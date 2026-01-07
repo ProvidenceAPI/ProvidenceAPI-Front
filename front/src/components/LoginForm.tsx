@@ -1,0 +1,307 @@
+"use client";
+
+import { useAppContext } from "@/contexts/AuthContext";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import axios from "axios";
+import Swal from "sweetalert2";
+
+// Tipos locales
+type LoginFormState = {
+  email: string;
+  password: string;
+};
+
+// Tipo para la respuesta de la API
+type ApiLoginResponse = {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string;
+    role?: "user" | "admin";
+  };
+  token: string;
+  message?: string;
+};
+
+const formInicialState: LoginFormState = {
+  email: "",
+  password: "",
+};
+
+export default function LoginForm() {
+  const { setLogin } = useAppContext(); // Ahora setLogin existe
+  const router = useRouter();
+  const [loginForm, setLoginForm] = useState<LoginFormState>(formInicialState);
+  const [errors, setErrors] = useState({ email: "", password: "" });
+  const [isLoading, setIsLoading] = useState(false);
+
+  const changeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setLoginForm({
+      ...loginForm,
+      [name]: value,
+    });
+
+    if (errors[name as keyof typeof errors]) {
+      setErrors({
+        ...errors,
+        [name]: "",
+      });
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = { email: "", password: "" };
+    let isValid = true;
+
+    if (!loginForm.email) {
+      newErrors.email = "Ingresa tu email";
+      isValid = false;
+    } else if (!/\S+@\S+\.\S+/.test(loginForm.email)) {
+      newErrors.email = "Email inválido";
+      isValid = false;
+    }
+
+    if (!loginForm.password) {
+      newErrors.password = "Ingresa tu contraseña";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const submitHandler = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    if (!validateForm()) {
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const result = await axios.post<ApiLoginResponse>(
+        `${process.env.NEXT_PUBLIC_API_URL}/users/login`, 
+        loginForm
+      );
+      
+      // Usa el tipo correcto para la respuesta
+      const loginInfo = result.data;
+      setLoginForm(formInicialState);
+      
+      // Ahora loginInfo tiene user y token definidos
+      if (loginInfo.user && loginInfo.token) {
+        // Llama a setLogin con los datos correctos
+        setLogin(loginInfo.user, loginInfo.token);
+        
+        await Swal.fire({
+          title: '¡Bienvenido!',
+          text: 'Sesión iniciada correctamente',
+          icon: 'success',
+          confirmButtonText: 'Continuar'
+        });
+        
+        router.push("/home");
+      } else {
+        await Swal.fire({
+          title: 'Error',
+          text: 'Usuario no encontrado en la respuesta',
+          icon: 'error',
+          confirmButtonText: 'Entendido'
+        });
+      }
+
+    } catch (error: any) {
+      console.error("Login error:", error);
+      
+      let errorMessage = "Email o contraseña incorrectos";
+      if (error.response) {
+        errorMessage = error.response.data?.message || errorMessage;
+      } else if (error.request) {
+        errorMessage = "Error de conexión con el servidor";
+      }
+      
+      await Swal.fire({
+        title: 'Error',
+        text: errorMessage,
+        icon: 'error',
+        confirmButtonText: 'Reintentar'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex">
+      {/* Left side - Black section */}
+      <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-center px-12 py-20">
+        <div className="text-2xl font-bold tracking-[0.2em]">
+          <Link href="/" className="flex flex-col hover:no-underline">
+            <img src="/logo.png" alt="Providence Fitness Logo" className="h-8 w-auto" />
+          </Link>
+        </div>
+        <h2 className="text-5xl font-bold leading-tight mb-6">
+          BIENVENIDO<br />DE VUELTA
+        </h2>
+
+        <p className="text-gray-400 text-lg leading-relaxed">
+          Continúa tu transformación. Inicia sesión y accede a tu entrenamiento.
+        </p>
+      </div>
+
+      {/* Right side - Form section */}
+      <div className="w-full md:w-1/2 bg-white flex flex-col justify-center px-8 md:px-12 py-20">
+        <div className="max-w-md mx-auto w-full">
+          {/* Header */}
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-black mb-2">INICIAR SESIÓN</h2>
+            <p className="text-gray-600">Ingresa tus credenciales para continuar</p>
+          </div>
+
+          <form onSubmit={submitHandler} className="space-y-6">
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-semibold text-black mb-2">EMAIL</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                  ✉️
+                </span>
+                <input
+                  className={`w-full pl-12 pr-4 py-3 border rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#DC2626] focus:bg-white transition ${
+                    errors.email ? "border-red-500" : "border-gray-300"
+                  }`}
+                  type="email"
+                  name="email"
+                  value={loginForm.email}
+                  onChange={changeHandler}
+                  placeholder="tu@email.com"
+                  disabled={isLoading}
+                />
+              </div>
+              {errors.email && (
+                <p className="text-red-500 text-sm mt-2">{errors.email}</p>
+              )}
+            </div>
+
+            {/* Password */}
+            <div>
+              <label className="block text-sm font-semibold text-black mb-2">CONTRASEÑA</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                  🔒
+                </span>
+                <input
+                  className={`w-full pl-12 pr-4 py-3 border rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#DC2626] focus:bg-white transition ${
+                    errors.password ? "border-red-500" : "border-gray-300"
+                  }`}
+                  type="password"
+                  name="password"
+                  value={loginForm.password}
+                  onChange={changeHandler}
+                  placeholder="•••••••"
+                  disabled={isLoading}
+                />
+              </div>
+              {errors.password && (
+                <p className="text-red-500 text-sm mt-2">{errors.password}</p>
+              )}
+            </div>
+
+            {/* Remember me and Forgot password */}
+            <div className="flex items-center justify-between">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 rounded border-gray-300 cursor-pointer"
+                  disabled={isLoading}
+                />
+                <span className="text-sm text-gray-700">Recuérdame</span>
+              </label>
+              <Link 
+                href="/forgot-password" 
+                className="text-sm text-[#DC2626] font-semibold hover:underline"
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              className={`w-full py-3 rounded-lg font-bold text-white text-lg transition-all uppercase tracking-wider ${
+                isLoading 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-[#DC2626] hover:bg-[#B01C1C]'
+              }`}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Procesando...
+                </span>
+              ) : (
+                <>
+                  INICIAR SESIÓN <span className="ml-2">→</span>
+                </>
+              )}
+            </button>
+
+            {/* Social Login */}
+            <div className="relative py-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">O continúa con</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                className="flex items-center justify-center py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                disabled={isLoading}
+              >
+                <span className="mr-2">G</span>
+                <span className="text-sm font-medium">Google</span>
+              </button>
+              
+            </div>
+
+            {/* Register Link */}
+            <div className="text-center pt-2">
+              <p className="text-gray-700">
+                ¿No tienes una cuenta?{" "}
+                <Link 
+                  href="/register" 
+                  className="text-[#DC2626] font-bold hover:underline"
+                >
+                  Regístrate aquí
+                </Link>
+              </p>
+            </div>
+
+            {/* Back Link */}
+            <div className="text-center pt-4 border-t border-gray-200">
+              <Link 
+                href="/" 
+                className="text-sm text-gray-600 hover:text-gray-900 transition inline-flex items-center"
+              >
+                <span className="mr-1">←</span> Volver al sitio web
+              </Link>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
