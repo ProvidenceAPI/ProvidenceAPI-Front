@@ -12,12 +12,7 @@ export const Navbar: React.FC = () => {
         {/* Logo */}
         <div className="text-2xl font-bold tracking-[0.2em]">
           <Link href="/" className="flex flex-col hover:no-underline">
-            <span className="text-white">PROVID</span>
-            <div className="flex">
-              <span className="text-white">ENC</span>
-              <span className="text-[#DC2626]">E</span>
-            </div>
-            <div className="text-xs tracking-[0.3em] text-gray-300 mt-1">FITNESS</div>
+            <img src="/logo.png" alt="Providence Fitness Logo" className="h-8 w-auto" />
           </Link>
         </div>
 
@@ -26,17 +21,26 @@ export const Navbar: React.FC = () => {
           {/* Enlaces para NO logueados */}
           {!user ? (
             <>
-              <Link href="/landing" className="hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium">
+              <Link href="/" className="hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium">
                 Inicio
               </Link>
-              <Link href="/activities" className="hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium">
+              <Link href="/nosotros" className="hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium">
                 Nosotros
               </Link>
+              <Link href="/home" className="hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium">
+                Actividades
+              </Link>
+              <Link href="/testimonios" className="hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium">
+                Testimonios
+              </Link>
+              <Link href="/ubicacion" className="hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium">
+                Ubicacion
+              </Link>
               <div className="h-6 w-px bg-gray-700"></div>
-              <Link href="/login" className="px-6 py-2 border border-white hover:bg-white hover:text-black transition-all duration-200 uppercase text-sm font-bold tracking-wider">
+              <Link href="/login" className="px-6 py-2 rounded-md hover:bg-white hover:text-black transition-all duration-200 uppercase text-sm font-bold tracking-wider">
                 Iniciar Sesión
               </Link>
-              <Link href="/register" className="px-6 py-2 bg-[#DC2626] hover:bg-[#B01C1C] transition-all duration-200 uppercase text-sm font-bold tracking-wider">
+              <Link href="/register" className="px-6 py-2 rounded-md bg-[#DC2626] hover:bg-[#B01C1C] transition-all duration-200 uppercase text-sm font-bold tracking-wider">
                 Únete Ahora
               </Link>
             </>
@@ -44,9 +48,6 @@ export const Navbar: React.FC = () => {
             /* Enlaces para USUARIOS logueados */
             <>
               <Link href="/home" className="hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium">
-                Home
-              </Link>
-              <Link href="/activities" className="hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium">
                 Actividades
               </Link>
               <Link href="/reservations" className="hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium">
@@ -97,14 +98,14 @@ export const Navbar: React.FC = () => {
         {!user ? (
           <div className="flex flex-col gap-4">
             <Link href="/landing" className="hover:text-[#DC2626] py-2">Inicio</Link>
-            <Link href="/activities" className="hover:text-[#DC2626] py-2">Ver Actividades</Link>
+            <Link href="/home" className="hover:text-[#DC2626] py-2">Ver Actividades</Link>
             <Link href="/login" className="py-2">Iniciar Sesión</Link>
             <Link href="/register" className="text-[#DC2626] py-2">Únete Ahora</Link>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            <Link href="/home" className="hover:text-[#DC2626] py-2">Home</Link>
-            <Link href="/activities" className="hover:text-[#DC2626] py-2">Actividades</Link>
+            <Link href="/landing" className="hover:text-[#DC2626] py-2">Home</Link>
+            <Link href="/home" className="hover:text-[#DC2626] py-2">Actividades</Link>
             <Link href="/reservations" className="hover:text-[#DC2626] py-2">Mis Reservas</Link>
             <Link href="/payments" className="hover:text-[#DC2626] py-2">Mis Pagos</Link>
             <Link href="/profile" className="hover:text-[#DC2626] py-2">Mi Perfil</Link>

@@ -60,10 +60,8 @@ const HomePage: React.FC = () => {
     );
   }
 
-  if (!user) {
-    router.replace("/login");
-    return null;
-  }
+  
+  
 
   return (
     <>

@@ -1,136 +1,107 @@
 import React from "react";
 import Link from "next/link";
-import { FacebookIcon, InstagramIcon, TwitterIcon, WhatsAppIcon } from "./SocialIcons";
+import { FacebookIcon, InstagramIcon,TwitterIcon, MailIcon, PhoneIcon, LocationIcon} from "./SocialIcons";
 
 export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
-  
+
   return (
-    <div>
-      <div className="container mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-          {/* Columna 1: Brand */}
+    <footer className="bg-black text-white border-t-2 border-[#DC2626]">
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
+          {/* Columna 1 - Brand con logo */}
           <div>
-            <h2 className="text-2xl font-bold tracking-[0.2em] mb-4">
-              <span className="text-white">PROVID</span>
-              <span className="text-[#DC2626]">E</span>
-              <span className="text-white">NCE</span>
-            </h2>
-            <p className="text-gray-400 text-sm mb-2">FITNESS</p>
-            <p className="text-gray-400 text-sm mb-6">
+            <div className="mb-4">
+              {/* Logo */}
+              <img 
+                src="/logo.png" 
+                alt="Providence Fitness Logo" 
+                className="h-12 w-auto mb-3"
+              />
+              
+            </div>
+            
+            <p className="text-gray-400 text-sm mb-6 leading-relaxed">
               Transforma tu cuerpo, eleva tu vida.<br />
               Únete a la revolución Providence hoy.
             </p>
+
+            <div className="flex gap-4">
+              <a href="https://facebook.com" className="text-gray-400 hover:text-[#DC2626] transition-colors">
+                <FacebookIcon className="w-5 h-5" />
+              </a>
+              <a href="https://instagram.com" className="text-gray-400 hover:text-[#DC2626] transition-colors">
+                <InstagramIcon className="w-5 h-5" />
+              </a>
+              <a href="https://twitter.com" className="text-gray-400 hover:text-[#DC2626] transition-colors">
+                <TwitterIcon className="w-5 h-5" />
+              </a>
+            </div>
           </div>
 
-              
-            
-                   
-                        
+          {/* Columna 2 - Enlaces rápidos */}
+          <div>
+            <h3 className="text-[#FFFFFF] font-bold uppercase mb-6 tracking-wider text-lg">ENLACES RÁPIDOS</h3>
+            <ul className="space-y-4">
+              {["Inicio", "Nosotros", "Actividades", "Testimonios"].map((item) => (
+                <li key={item}>
+                  <Link 
+                    href="#" 
+                    className="text-gray-300 hover:text-white hover:underline transition-colors text-sm"
+                  >
+                    {item}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-                              {/* Iconos de las redes */}
-                              <div className="flex gap-4 mt-4">
-                                <a
-                                  href="https://wa.me/15551234567"
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-gray-400 hover:text-green-500 transition-all duration-300 hover:scale-110"
-                                  aria-label="WhatsApp"
-                                >
-                                  <WhatsAppIcon className="w-5 h-5" />
-                                </a>
-                                <a
-                                  href="https://facebook.com"
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-gray-400 hover:text-blue-500 transition-all duration-300 hover:scale-110"
-                                  aria-label="Facebook"
-                                >
-                                  <FacebookIcon className="w-5 h-5" />
-                                </a>
-                                <a
-                                  href="https://instagram.com"
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-gray-400 hover:text-pink-500 transition-all duration-300 hover:scale-110"
-                                  aria-label="Instagram"
-                                >
-                                  <InstagramIcon className="w-5 h-5" />
-                                </a>
-                                <a
-                                  href="https://twitter.com"
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-gray-400 hover:text-blue-400 transition-all duration-300 hover:scale-110"
-                                  aria-label="Twitter"
-                                >
-                                  <TwitterIcon className="w-5 h-5" />
-                                </a>
-                              </div>
-                            </div>
+          {/* Columna 3 - Programas */}
+          <div>
+            <h3 className="text-[#FFFFFF] font-bold uppercase mb-6 tracking-wider text-lg">PROGRAMAS</h3>
+            <ul className="space-y-4">
+              {["CrossFit", "Funcional", "HIIT", "Open Box"].map((program) => (
+                <li key={program}>
+                  <Link 
+                    href="#" 
+                    className="text-gray-300 hover:text-white hover:underline transition-colors text-sm"
+                  >
+                    {program}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-                            {/* Columna 2: Enlaces Rápidos */}
-                            <div>
-                              <h3 className="text-[#DC2626] font-bold uppercase mb-4 tracking-wide text-lg">ENLACES RÁPIDOS</h3>
-                              <ul className="space-y-3">
-                                {["Inicio", "Nosotros", "Actividades", "Testimonios"].map((item) => (
-                                  <li key={item}>
-                                    <Link
-                                      href="/"
-                                      className="text-gray-300 hover:text-white hover:underline transition-colors duration-200"
-                                    >
-                                      {item}
-                                    </Link>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
+          {/* Columna 4 - Contacto */}
+          <div>
+            <h3 className="text-[#FFFFFF] font-bold uppercase mb-6 tracking-wider text-lg">CONTACTO</h3>
+            <ul className="space-y-5 text-gray-300 text-sm">
+              <li className="flex items-start gap-3">
+                <PhoneIcon className="w-5 h-5 mt-0.5 flex-shrink-0 text-gray-400" />
+                <span>(555) 123-4567</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <MailIcon className="w-5 h-5 mt-0.5 flex-shrink-0 text-gray-400" />
+                <span>info@providencefitness.com</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <LocationIcon className="w-5 h-5 mt-0.5 flex-shrink-0 text-gray-400" />
+                <span>Provincia de Buenos Aires 760</span>
+              </li>
+            </ul>
+          </div>
+        </div>
 
-                            {/* Columna 3: Programas */}
-                            <div>
-                              <h3 className="text-[#DC2626] font-bold uppercase mb-4 tracking-wide text-lg">PROGRAMAS</h3>
-                              <ul className="space-y-3">
-                                {["CrossFit", "Functional", "HIIT", "Open Box"].map((program) => (
-                                  <li key={program}>
-                                    <Link
-                                      href="/"
-                                      className="text-gray-300 hover:text-white hover:underline transition-colors duration-200"
-                                    >
-                                      {program}
-                                    </Link>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-
-                            {/* Columna 4: Contacto */}
-                            <div>
-                              <h3 className="text-[#DC2626] font-bold uppercase mb-4 tracking-wide text-lg">CONTACTO</h3>
-                              <ul className="space-y-4 text-gray-300">
-                                <li className="flex items-start">
-                                  <span className="mr-2">📞</span>
-                                  <span>(555) 123-4567</span>
-                                </li>
-                                <li className="flex items-start">
-                                  <span className="mr-2">✉️</span>
-                                  <span>info@providencefitness.com</span>
-                                </li>
-                                <li className="flex items-start">
-                                  <span className="mr-2">📍</span>
-                                  <span>Provincia de Buenos Aires 760</span>
-                                </li>
-                              </ul>
-                            </div>
-                          </div>
-
-                          
-                                <p className="text-gray-500 text-sm">
-                                  &copy; {currentYear} Providence Fitness. Todos los derechos reservados.
-                                </p>
-                              
-
-                              </div>
-                      
-                      
-                    );
-                  };
+        {/* Línea divisoria y derechos */}
+        <div className="mt-12 pt-8 border-t border-gray-800">
+          <div className="text-center">
+            <p className="text-gray-500 text-sm">
+              &copy; {currentYear} Providence Fitness. Todos los derechos reservados.
+            </p>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+};
