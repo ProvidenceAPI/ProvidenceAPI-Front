@@ -1,4 +1,3 @@
-// src/components/LoginForm.tsx
 "use client";
 
 import { useAppContext } from "@/contexts/AuthContext";
@@ -138,77 +137,170 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-md p-6 w-full max-w-sm">
-        <h2 className="text-xl font-bold text-center mb-6">
-          Iniciar Sesión
+    <div className="min-h-screen flex">
+      {/* Left side - Black section */}
+      <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-center px-12 py-20">
+        <div className="text-2xl font-bold tracking-[0.2em]">
+          <Link href="/" className="flex flex-col hover:no-underline">
+            <img src="/logo.png" alt="Providence Fitness Logo" className="h-8 w-auto" />
+          </Link>
+        </div>
+        <h2 className="text-5xl font-bold leading-tight mb-6">
+          BIENVENIDO<br />DE VUELTA
         </h2>
 
-        <form onSubmit={submitHandler} className="space-y-4">
-          {/* Email */}
-          <div>
-            <label className="block text-sm mb-1 font-medium text-gray-700">Email</label>
-            <input
-              className={`w-full p-3 border rounded-md ${errors.email ? "border-red-500" : "border-gray-300"} focus:outline-none focus:ring-2 focus:ring-[#DC2626] focus:border-transparent`}
-              type="email"
-              name="email"
-              value={loginForm.email}
-              onChange={changeHandler}
-              placeholder="ejemplo@email.com"
-              disabled={isLoading}
-            />
-            {errors.email && (
-              <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-            )}
+        <p className="text-gray-400 text-lg leading-relaxed">
+          Continúa tu transformación. Inicia sesión y accede a tu entrenamiento.
+        </p>
+      </div>
+
+      {/* Right side - Form section */}
+      <div className="w-full md:w-1/2 bg-white flex flex-col justify-center px-8 md:px-12 py-20">
+        <div className="max-w-md mx-auto w-full">
+          {/* Header */}
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-black mb-2">INICIAR SESIÓN</h2>
+            <p className="text-gray-600">Ingresa tus credenciales para continuar</p>
           </div>
 
-          {/* Contraseña */}
-          <div>
-            <label className="block text-sm mb-1 font-medium text-gray-700">Contraseña</label>
-            <input
-              className={`w-full p-3 border rounded-md ${errors.password ? "border-red-500" : "border-gray-300"} focus:outline-none focus:ring-2 focus:ring-[#DC2626] focus:border-transparent`}
-              type="password"
-              name="password"
-              value={loginForm.password}
-              onChange={changeHandler}
-              placeholder="Tu contraseña"
-              disabled={isLoading}
-            />
-            {errors.password && (
-              <p className="text-red-500 text-sm mt-1">{errors.password}</p>
-            )}
-          </div>
+          <form onSubmit={submitHandler} className="space-y-6">
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-semibold text-black mb-2">EMAIL</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                  ✉️
+                </span>
+                <input
+                  className={`w-full pl-12 pr-4 py-3 border rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#DC2626] focus:bg-white transition ${
+                    errors.email ? "border-red-500" : "border-gray-300"
+                  }`}
+                  type="email"
+                  name="email"
+                  value={loginForm.email}
+                  onChange={changeHandler}
+                  placeholder="tu@email.com"
+                  disabled={isLoading}
+                />
+              </div>
+              {errors.email && (
+                <p className="text-red-500 text-sm mt-2">{errors.email}</p>
+              )}
+            </div>
 
-          {/* Botón */}
-          <button
-            type="submit"
-            className={`w-full p-3 rounded-md font-medium transition-colors ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#DC2626] hover:bg-[#B01C1C] text-white'}`}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <span className="flex items-center justify-center">
-                <svg className="animate-spin h-5 w-5 mr-3 text-white" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                Procesando...
-              </span>
-            ) : 'Acceder'}
-          </button>
+            {/* Password */}
+            <div>
+              <label className="block text-sm font-semibold text-black mb-2">CONTRASEÑA</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                  🔒
+                </span>
+                <input
+                  className={`w-full pl-12 pr-4 py-3 border rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#DC2626] focus:bg-white transition ${
+                    errors.password ? "border-red-500" : "border-gray-300"
+                  }`}
+                  type="password"
+                  name="password"
+                  value={loginForm.password}
+                  onChange={changeHandler}
+                  placeholder="•••••••"
+                  disabled={isLoading}
+                />
+              </div>
+              {errors.password && (
+                <p className="text-red-500 text-sm mt-2">{errors.password}</p>
+              )}
+            </div>
 
-          {/* Enlace a registro */}
-          <div className="text-center pt-4">
-            <p className="text-gray-600 text-sm">
-              ¿No tienes cuenta?{" "}
+            {/* Remember me and Forgot password */}
+            <div className="flex items-center justify-between">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 rounded border-gray-300 cursor-pointer"
+                  disabled={isLoading}
+                />
+                <span className="text-sm text-gray-700">Recuérdame</span>
+              </label>
               <Link 
-                href="/register" 
-                className="text-[#DC2626] font-medium hover:underline"
+                href="/forgot-password" 
+                className="text-sm text-[#DC2626] font-semibold hover:underline"
               >
-                Regístrate aquí
+                ¿Olvidaste tu contraseña?
               </Link>
-            </p>
-          </div>
-        </form>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              className={`w-full py-3 rounded-lg font-bold text-white text-lg transition-all uppercase tracking-wider ${
+                isLoading 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-[#DC2626] hover:bg-[#B01C1C]'
+              }`}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Procesando...
+                </span>
+              ) : (
+                <>
+                  INICIAR SESIÓN <span className="ml-2">→</span>
+                </>
+              )}
+            </button>
+
+            {/* Social Login */}
+            <div className="relative py-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">O continúa con</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                className="flex items-center justify-center py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                disabled={isLoading}
+              >
+                <span className="mr-2">G</span>
+                <span className="text-sm font-medium">Google</span>
+              </button>
+              
+            </div>
+
+            {/* Register Link */}
+            <div className="text-center pt-2">
+              <p className="text-gray-700">
+                ¿No tienes una cuenta?{" "}
+                <Link 
+                  href="/register" 
+                  className="text-[#DC2626] font-bold hover:underline"
+                >
+                  Regístrate aquí
+                </Link>
+              </p>
+            </div>
+
+            {/* Back Link */}
+            <div className="text-center pt-4 border-t border-gray-200">
+              <Link 
+                href="/" 
+                className="text-sm text-gray-600 hover:text-gray-900 transition inline-flex items-center"
+              >
+                <span className="mr-1">←</span> Volver al sitio web
+              </Link>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
