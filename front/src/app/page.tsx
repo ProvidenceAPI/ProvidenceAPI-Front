@@ -2,6 +2,8 @@ import React from "react";
 import TransformacionCTA from "@/components/TransformacionCTA";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import Link from "next/link";
+
 
 const LandingPage: React.FC = () => {
   return (
@@ -33,9 +35,9 @@ const LandingPage: React.FC = () => {
                 RESERVA TU TURNO Y ENTRENA EN<br />
                 <span className="text-[#DC2626]">PROVIDENCE FITNESS</span>
               </h2>
-              <button className="bg-[#DC2626] hover:bg-[#B01C1C] text-white px-8 py-4 rounded-md text-xl font-bold uppercase tracking-wider mt-6 transition-colors hover:scale-105">
+              <Link href="/home" className="bg-[#DC2626] hover:bg-[#B01C1C] text-white px-8 py-4 rounded-md text-xl font-bold uppercase tracking-wider mt-6 transition-colors hover:scale-105">
                 Ver Clases Disponibles
-              </button>
+              </Link>
             </div>
           </div>
         </section>
