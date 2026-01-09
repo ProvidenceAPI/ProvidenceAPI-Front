@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Navbar } from "src/components/Navbar";
 import Link from "next/link";
-import axios from "axios";
+import api from '../../services/api';
 
 export default function DashboardPage() {
-  const { user, isAuthenticated, loading, logout, updateUser } = useAppContext();
+  const { user, isAuthenticated, loading, updateUser } = useAppContext();
   const router = useRouter();
   const [stats, setStats] = useState({
     reservasActivas: 0,
@@ -16,7 +16,6 @@ export default function DashboardPage() {
     proximaClase: null as string | null,
   });
   
-  // Estados para edición de perfil
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({
     phone: "",
@@ -32,14 +31,12 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      // Aquí cargarías datos reales del backend
       setStats({
         reservasActivas: 3,
         pagosPendientes: 1,
         proximaClase: "2024-01-20 18:00 - CrossFit",
       });
-      
-      // Inicializar formulario con datos del usuario
+
       setFormData({
         phone: user.phone || "",
         profileImage: user.profileImage || "",
@@ -47,103 +44,74 @@ export default function DashboardPage() {
     }
   }, [isAuthenticated, user]);
 
-  // Función para subir imagen a Cloudinary
-  const uploadToCloudinary = async (file: File) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const validTypes = ['image/png', 'image/jpg', 'image/jpeg', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      alert('Solo se permiten imágenes PNG, JPG, JPEG o WEBP');
+      return;
+    }
+    if (file.size > 2000000) {
+      alert('La imagen debe ser menor a 2MB');
+      return;
+    }
     try {
       setUploading(true);
+
+      const formDataToSend = new FormData();
+      formDataToSend.append('file', file);
       
-      // 1. Obtener signature y timestamp del backend
-      const response = await axios.get('http://localhost:3000/cloudinary/signature');
-      const { signature, timestamp, api_key, cloud_name } = response.data;
-      
-      // 2. Crear FormData para Cloudinary
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('api_key', api_key);
-      formData.append('timestamp', timestamp.toString());
-      formData.append('signature', signature);
-      formData.append('folder', 'providence/profiles'); // Carpeta en Cloudinary
-      
-      // 3. Subir a Cloudinary
-      const cloudinaryResponse = await axios.post(
-        `https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-      
-      return cloudinaryResponse.data.secure_url; // URL de la imagen
-      
+      const response: any = await api.put('/users/profile/image', formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+  
+      const imageUrl = response.profileImage;
+
+      setFormData(prev => ({ ...prev, profileImage: imageUrl }));
+      if (user && imageUrl) {
+        updateUser({ ...user, profileImage: imageUrl });
+      }
+      alert("Foto de perfil actualizada exitosamente");
     } catch (error) {
-      console.error('Error subiendo imagen:', error);
-      throw error;
+      console.error("Error actualizando foto:", error);
+      alert("Error al actualizar la foto de perfil");
     } finally {
       setUploading(false);
     }
   };
 
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      // Subir imagen a Cloudinary
-      const imageUrl = await uploadToCloudinary(file);
-      
-      // Actualizar estado local
-      setFormData({ ...formData, profileImage: imageUrl });
-      
-      // Actualizar en el backend
-      await updateProfile({ profileImage: imageUrl });
-      
-      alert("Foto de perfil actualizada exitosamente");
-    } catch (error) {
-      console.error("Error actualizando foto:", error);
-      alert("Error al actualizar la foto de perfil");
-    }
-  };
-
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, phone: e.target.value });
-  };
-
-  const updateProfile = async (data: Partial<typeof formData>) => {
-    try {
-      const token = localStorage.getItem('providence_token');
-      
-      // Actualizar en backend
-      const response = await axios.put(
-        'http://localhost:3000/users/profile',
-        data,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      
-      // Actualizar en contexto
-      updateUser(response.data.user);
-      
-      return response.data;
-    } catch (error) {
-      console.error("Error actualizando perfil:", error);
-      throw error;
-    }
+    setFormData(prev => ({ ...prev, phone: e.target.value }));
   };
 
   const handleSaveProfile = async () => {
     try {
-      await updateProfile(formData);
+      const { profileImage, ...dataToUpdate } = formData;
+      const response: any = await api.put('/users/profile', dataToUpdate);
+      if (user && response) {
+        updateUser({ 
+          ...user, 
+          phone: response.phone || dataToUpdate.phone,
+          name: response.name || user.name,
+        });
+      }
       setEditMode(false);
       alert("Perfil actualizado exitosamente");
     } catch (error) {
       console.error("Error guardando perfil:", error);
       alert("Error al actualizar el perfil");
     }
+  };
+
+  const handleCancelEdit = () => {
+    setEditMode(false);
+    setFormData({
+      phone: user?.phone || "",
+      profileImage: user?.profileImage || "",
+    });
   };
 
   if (loading) {
@@ -153,7 +121,6 @@ export default function DashboardPage() {
       </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -190,7 +157,7 @@ export default function DashboardPage() {
                   <input 
                     type="file" 
                     className="hidden"
-                    accept="image/*"
+                    accept="image/png,image/jpg,image/jpeg,image/webp"
                     onChange={handleImageChange}
                     disabled={uploading}
                   />
@@ -210,7 +177,6 @@ export default function DashboardPage() {
                 <p className="text-gray-600 mt-1">
                   {user?.email}
                 </p>
-                
               </div>
             </div>
             
@@ -241,13 +207,7 @@ export default function DashboardPage() {
                     Guardar
                   </button>
                   <button
-                    onClick={() => {
-                      setEditMode(false);
-                      setFormData({
-                        phone: user?.phone || "",
-                        profileImage: user?.profileImage || "",
-                      });
-                    }}
+                    onClick={handleCancelEdit}
                     className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
                   >
                     Cancelar
@@ -265,7 +225,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Resto del dashboard (igual que antes) */}
+        {/* Tarjetas de estadísticas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
@@ -328,8 +288,6 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-
-        {/* ... resto del dashboard igual ... */}
       </div>
     </div>
   );

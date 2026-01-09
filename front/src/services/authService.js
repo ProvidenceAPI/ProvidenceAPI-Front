@@ -78,12 +78,12 @@ export const authService = {
     
     try {
       // Necesitas crear POST /upload o similar
-      const response = await api.put('users/profile/image', formData, {
+      const response = await api.put('/users/profile/image', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      return response
+      return response.url || response.profileImage;
     } catch (error) {
       console.error('Upload image error:', error);
       throw error.response?.data || error.message;
