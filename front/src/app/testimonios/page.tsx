@@ -1,7 +1,7 @@
 import React from 'react';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
-import TransformacionCTA from '@/components/TransformacionCTA';
+import { Navbar } from 'src/components/Navbar';
+import { Footer } from 'src/components/Footer';
+import TransformacionCTA from 'src/components/TransformacionCTA';
 
 interface Testimonial {
   id: number;

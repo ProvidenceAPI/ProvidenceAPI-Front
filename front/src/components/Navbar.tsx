@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "src/contexts/AuthContext";
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   
@@ -50,23 +50,23 @@ export const Navbar: React.FC = () => {
               <Link href="/home" className="hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium">
                 Actividades
               </Link>
-              <Link href="/reservations" className="hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium">
+              <Link href="/mis-reservas" className="hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium">
                 Mis Reservas
               </Link>
-              <Link href="/payments" className="hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium">
+              <Link href="/mis-pagos" className="hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium">
                 Mis Pagos
               </Link>
-              <Link href="/profile" className="hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium">
+              <Link href="/dashboard" className="hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium">
                 Mi Perfil
               </Link>
               
-              {/* Admin link - solo si es admin */}
+              {/* Admin link - solo si es admin 
               {user.role === "admin" && (
                 <Link href="/admin" className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded uppercase text-sm font-bold tracking-wider">
                   Admin
                 </Link>
               )}
-              
+              */}
               <div className="h-6 w-px bg-gray-700"></div>
               
               {/* User info y logout */}
@@ -109,7 +109,7 @@ export const Navbar: React.FC = () => {
             <Link href="/reservations" className="hover:text-[#DC2626] py-2">Mis Reservas</Link>
             <Link href="/payments" className="hover:text-[#DC2626] py-2">Mis Pagos</Link>
             <Link href="/profile" className="hover:text-[#DC2626] py-2">Mi Perfil</Link>
-            {user.role === "admin" && <Link href="/admin" className="text-purple-400 py-2">Admin</Link>}
+            {/*user.role === "admin" && <Link href="/admin" className="text-purple-400 py-2">Admin</Link>*/}
             <button onClick={() => logout()} className="text-left py-2 text-gray-400">Cerrar sesión</button>
           </div>
         )}
@@ -117,4 +117,3 @@ export const Navbar: React.FC = () => {
     </nav>
   );
 };
-
