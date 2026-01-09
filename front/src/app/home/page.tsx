@@ -2,11 +2,10 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-
-import { Navbar } from "@/components/Navbar";
-import TransformacionCTA from "@/components/TransformacionCTA";
-import { useAuth } from "@/contexts/AuthContext";
-import { Footer } from "@/components/Footer";
+import TransformacionCTA from "src/components/TransformacionCTA";
+import { useAuth } from "src/contexts/AuthContext";
+import { Footer } from "src/components/Footer";
+import { Navbar } from "src/components/Navbar";
 
 const HomePage: React.FC = () => {
   const { user, loading } = useAuth();

@@ -6,8 +6,8 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import Swal from "sweetalert2";
 
-import RegisterDto from "@/interfaces/RegisterDto";
-import RegisterFormState from "@/interfaces/RegisterFormState";
+import RegisterDto from "src/interfaces/RegisterDto";
+import RegisterFormState from "src/interfaces/RegisterFormState";
 
 // Definir interfaces actualizadas
 interface FormErrors {

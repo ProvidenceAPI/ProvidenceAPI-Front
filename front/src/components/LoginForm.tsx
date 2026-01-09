@@ -1,29 +1,14 @@
 "use client";
 
-import { useAppContext } from "@/contexts/AuthContext";
+import { useAppContext } from "src/contexts/AuthContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import axios from "axios";
 import Swal from "sweetalert2";
 
-// Tipos locales
 type LoginFormState = {
   email: string;
   password: string;
-};
-
-// Tipo para la respuesta de la API
-type ApiLoginResponse = {
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    phone?: string;
-    role?: "user" | "admin";
-  };
-  token: string;
-  message?: string;
 };
 
 const formInicialState: LoginFormState = {
@@ -32,12 +17,12 @@ const formInicialState: LoginFormState = {
 };
 
 export default function LoginForm() {
-  const { setLogin } = useAppContext();
+  const { login } = useAppContext();
   const router = useRouter();
   const [loginForm, setLoginForm] = useState<LoginFormState>(formInicialState);
   const [errors, setErrors] = useState({ email: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
+   const [googleLoading, setGoogleLoading] = useState(false);
 
   const changeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     const property = e.target.name;
@@ -48,7 +33,6 @@ export default function LoginForm() {
       [property]: value,
     });
 
-    // Limpiar error cuando el usuario empiece a escribir
     if (errors[property as keyof typeof errors]) {
       setErrors({
         ...errors,
@@ -78,7 +62,6 @@ export default function LoginForm() {
     return isValid;
   };
 
-  // Función para Google Auth
   const handleGoogleAuth = () => {
     setGoogleLoading(true);
     
@@ -93,6 +76,7 @@ export default function LoginForm() {
     window.location.href = googleAuthUrl;
   };
 
+
   const submitHandler = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
@@ -103,46 +87,34 @@ export default function LoginForm() {
     }
 
     try {
-      const result = await axios.post<ApiLoginResponse>(
-        `${process.env.NEXT_PUBLIC_API_URL}/users/login`,
-        loginForm
-      );
-
-      const loginInfo = result.data;
+      // Usamos la función login del contexto
+      const result = await login(loginForm.email, loginForm.password);
+      
       setLoginForm(formInicialState);
 
-      if (loginInfo.user && loginInfo.token) {
-        setLogin(loginInfo.user, loginInfo.token);
-
+      if (result.success) {
         await Swal.fire({
           title: "¡Bienvenido!",
-          text: "Sesión iniciada correctamente",
+          text: result.message,
           icon: "success",
           confirmButtonText: "Continuar",
         });
 
-        router.push("/home");
+        // Redirigir al dashboard
+        router.push("/dashboard");
       } else {
         await Swal.fire({
           title: "Error",
-          text: "Usuario no encontrado en la respuesta",
+          text: result.message,
           icon: "error",
           confirmButtonText: "Entendido",
         });
       }
     } catch (error: any) {
       console.error("Login error:", error);
-
-      let errorMessage = "Email o contraseña incorrectos";
-      if (error.response) {
-        errorMessage = error.response.data?.message || errorMessage;
-      } else if (error.request) {
-        errorMessage = "Error de conexión con el servidor";
-      }
-
       await Swal.fire({
         title: "Error",
-        text: errorMessage,
+        text: "Error inesperado al iniciar sesión",
         icon: "error",
         confirmButtonText: "Reintentar",
       });
@@ -287,24 +259,6 @@ export default function LoginForm() {
               )}
             </div>
 
-            {/* Remember me and Forgot password */}
-            <div className="flex items-center justify-between">
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 rounded border-gray-300 cursor-pointer"
-                  disabled={isLoading}
-                />
-                <span className="text-sm text-gray-700">Recuérdame</span>
-              </label>
-              <Link
-                href="/forgot-password"
-                className="text-sm text-[#DC2626] font-semibold hover:underline"
-              >
-                ¿Olvidaste tu contraseña?
-              </Link>
-            </div>
-
             {/* Submit Button */}
             <button
               type="submit"
@@ -345,14 +299,15 @@ export default function LoginForm() {
               )}
             </button>
 
-            {/* Social Login */}
+
+ {/* Social Login */}
             <div className="relative py-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300"></div>
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-2 bg-white text-gray-500">
-                  O continúa con
+                  O regístrate con
                 </span>
               </div>
             </div>
@@ -413,6 +368,9 @@ export default function LoginForm() {
               </button>
             </div>
 
+
+
+
             {/* Register Link */}
             <div className="text-center pt-2">
               <p className="text-gray-700">
@@ -424,16 +382,6 @@ export default function LoginForm() {
                   Regístrate aquí
                 </Link>
               </p>
-            </div>
-
-            {/* Back Link */}
-            <div className="text-center pt-4 border-t border-gray-200">
-              <Link
-                href="/"
-                className="text-sm text-gray-600 hover:text-gray-900 transition inline-flex items-center"
-              >
-                <span className="mr-1">←</span> Volver al sitio web
-              </Link>
             </div>
           </form>
         </div>
