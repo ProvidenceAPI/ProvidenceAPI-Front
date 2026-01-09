@@ -83,7 +83,7 @@ export const authService = {
           'Content-Type': 'multipart/form-data',
         },
       });
-      return response;
+      return response.url || response.profileImage;
     } catch (error) {
       console.error('Upload image error:', error);
       throw error.response?.data || error.message;

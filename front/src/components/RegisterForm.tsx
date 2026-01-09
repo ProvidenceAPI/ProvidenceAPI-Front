@@ -320,8 +320,13 @@ export default function RegisterForm() {
   const handleGoogleAuth = () => {
     setGoogleLoading(true);
     
-    const googleAuthUrl = `${process.env.NEXT_PUBLIC_API_URL}/auth/google/signup`;
-            
+    // Redirigir al endpoint de Google OAuth del backend
+    // El backend manejará la redirección a Google y luego de vuelta a tu aplicación
+    const googleAuthUrl = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
+    
+    // Guardar la página actual para redirigir después del login
+    localStorage.setItem('redirectAfterLogin', window.location.pathname);
+    
     // Redirigir al backend para iniciar el flujo OAuth
     window.location.href = googleAuthUrl;
   };
