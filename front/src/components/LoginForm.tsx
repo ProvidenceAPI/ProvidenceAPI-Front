@@ -22,7 +22,7 @@ export default function LoginForm() {
   const [loginForm, setLoginForm] = useState<LoginFormState>(formInicialState);
   const [errors, setErrors] = useState({ email: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
-   const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const changeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     const property = e.target.name;
@@ -65,17 +65,16 @@ export default function LoginForm() {
   const handleGoogleAuth = () => {
     setGoogleLoading(true);
     
-    // Redirigir al endpoint de Google OAuth del backend
-    // El backend manejará la redirección a Google y luego de vuelta a tu aplicación
-    const googleAuthUrl = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
+    // Backend tiene endpoints separados para signup y login
+    // Usamos el endpoint de LOGIN de Google
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    const googleAuthUrl = `${API_URL}/auth/google/login`;
     
-    // Guardar la página actual para redirigir después del login
-    localStorage.setItem('redirectAfterLogin', window.location.pathname);
+    console.log('🔗 Redirigiendo a Google OAuth:', googleAuthUrl);
     
     // Redirigir al backend para iniciar el flujo OAuth
     window.location.href = googleAuthUrl;
   };
-
 
   const submitHandler = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -299,15 +298,14 @@ export default function LoginForm() {
               )}
             </button>
 
-
- {/* Social Login */}
+            {/* Social Login */}
             <div className="relative py-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300"></div>
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-2 bg-white text-gray-500">
-                  O regístrate con
+                  O inicia sesión con
                 </span>
               </div>
             </div>
@@ -367,9 +365,6 @@ export default function LoginForm() {
                 )}
               </button>
             </div>
-
-
-
 
             {/* Register Link */}
             <div className="text-center pt-2">
