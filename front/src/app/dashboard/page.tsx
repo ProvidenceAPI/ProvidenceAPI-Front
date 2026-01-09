@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Navbar } from "src/components/Navbar";
 import Link from "next/link";
-import api from '../../services/api';
+import api from "../../services/api";
 
 export default function DashboardPage() {
   const { user, isAuthenticated, loading, updateUser } = useAppContext();
@@ -15,7 +15,7 @@ export default function DashboardPage() {
     pagosPendientes: 0,
     proximaClase: null as string | null,
   });
-  
+
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({
     phone: "",
@@ -24,7 +24,11 @@ export default function DashboardPage() {
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
+    if (
+      !loading &&
+      !isAuthenticated &&
+      !localStorage.getItem("providence_token")
+    ) {
       router.push("/login");
     }
   }, [isAuthenticated, loading, router]);
@@ -47,30 +51,34 @@ export default function DashboardPage() {
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const validTypes = ['image/png', 'image/jpg', 'image/jpeg', 'image/webp'];
+    const validTypes = ["image/png", "image/jpg", "image/jpeg", "image/webp"];
     if (!validTypes.includes(file.type)) {
-      alert('Solo se permiten imágenes PNG, JPG, JPEG o WEBP');
+      alert("Solo se permiten imágenes PNG, JPG, JPEG o WEBP");
       return;
     }
     if (file.size > 2000000) {
-      alert('La imagen debe ser menor a 2MB');
+      alert("La imagen debe ser menor a 2MB");
       return;
     }
     try {
       setUploading(true);
 
       const formDataToSend = new FormData();
-      formDataToSend.append('file', file);
-      
-      const response: any = await api.put('/users/profile/image', formDataToSend, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-  
+      formDataToSend.append("file", file);
+
+      const response: any = await api.put(
+        "/users/profile/image",
+        formDataToSend,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
       const imageUrl = response.profileImage;
 
-      setFormData(prev => ({ ...prev, profileImage: imageUrl }));
+      setFormData((prev) => ({ ...prev, profileImage: imageUrl }));
       if (user && imageUrl) {
         updateUser({ ...user, profileImage: imageUrl });
       }
@@ -84,16 +92,16 @@ export default function DashboardPage() {
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({ ...prev, phone: e.target.value }));
+    setFormData((prev) => ({ ...prev, phone: e.target.value }));
   };
 
   const handleSaveProfile = async () => {
     try {
       const { profileImage, ...dataToUpdate } = formData;
-      const response: any = await api.put('/users/profile', dataToUpdate);
+      const response: any = await api.put("/users/profile", dataToUpdate);
       if (user && response) {
-        updateUser({ 
-          ...user, 
+        updateUser({
+          ...user,
           phone: response.phone || dataToUpdate.phone,
           name: response.name || user.name,
         });
@@ -124,7 +132,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      
+
       <div className="container mx-auto px-4 py-8">
         {/* Header con foto de perfil */}
         <div className="mb-8">
@@ -134,9 +142,9 @@ export default function DashboardPage() {
               <div className="relative group">
                 <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-white shadow-lg">
                   {formData.profileImage ? (
-                    <img 
-                      src={formData.profileImage} 
-                      alt="Foto de perfil" 
+                    <img
+                      src={formData.profileImage}
+                      alt="Foto de perfil"
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -147,39 +155,52 @@ export default function DashboardPage() {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Botón para cambiar foto */}
                 <label className="absolute bottom-0 right-0 bg-red-600 text-white p-2 rounded-full cursor-pointer hover:bg-red-700 transition group-hover:block hidden">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
                   </svg>
-                  <input 
-                    type="file" 
+                  <input
+                    type="file"
                     className="hidden"
                     accept="image/png,image/jpg,image/jpeg,image/webp"
                     onChange={handleImageChange}
                     disabled={uploading}
                   />
                 </label>
-                
+
                 {uploading && (
                   <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
                   </div>
                 )}
               </div>
-              
+
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">
                   ¡Hola, {user?.name || "Usuario"}!
                 </h1>
-                <p className="text-gray-600 mt-1">
-                  {user?.email}
-                </p>
+                <p className="text-gray-600 mt-1">{user?.email}</p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-4">
               <div className="text-right">
                 <p className="text-sm text-gray-500">Teléfono</p>
@@ -197,7 +218,7 @@ export default function DashboardPage() {
                   </p>
                 )}
               </div>
-              
+
               {editMode ? (
                 <div className="flex gap-2">
                   <button
@@ -231,14 +252,16 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Reservas Activas</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.reservasActivas}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {stats.reservasActivas}
+                </p>
               </div>
               <div className="p-3 bg-blue-100 rounded-full">
                 <span className="text-blue-600">📅</span>
               </div>
             </div>
             <div className="mt-4">
-              <Link 
+              <Link
                 href="/mis-reservas"
                 className="text-blue-600 hover:text-blue-800 text-sm font-medium"
               >
@@ -251,14 +274,16 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Pagos Pendientes</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.pagosPendientes}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {stats.pagosPendientes}
+                </p>
               </div>
               <div className="p-3 bg-green-100 rounded-full">
                 <span className="text-green-600">💰</span>
               </div>
             </div>
             <div className="mt-4">
-              <Link 
+              <Link
                 href="/mis-pagos"
                 className="text-green-600 hover:text-green-800 text-sm font-medium"
               >
