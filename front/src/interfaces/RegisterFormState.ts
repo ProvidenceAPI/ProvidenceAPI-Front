@@ -1,12 +1,11 @@
 export default interface RegisterFormState {
   name: string;
-  lastName: string;
+  lastname: string;
   email: string;
   password: string;
-  repeatPassword: string;
-  address: string;
+  confirmPassword: string;
   phone: string;
-  dni: string;
-  gender: string;
-  birthDate: string;
+  dni: number;
+  genre: string;
+  birthdate: string;
 }

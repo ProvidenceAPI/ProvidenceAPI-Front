@@ -1,9 +1,11 @@
 export default interface RegisterDto {
-    email: string;
-    password: string;
-    repeatPassword: string;
-    name: string;
-    address: string;
-    phone: string;
-    
-} ;
+  name: string;
+  lastname: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  phone: string;
+  dni: number;
+  genre: string;
+  birthdate: string;
+}
