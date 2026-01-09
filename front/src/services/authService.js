@@ -24,7 +24,7 @@ export const authService = {
   // Register - según tu SignupDto
   register: async (userData) => {
     try {
-      const response = await api.post('/auth/singup', userData);
+      const response = await api.post('/auth/signup', userData);
       
       if (response.access_token) {
         localStorage.setItem('providence_token', response.access_token);
@@ -40,7 +40,7 @@ export const authService = {
   // Obtener mi perfil - según tu endpoint GET /users/me
   getMyProfile: async () => {
     try {
-      const response = await api.get('/users/me');
+      const response = await api.get('/users/profile');
       return response;
     } catch (error) {
       console.error('Get profile error:', error);
@@ -51,7 +51,7 @@ export const authService = {
   // Actualizar perfil - según tu endpoint PUT /users/me
   updateProfile: async (data) => {
     try {
-      const response = await api.put('/users/me', data);
+      const response = await api.put('/users/profile', data);
       return response;
     } catch (error) {
       console.error('Update profile error:', error);
@@ -63,7 +63,7 @@ export const authService = {
   changePassword: async (data) => {
     try {
       // Necesitas crear PUT /users/me/password en tu backend
-      const response = await api.put('/users/me/password', data);
+      const response = await api.put('/users/profile/password', data);
       return response;
     } catch (error) {
       console.error('Change password error:', error);
@@ -78,15 +78,27 @@ export const authService = {
     
     try {
       // Necesitas crear POST /upload o similar
-      const response = await api.post('/upload/profile-image', formData, {
+      const response = await api.put('/users/profile/image', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      return response.url || response.profileImage;
+      return response;
     } catch (error) {
       console.error('Upload image error:', error);
       throw error.response?.data || error.message;
+    }
+  },
+
+  updateProfileImageUrl: async (imageUrl) => {
+    try {
+      const response = await api.put('/users/profile/image-url', {
+        imageUrl
+      });
+      return response;
+    } catch (error) {
+      console.error('Update image URL error:', error);
+      throw error;
     }
   },
 
