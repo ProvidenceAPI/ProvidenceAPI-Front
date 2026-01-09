@@ -1,11 +1,11 @@
 export default interface RegisterFormState {
-    email: string;
-    password: string;
-    repeatPassword: string;
-    name: string;
-    address: string;
-    phone: string;
-    
-} ;
-
-
+  name: string;
+  lastname: string;
+  email: string;
+  password: string;
+  confirmPassword: string; // Cambiar de repeatPassword a confirmPassword
+  phone: string;
+  dni: number;
+  genre: string;
+  birthdate: string;      // Formato: "1991-03-12"
+}
