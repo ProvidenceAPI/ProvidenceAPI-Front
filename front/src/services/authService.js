@@ -24,7 +24,7 @@ export const authService = {
   // Register - según tu SignupDto
   register: async (userData) => {
     try {
-      const response = await api.post('/auth/signup', userData);
+      const response = await api.post('/auth/signin', userData);
       
       if (response.access_token) {
         localStorage.setItem('providence_token', response.access_token);

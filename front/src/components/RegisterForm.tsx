@@ -367,9 +367,8 @@ export default function RegisterForm() {
         confirmButtonText: "Ir al Login",
       });
 
-      setTimeout(() => {
-        router.push("/login");
-      }, 2000);
+      // ⭐⭐ REDIRECCIÓN INMEDIATA AL LOGIN ⭐⭐
+      router.push("/login");
 
     } catch (error: any) {
       let errorMessage = "Error al crear el usuario";
