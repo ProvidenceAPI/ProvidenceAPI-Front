@@ -2,69 +2,160 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import Swal from "sweetalert2";
 
-import RegisterDto from "@/interfaces/RegisterDto";
-import RegisterFormState from "@/interfaces/RegisterFormState";
+import RegisterDto from "src/interfaces/RegisterDto";
+import RegisterFormState from "src/interfaces/RegisterFormState";
 
 // Definir interfaces actualizadas
 interface FormErrors {
   name: string;
-  lastName: string;
+  lastname: string;
   email: string;
   password: string;
-  repeatPassword: string;
-  address: string;
+  confirmPassword: string;
   phone: string;
   dni: string;
-  gender: string;
-  birthDate: string;
+  genre: string;
+  birthdate: string;
+}
+
+interface ValidationRules {
+  name: boolean;
+  lastname: boolean;
+  email: boolean;
+  password: boolean;
+  confirmPassword: boolean;
+  phone: boolean;
+  dni: boolean;
+  genre: boolean;
+  birthdate: boolean;
 }
 
 const formInicialState: RegisterFormState = {
   name: "",
-  lastName: "",
+  lastname: "",
   email: "",
   password: "",
-  repeatPassword: "",
-  address: "",
+  confirmPassword: "",
   phone: "",
-  dni: "",
-  gender: "",
-  birthDate: "",
+  dni: 0,
+  genre: "",
+  birthdate: "",
 };
 
 const initialErrors: FormErrors = {
   name: "",
-  lastName: "",
+  lastname: "",
   email: "",
   password: "",
-  repeatPassword: "",
-  address: "",
+  confirmPassword: "",
   phone: "",
   dni: "",
-  gender: "",
-  birthDate: "",
+  genre: "",
+  birthdate: "",
+};
+
+const initialValidations: ValidationRules = {
+  name: false,
+  lastname: false,
+  email: false,
+  password: false,
+  confirmPassword: false,
+  phone: false,
+  dni: false,
+  genre: false,
+  birthdate: false,
 };
 
 export default function RegisterForm() {
   const router = useRouter();
   const [registerForm, setRegisterForm] = useState<RegisterFormState>(formInicialState);
   const [errors, setErrors] = useState<FormErrors>(initialErrors);
+  const [validations, setValidations] = useState<ValidationRules>(initialValidations);
   const [isLoading, setIsLoading] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [emailChecking, setEmailChecking] = useState(false);
   const [emailExists, setEmailExists] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Validaciones en tiempo real
+  useEffect(() => {
+    validateRealTime();
+  }, [registerForm]);
+
+  const validateRealTime = () => {
+    const newValidations = { ...initialValidations };
+
+    // Validación de nombre (3-80 caracteres)
+    newValidations.name = registerForm.name.length >= 3 && registerForm.name.length <= 80;
+
+    // Validación de apellido (3-80 caracteres)
+    newValidations.lastname = registerForm.lastname.length >= 3 && registerForm.lastname.length <= 80;
+
+    // Validación de email
+    const emailRegex = /\S+@\S+\.\S+/;
+    newValidations.email = emailRegex.test(registerForm.email);
+
+    // Validación de contraseña (8-15 caracteres, con mayúsculas, minúsculas, números y caracteres especiales)
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/;
+    newValidations.password = 
+      registerForm.password.length >= 8 && 
+      registerForm.password.length <= 15 && 
+      passwordRegex.test(registerForm.password);
+
+    // Validación de confirmación de contraseña
+    newValidations.confirmPassword = registerForm.password === registerForm.confirmPassword && registerForm.confirmPassword.length > 0;
+
+    // Validación de teléfono (10-15 dígitos)
+    const phoneRegex = /^\d{10,15}$/;
+    newValidations.phone = phoneRegex.test(registerForm.phone.replace(/\D/g, ''));
+
+    // Validación de DNI (7-10 dígitos, positivo)
+    const dniString = registerForm.dni?.toString() || '';
+    newValidations.dni = 
+      registerForm.dni > 0 && 
+      /^\d{7,10}$/.test(dniString) && 
+      registerForm.dni >= 1000000 && 
+      registerForm.dni <= 9999999999;
+
+    // Validación de género (debe tener un valor seleccionado)
+    newValidations.genre = registerForm.genre !== "";
+
+    // Validación de fecha de nacimiento (mínimo 16 años)
+    if (registerForm.birthdate) {
+      const birthDate = new Date(registerForm.birthdate);
+      const today = new Date();
+      const age = today.getFullYear() - birthDate.getFullYear();
+      newValidations.birthdate = age >= 16;
+    } else {
+      newValidations.birthdate = false;
+    }
+
+    setValidations(newValidations);
+  };
 
   const changeHandler = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const property = e.target.name;
-    const value = e.target.value;
+    let value = e.target.value;
+
+    // Manejo especial para DNI
+    if (property === "dni") {
+      const numericValue = value.replace(/\D/g, '');
+      value = numericValue;
+    }
+    // Manejo especial para teléfono (solo números)
+    else if (property === "phone") {
+      value = value.replace(/\D/g, '');
+    }
 
     setRegisterForm({
       ...registerForm,
-      [property]: value,
+      [property]: property === "dni" ? (value ? parseInt(value, 10) : 0) : value,
     });
 
     // Limpiar error cuando el usuario empiece a escribir
@@ -84,7 +175,11 @@ export default function RegisterForm() {
   const checkEmailAvailability = async (email: string) => {
     setEmailChecking(true);
     try {
-      // Simulación de verificación (remover en producción)
+      // Aquí deberías hacer la llamada real a tu backend
+      // const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/check-email/${email}`);
+      // setEmailExists(response.data.exists);
+      
+      // Simulación
       setTimeout(() => {
         setEmailChecking(false);
         setEmailExists(false);
@@ -98,15 +193,27 @@ export default function RegisterForm() {
     const newErrors = { ...initialErrors };
     let isValid = true;
 
-    // Validación de nombre
+    // Validación de nombre (3-80 caracteres)
     if (!registerForm.name.trim()) {
       newErrors.name = "Falta el nombre";
       isValid = false;
+    } else if (registerForm.name.length < 3) {
+      newErrors.name = "El nombre debe tener al menos 3 caracteres";
+      isValid = false;
+    } else if (registerForm.name.length > 80) {
+      newErrors.name = "El nombre no debe exceder 80 caracteres";
+      isValid = false;
     }
 
-    // Validación de apellido
-    if (!registerForm.lastName.trim()) {
-      newErrors.lastName = "Falta el apellido";
+    // Validación de apellido (3-80 caracteres)
+    if (!registerForm.lastname.trim()) {
+      newErrors.lastname = "Falta el apellido";
+      isValid = false;
+    } else if (registerForm.lastname.length < 3) {
+      newErrors.lastname = "El apellido debe tener al menos 3 caracteres";
+      isValid = false;
+    } else if (registerForm.lastname.length > 80) {
+      newErrors.lastname = "El apellido no debe exceder 80 caracteres";
       isValid = false;
     }
 
@@ -122,71 +229,74 @@ export default function RegisterForm() {
       isValid = false;
     }
 
-    // Validación de contraseña (8-12 caracteres)
+    // Validación de contraseña (8-15 caracteres, con mayúsculas, minúsculas, números y caracteres especiales)
     if (!registerForm.password) {
       newErrors.password = "Falta la contraseña";
       isValid = false;
     } else if (registerForm.password.length < 8) {
       newErrors.password = "La contraseña debe tener al menos 8 caracteres";
       isValid = false;
-    } else if (registerForm.password.length > 12) {
-      newErrors.password = "La contraseña no debe exceder 12 caracteres";
+    } else if (registerForm.password.length > 15) {
+      newErrors.password = "La contraseña no debe exceder 15 caracteres";
+      isValid = false;
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/.test(registerForm.password)) {
+      newErrors.password = "Debe contener mayúsculas, minúsculas, números y caracteres especiales (!@#$%^&*)";
       isValid = false;
     }
 
     // Validación de confirmación de contraseña
-    if (!registerForm.repeatPassword) {
-      newErrors.repeatPassword = "Confirma tu contraseña";
+    if (!registerForm.confirmPassword) {
+      newErrors.confirmPassword = "Confirma tu contraseña";
       isValid = false;
-    } else if (registerForm.password !== registerForm.repeatPassword) {
-      newErrors.repeatPassword = "Las contraseñas no coinciden";
-      isValid = false;
-    }
-
-    // Validación de dirección
-    if (!registerForm.address.trim()) {
-      newErrors.address = "Falta la dirección";
+    } else if (registerForm.password !== registerForm.confirmPassword) {
+      newErrors.confirmPassword = "Las contraseñas no coinciden";
       isValid = false;
     }
 
-    // Validación de teléfono
+    // Validación de teléfono (10-15 dígitos)
     if (!registerForm.phone.trim()) {
       newErrors.phone = "Falta el teléfono";
       isValid = false;
-    } else if (!/^[0-9\-\+\(\)\s]+$/.test(registerForm.phone)) {
-      newErrors.phone = "Formato de teléfono no válido";
+    } else if (!/^\d{10,15}$/.test(registerForm.phone)) {
+      newErrors.phone = "El teléfono debe tener entre 10 y 15 dígitos";
       isValid = false;
     }
 
-    // Validación de DNI
-    if (!registerForm.dni.trim()) {
+    // Validación de DNI (7-10 dígitos, positivo)
+    if (!registerForm.dni || registerForm.dni === 0) {
       newErrors.dni = "Falta el DNI";
       isValid = false;
-    } else if (!/^\d{7,8}$/.test(registerForm.dni.replace(/\D/g, ''))) {
-      newErrors.dni = "DNI no válido (7-8 dígitos)";
-      isValid = false;
+    } else {
+      const dniString = registerForm.dni.toString();
+      if (!/^\d{7,10}$/.test(dniString)) {
+        newErrors.dni = "El DNI debe tener entre 7 y 10 dígitos";
+        isValid = false;
+      } else if (registerForm.dni < 1000000) {
+        newErrors.dni = "El DNI debe ser mayor a 1,000,000";
+        isValid = false;
+      } else if (registerForm.dni > 9999999999) {
+        newErrors.dni = "El DNI debe ser menor a 9,999,999,999";
+        isValid = false;
+      }
     }
 
     // Validación de género
-    if (!registerForm.gender) {
-      newErrors.gender = "Selecciona tu género";
+    if (!registerForm.genre) {
+      newErrors.genre = "Selecciona tu género";
       isValid = false;
     }
 
-    // Validación de fecha de nacimiento
-    if (!registerForm.birthDate) {
-      newErrors.birthDate = "Falta la fecha de nacimiento";
+    // Validación de fecha de nacimiento (mínimo 16 años)
+    if (!registerForm.birthdate) {
+      newErrors.birthdate = "Falta la fecha de nacimiento";
       isValid = false;
     } else {
-      const birthDate = new Date(registerForm.birthDate);
+      const birthDate = new Date(registerForm.birthdate);
       const today = new Date();
       const age = today.getFullYear() - birthDate.getFullYear();
       
       if (age < 16) {
-        newErrors.birthDate = "Debes tener al menos 16 años";
-        isValid = false;
-      } else if (age > 100) {
-        newErrors.birthDate = "Fecha de nacimiento no válida";
+        newErrors.birthdate = "Debes tener al menos 16 años";
         isValid = false;
       }
     }
@@ -202,18 +312,23 @@ export default function RegisterForm() {
 
   const postRegister = async (registerDto: RegisterDto) => {
     return await axios.post(
-      `${process.env.NEXT_PUBLIC_API_URL}/users/register`,
+      `${process.env.NEXT_PUBLIC_API_URL}/auth/signup`,
       registerDto
     );
   };
 
   const handleGoogleAuth = () => {
-    Swal.fire({
-      title: "Google Auth",
-      text: "Esta funcionalidad estará disponible próximamente",
-      icon: "info",
-      confirmButtonText: "Entendido",
-    });
+    setGoogleLoading(true);
+    
+    // Redirigir al endpoint de Google OAuth del backend
+    // El backend manejará la redirección a Google y luego de vuelta a tu aplicación
+    const googleAuthUrl = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
+    
+    // Guardar la página actual para redirigir después del login
+    localStorage.setItem('redirectAfterLogin', window.location.pathname);
+    
+    // Redirigir al backend para iniciar el flujo OAuth
+    window.location.href = googleAuthUrl;
   };
 
   const submitHandler = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -236,14 +351,14 @@ export default function RegisterForm() {
     try {
       const registerDto: RegisterDto = {
         name: registerForm.name,
-        lastName: registerForm.lastName,
+        lastname: registerForm.lastname,
         email: registerForm.email,
         password: registerForm.password,
-        address: registerForm.address,
         phone: registerForm.phone,
         dni: registerForm.dni,
-        gender: registerForm.gender,
-        birthDate: registerForm.birthDate,
+        confirmPassword: registerForm.confirmPassword,
+        genre: registerForm.genre,
+        birthdate: registerForm.birthdate,
       };
 
       await postRegister(registerDto);
@@ -257,9 +372,8 @@ export default function RegisterForm() {
         confirmButtonText: "Ir al Login",
       });
 
-      setTimeout(() => {
-        router.push("/login");
-      }, 2000);
+      // ⭐⭐ REDIRECCIÓN INMEDIATA AL LOGIN ⭐⭐
+      router.push("/login");
 
     } catch (error: any) {
       let errorMessage = "Error al crear el usuario";
@@ -284,6 +398,25 @@ export default function RegisterForm() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const getPasswordStrength = (password: string) => {
+    if (password.length === 0) return { text: "Sin contraseña", color: "text-gray-400" };
+    if (password.length < 8) return { text: "Muy débil", color: "text-red-500" };
+    
+    const hasLower = /[a-z]/.test(password);
+    const hasUpper = /[A-Z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    const hasSpecial = /[!@#$%^&*]/.test(password);
+    
+    const score = [hasLower, hasUpper, hasNumber, hasSpecial].filter(Boolean).length;
+    
+    if (score === 1) return { text: "Débil", color: "text-red-500" };
+    if (score === 2) return { text: "Regular", color: "text-yellow-500" };
+    if (score === 3) return { text: "Buena", color: "text-green-500" };
+    if (score === 4) return { text: "Excelente", color: "text-green-600" };
+    
+    return { text: "Sin contraseña", color: "text-gray-400" };
   };
 
   return (
@@ -371,20 +504,22 @@ export default function RegisterForm() {
                     errors.name ? "text-red-600" : "text-black"
                   }`}
                 >
-                  NOMBRE
+                  NOMBRE (3-80 caracteres)
                 </label>
                 <div className="relative">
                   <span
                     className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${
-                      errors.name ? "text-red-500" : "text-gray-400"
+                      errors.name ? "text-red-500" : validations.name ? "text-green-500" : "text-gray-400"
                     }`}
                   >
-                    👤
+                    {validations.name ? "✓" : "👤"}
                   </span>
                   <input
                     className={`w-full pl-12 pr-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DC2626] transition ${
                       errors.name
                         ? "border-red-500 bg-red-50 text-red-900 placeholder-red-300"
+                        : validations.name
+                        ? "border-green-500 bg-green-50 text-gray-900 focus:bg-white"
                         : "border-gray-300 bg-gray-50 text-gray-900 focus:bg-white"
                     }`}
                     type="text"
@@ -395,7 +530,7 @@ export default function RegisterForm() {
                     disabled={isLoading}
                   />
                 </div>
-                {errors.name && (
+                {errors.name ? (
                   <p className="mt-2 text-sm text-red-600 flex items-center">
                     <svg
                       className="w-4 h-4 mr-1"
@@ -410,6 +545,10 @@ export default function RegisterForm() {
                     </svg>
                     {errors.name}
                   </p>
+                ) : registerForm.name.length > 0 && !validations.name && (
+                  <p className="mt-2 text-sm text-yellow-600">
+                    Debe tener entre 3 y 80 caracteres
+                  </p>
                 )}
               </div>
 
@@ -417,34 +556,36 @@ export default function RegisterForm() {
               <div>
                 <label
                   className={`block text-sm font-semibold mb-2 ${
-                    errors.lastName ? "text-red-600" : "text-black"
+                    errors.lastname ? "text-red-600" : "text-black"
                   }`}
                 >
-                  APELLIDO
+                  APELLIDO (3-80 caracteres)
                 </label>
                 <div className="relative">
                   <span
                     className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${
-                      errors.lastName ? "text-red-500" : "text-gray-400"
+                      errors.lastname ? "text-red-500" : validations.lastname ? "text-green-500" : "text-gray-400"
                     }`}
                   >
-                    👤
+                    {validations.lastname ? "✓" : "👤"}
                   </span>
                   <input
                     className={`w-full pl-12 pr-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DC2626] transition ${
-                      errors.lastName
+                      errors.lastname
                         ? "border-red-500 bg-red-50 text-red-900 placeholder-red-300"
+                        : validations.lastname
+                        ? "border-green-500 bg-green-50 text-gray-900 focus:bg-white"
                         : "border-gray-300 bg-gray-50 text-gray-900 focus:bg-white"
                     }`}
                     type="text"
-                    name="lastName"
-                    value={registerForm.lastName}
+                    name="lastname"
+                    value={registerForm.lastname}
                     onChange={changeHandler}
                     placeholder="Apellido"
                     disabled={isLoading}
                   />
                 </div>
-                {errors.lastName && (
+                {errors.lastname ? (
                   <p className="mt-2 text-sm text-red-600 flex items-center">
                     <svg
                       className="w-4 h-4 mr-1"
@@ -457,7 +598,11 @@ export default function RegisterForm() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    {errors.lastName}
+                    {errors.lastname}
+                  </p>
+                ) : registerForm.lastname.length > 0 && !validations.lastname && (
+                  <p className="mt-2 text-sm text-yellow-600">
+                    Debe tener entre 3 y 80 caracteres
                   </p>
                 )}
               </div>
@@ -478,10 +623,10 @@ export default function RegisterForm() {
               <div className="relative">
                 <span
                   className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${
-                    errors.email ? "text-red-500" : "text-gray-400"
+                    errors.email ? "text-red-500" : validations.email ? "text-green-500" : "text-gray-400"
                   }`}
                 >
-                  ✉️
+                  {validations.email ? "✓" : "✉️"}
                 </span>
                 <input
                   className={`w-full pl-12 pr-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DC2626] transition ${
@@ -489,6 +634,8 @@ export default function RegisterForm() {
                       ? "border-red-500 bg-red-50 text-red-900 placeholder-red-300"
                       : emailExists
                       ? "border-yellow-500 bg-yellow-50"
+                      : validations.email
+                      ? "border-green-500 bg-green-50 text-gray-900 focus:bg-white"
                       : "border-gray-300 bg-gray-50 text-gray-900 focus:bg-white"
                   }`}
                   type="email"
@@ -519,9 +666,9 @@ export default function RegisterForm() {
                   </svg>
                   {errors.email}
                 </p>
-              ) : (
-                <p className="mt-2 text-sm text-gray-500">
-                  Te enviaremos un email de confirmación
+              ) : registerForm.email.length > 0 && !validations.email && (
+                <p className="mt-2 text-sm text-yellow-600">
+                  Introduce un email válido (ejemplo@correo.com)
                 </p>
               )}
             </div>
@@ -530,86 +677,75 @@ export default function RegisterForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* DNI */}
               <div>
-                <label
-                  className={`block text-sm font-semibold mb-2 ${
-                    errors.dni ? "text-red-600" : "text-black"
-                  }`}
-                >
-                  DNI
+                <label className={`block text-sm font-semibold mb-2 ${errors.dni ? "text-red-600" : "text-black"}`}>
+                  DNI (7-10 dígitos)
                 </label>
                 <div className="relative">
-                  <span
-                    className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${
-                      errors.dni ? "text-red-500" : "text-gray-400"
-                    }`}
-                  >
-                    🆔
+                  <span className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${errors.dni ? "text-red-500" : validations.dni ? "text-green-500" : "text-gray-400"}`}>
+                    {validations.dni ? "✓" : "🆔"}
                   </span>
                   <input
                     className={`w-full pl-12 pr-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DC2626] transition ${
                       errors.dni
                         ? "border-red-500 bg-red-50 text-red-900 placeholder-red-300"
+                        : validations.dni
+                        ? "border-green-500 bg-green-50 text-gray-900 focus:bg-white"
                         : "border-gray-300 bg-gray-50 text-gray-900 focus:bg-white"
                     }`}
                     type="text"
                     name="dni"
-                    value={registerForm.dni}
+                    value={registerForm.dni || ""}
                     onChange={changeHandler}
-                    placeholder="12345678"
-                    maxLength={8}
+                    placeholder="123456789"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={10}
                     disabled={isLoading}
                   />
                 </div>
-                {errors.dni && (
+                {errors.dni ? (
                   <p className="mt-2 text-sm text-red-600 flex items-center">
-                    <svg
-                      className="w-4 h-4 mr-1"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                        clipRule="evenodd"
-                      />
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
                     {errors.dni}
+                  </p>
+                ) : registerForm.dni > 0 && !validations.dni && (
+                  <p className="mt-2 text-sm text-yellow-600">
+                    Debe tener entre 7 y 10 dígitos
                   </p>
                 )}
               </div>
 
               {/* Teléfono */}
               <div>
-                <label
-                  className={`block text-sm font-semibold mb-2 ${
-                    errors.phone ? "text-red-600" : "text-black"
-                  }`}
-                >
-                  TELÉFONO
+                <label className={`block text-sm font-semibold mb-2 ${errors.phone ? "text-red-600" : "text-black"}`}>
+                  TELÉFONO (10-15 dígitos)
                 </label>
                 <div className="relative">
-                  <span
-                    className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${
-                      errors.phone ? "text-red-500" : "text-gray-400"
-                    }`}
-                  >
-                    📱
+                  <span className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${errors.phone ? "text-red-500" : validations.phone ? "text-green-500" : "text-gray-400"}`}>
+                    {validations.phone ? "✓" : "📱"}
                   </span>
                   <input
                     className={`w-full pl-12 pr-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DC2626] transition ${
                       errors.phone
                         ? "border-red-500 bg-red-50 text-red-900 placeholder-red-300"
+                        : validations.phone
+                        ? "border-green-500 bg-green-50 text-gray-900 focus:bg-white"
                         : "border-gray-300 bg-gray-50 text-gray-900 focus:bg-white"
                     }`}
-                    type="tel"
+                    type="text"
                     name="phone"
                     value={registerForm.phone}
                     onChange={changeHandler}
-                    placeholder="011-1234-5678"
+                    placeholder="3157615003"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={15}
                     disabled={isLoading}
                   />
                 </div>
-                {errors.phone && (
+                {errors.phone ? (
                   <p className="mt-2 text-sm text-red-600 flex items-center">
                     <svg
                       className="w-4 h-4 mr-1"
@@ -624,6 +760,10 @@ export default function RegisterForm() {
                     </svg>
                     {errors.phone}
                   </p>
+                ) : registerForm.phone.length > 0 && !validations.phone && (
+                  <p className="mt-2 text-sm text-yellow-600">
+                    Debe tener entre 10 y 15 dígitos
+                  </p>
                 )}
               </div>
             </div>
@@ -632,37 +772,31 @@ export default function RegisterForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Género */}
               <div>
-                <label
-                  className={`block text-sm font-semibold mb-2 ${
-                    errors.gender ? "text-red-600" : "text-black"
-                  }`}
-                >
+                <label className={`block text-sm font-semibold mb-2 ${errors.genre ? "text-red-600" : "text-black"}`}>
                   GÉNERO
                 </label>
                 <div className="relative">
-                  <span
-                    className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${
-                      errors.gender ? "text-red-500" : "text-gray-400"
-                    }`}
-                  >
-                    ⚤
+                  <span className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${errors.genre ? "text-red-500" : validations.genre ? "text-green-500" : "text-gray-400"}`}>
+                    {validations.genre ? "✓" : "⚤"}
                   </span>
                   <select
                     className={`w-full pl-12 pr-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DC2626] transition appearance-none ${
-                      errors.gender
+                      errors.genre
                         ? "border-red-500 bg-red-50 text-red-900"
+                        : validations.genre
+                        ? "border-green-500 bg-green-50 text-gray-900 focus:bg-white"
                         : "border-gray-300 bg-gray-50 text-gray-900 focus:bg-white"
                     }`}
-                    name="gender"
-                    value={registerForm.gender}
+                    name="genre"
+                    value={registerForm.genre}
                     onChange={changeHandler}
                     disabled={isLoading}
                   >
                     <option value="">Seleccionar género</option>
-                    <option value="masculino">Masculino</option>
-                    <option value="femenino">Femenino</option>
-                    <option value="otro">Otro</option>
-                    <option value="prefiero-no-decir">Prefiero no decir</option>
+                    <option value="Male">Masculino</option>
+                    <option value="Female">Femenino</option>
+                    <option value="Other">Otro</option>
+                    <option value="Nonbinary">No binario</option>
                   </select>
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -670,7 +804,7 @@ export default function RegisterForm() {
                     </svg>
                   </div>
                 </div>
-                {errors.gender && (
+                {errors.genre && (
                   <p className="mt-2 text-sm text-red-600 flex items-center">
                     <svg
                       className="w-4 h-4 mr-1"
@@ -683,43 +817,37 @@ export default function RegisterForm() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    {errors.gender}
+                    {errors.genre}
                   </p>
                 )}
               </div>
 
               {/* Fecha de Nacimiento */}
               <div>
-                <label
-                  className={`block text-sm font-semibold mb-2 ${
-                    errors.birthDate ? "text-red-600" : "text-black"
-                  }`}
-                >
-                  FECHA DE NACIMIENTO
+                <label className={`block text-sm font-semibold mb-2 ${errors.birthdate ? "text-red-600" : "text-black"}`}>
+                  FECHA DE NACIMIENTO (Mínimo 16 años)
                 </label>
                 <div className="relative">
-                  <span
-                    className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${
-                      errors.birthDate ? "text-red-500" : "text-gray-400"
-                    }`}
-                  >
-                    🎂
+                  <span className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${errors.birthdate ? "text-red-500" : validations.birthdate ? "text-green-500" : "text-gray-400"}`}>
+                    {validations.birthdate ? "✓" : "🎂"}
                   </span>
                   <input
                     className={`w-full pl-12 pr-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DC2626] transition ${
-                      errors.birthDate
+                      errors.birthdate
                         ? "border-red-500 bg-red-50 text-red-900"
+                        : validations.birthdate
+                        ? "border-green-500 bg-green-50 text-gray-900 focus:bg-white"
                         : "border-gray-300 bg-gray-50 text-gray-900 focus:bg-white"
                     }`}
                     type="date"
-                    name="birthDate"
-                    value={registerForm.birthDate}
+                    name="birthdate"
+                    value={registerForm.birthdate}
                     onChange={changeHandler}
                     max={new Date().toISOString().split('T')[0]}
                     disabled={isLoading}
                   />
                 </div>
-                {errors.birthDate && (
+                {errors.birthdate ? (
                   <p className="mt-2 text-sm text-red-600 flex items-center">
                     <svg
                       className="w-4 h-4 mr-1"
@@ -732,97 +860,62 @@ export default function RegisterForm() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    {errors.birthDate}
+                    {errors.birthdate}
+                  </p>
+                ) : registerForm.birthdate && !validations.birthdate && (
+                  <p className="mt-2 text-sm text-yellow-600">
+                    Debes tener al menos 16 años
                   </p>
                 )}
               </div>
-            </div>
-
-            {/* Dirección */}
-            <div>
-              <label
-                className={`block text-sm font-semibold mb-2 ${
-                  errors.address ? "text-red-600" : "text-black"
-                }`}
-              >
-                DIRECCIÓN
-              </label>
-              <div className="relative">
-                <span
-                  className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${
-                    errors.address ? "text-red-500" : "text-gray-400"
-                  }`}
-                >
-                  🏠
-                </span>
-                <input
-                  className={`w-full pl-12 pr-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DC2626] transition ${
-                    errors.address
-                      ? "border-red-500 bg-red-50 text-red-900 placeholder-red-300"
-                      : "border-gray-300 bg-gray-50 text-gray-900 focus:bg-white"
-                  }`}
-                  type="text"
-                  name="address"
-                  value={registerForm.address}
-                  onChange={changeHandler}
-                  placeholder="Calle, número, ciudad"
-                  disabled={isLoading}
-                />
-              </div>
-              {errors.address && (
-                <p className="mt-2 text-sm text-red-600 flex items-center">
-                  <svg
-                    className="w-4 h-4 mr-1"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  {errors.address}
-                </p>
-              )}
             </div>
 
             {/* Contraseña y Confirmar Contraseña en una fila */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Contraseña */}
               <div>
-                <label
-                  className={`block text-sm font-semibold mb-2 ${
-                    errors.password ? "text-red-600" : "text-black"
-                  }`}
-                >
-                  CONTRASEÑA (8-12 caracteres)
+                <label className={`block text-sm font-semibold mb-2 ${errors.password ? "text-red-600" : "text-black"}`}>
+                  CONTRASEÑA (8-15 caracteres)
                 </label>
                 <div className="relative">
-                  <span
-                    className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${
-                      errors.password ? "text-red-500" : "text-gray-400"
-                    }`}
-                  >
-                    🔒
+                  <span className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${errors.password ? "text-red-500" : validations.password ? "text-green-500" : "text-gray-400"}`}>
+                    {validations.password ? "✓" : "🔒"}
                   </span>
                   <input
-                    className={`w-full pl-12 pr-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DC2626] transition ${
+                    className={`w-full pl-12 pr-12 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DC2626] transition ${
                       errors.password
                         ? "border-red-500 bg-red-50 text-red-900 placeholder-red-300"
+                        : validations.password
+                        ? "border-green-500 bg-green-50 text-gray-900 focus:bg-white"
                         : "border-gray-300 bg-gray-50 text-gray-900 focus:bg-white"
                     }`}
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     name="password"
                     value={registerForm.password}
                     onChange={changeHandler}
-                    placeholder="Mínimo 8 caracteres"
+                    placeholder="Contraseña123*"
                     minLength={8}
-                    maxLength={12}
+                    maxLength={15}
                     disabled={isLoading}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPassword ? (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L6.59 6.59m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
-                {errors.password && (
+                {errors.password ? (
                   <p className="mt-2 text-sm text-red-600 flex items-center">
                     <svg
                       className="w-4 h-4 mr-1"
@@ -837,49 +930,87 @@ export default function RegisterForm() {
                     </svg>
                     {errors.password}
                   </p>
-                )}
-                {registerForm.password.length > 0 && !errors.password && (
-                  <p className={`mt-2 text-sm ${
-                    registerForm.password.length < 8 ? 'text-yellow-600' : 
-                    registerForm.password.length > 12 ? 'text-red-600' : 'text-green-600'
-                  }`}>
-                    {registerForm.password.length}/12 caracteres
-                  </p>
+                ) : (
+                  <div className="mt-2 space-y-1">
+                    {registerForm.password.length > 0 && (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <span className={`text-sm ${getPasswordStrength(registerForm.password).color}`}>
+                            Seguridad: {getPasswordStrength(registerForm.password).text}
+                          </span>
+                          <span className={`text-sm ${
+                            registerForm.password.length < 8 ? 'text-red-500' : 
+                            registerForm.password.length > 15 ? 'text-red-500' : 'text-green-600'
+                          }`}>
+                            {registerForm.password.length}/15
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className={`flex items-center ${/[a-z]/.test(registerForm.password) ? 'text-green-600' : 'text-gray-400'}`}>
+                            <span className="mr-1">{/[a-z]/.test(registerForm.password) ? '✓' : '○'}</span>
+                            Minúscula
+                          </div>
+                          <div className={`flex items-center ${/[A-Z]/.test(registerForm.password) ? 'text-green-600' : 'text-gray-400'}`}>
+                            <span className="mr-1">{/[A-Z]/.test(registerForm.password) ? '✓' : '○'}</span>
+                            Mayúscula
+                          </div>
+                          <div className={`flex items-center ${/\d/.test(registerForm.password) ? 'text-green-600' : 'text-gray-400'}`}>
+                            <span className="mr-1">{/\d/.test(registerForm.password) ? '✓' : '○'}</span>
+                            Número
+                          </div>
+                          <div className={`flex items-center ${/[!@#$%^&*]/.test(registerForm.password) ? 'text-green-600' : 'text-gray-400'}`}>
+                            <span className="mr-1">{/[!@#$%^&*]/.test(registerForm.password) ? '✓' : '○'}</span>
+                            Especial
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
 
               {/* Confirmar Contraseña */}
               <div>
-                <label
-                  className={`block text-sm font-semibold mb-2 ${
-                    errors.repeatPassword ? "text-red-600" : "text-black"
-                  }`}
-                >
+                <label className={`block text-sm font-semibold mb-2 ${errors.confirmPassword ? "text-red-600" : "text-black"}`}>
                   CONFIRMAR CONTRASEÑA
                 </label>
                 <div className="relative">
-                  <span
-                    className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${
-                      errors.repeatPassword ? "text-red-500" : "text-gray-400"
-                    }`}
-                  >
-                    🔒
+                  <span className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${errors.confirmPassword ? "text-red-500" : validations.confirmPassword ? "text-green-500" : "text-gray-400"}`}>
+                    {validations.confirmPassword ? "✓" : "🔒"}
                   </span>
                   <input
-                    className={`w-full pl-12 pr-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DC2626] transition ${
-                      errors.repeatPassword
+                    className={`w-full pl-12 pr-12 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DC2626] transition ${
+                      errors.confirmPassword
                         ? "border-red-500 bg-red-50 text-red-900 placeholder-red-300"
+                        : validations.confirmPassword
+                        ? "border-green-500 bg-green-50 text-gray-900 focus:bg-white"
                         : "border-gray-300 bg-gray-50 text-gray-900 focus:bg-white"
                     }`}
-                    type="password"
-                    name="repeatPassword"
-                    value={registerForm.repeatPassword}
+                    type={showConfirmPassword ? "text" : "password"}
+                    name="confirmPassword"
+                    value={registerForm.confirmPassword}
                     onChange={changeHandler}
                     placeholder="Repite tu contraseña"
                     disabled={isLoading}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showConfirmPassword ? (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L6.59 6.59m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
-                {errors.repeatPassword && (
+                {errors.confirmPassword ? (
                   <p className="mt-2 text-sm text-red-600 flex items-center">
                     <svg
                       className="w-4 h-4 mr-1"
@@ -892,7 +1023,11 @@ export default function RegisterForm() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    {errors.repeatPassword}
+                    {errors.confirmPassword}
+                  </p>
+                ) : registerForm.confirmPassword.length > 0 && !validations.confirmPassword && (
+                  <p className="mt-2 text-sm text-yellow-600">
+                    Las contraseñas no coinciden
                   </p>
                 )}
               </div>
@@ -905,7 +1040,9 @@ export default function RegisterForm() {
                 id="terms"
                 checked={acceptTerms}
                 onChange={(e) => setAcceptTerms(e.target.checked)}
-                className="mt-1 w-4 h-4 rounded border-gray-300 cursor-pointer"
+                className={`mt-1 w-4 h-4 rounded border-2 cursor-pointer transition ${
+                  acceptTerms ? "border-green-500 bg-green-500" : "border-gray-300"
+                }`}
                 disabled={isLoading}
               />
               <label htmlFor="terms" className="text-sm text-gray-700">
@@ -917,11 +1054,11 @@ export default function RegisterForm() {
             <button
               type="submit"
               className={`w-full py-3 rounded-lg font-bold text-white text-lg transition-all uppercase tracking-wider ${
-                isLoading
+                isLoading || !acceptTerms
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-[#DC2626] hover:bg-[#B01C1C]"
               }`}
-              disabled={isLoading}
+              disabled={isLoading || !acceptTerms}
             >
               {isLoading ? (
                 <span className="flex items-center justify-center">
@@ -969,28 +1106,55 @@ export default function RegisterForm() {
               <button
                 type="button"
                 onClick={handleGoogleAuth}
-                className="flex items-center justify-center py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-                disabled={isLoading}
+                className="flex items-center justify-center w-full py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={googleLoading || isLoading}
               >
-                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  />
-                </svg>
-                <span className="text-sm font-medium">Continuar con Google</span>
+                {googleLoading ? (
+                  <span className="flex items-center justify-center">
+                    <svg
+                      className="animate-spin h-5 w-5 mr-2"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        fill="none"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    Conectando con Google...
+                  </span>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                      <path
+                        fill="#4285F4"
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                      />
+                    </svg>
+                    <span className="text-sm font-medium">Continuar con Google</span>
+                  </>
+                )}
               </button>
             </div>
 

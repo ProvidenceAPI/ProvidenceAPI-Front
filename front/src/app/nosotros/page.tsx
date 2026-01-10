@@ -2,11 +2,19 @@
 
 import { useState } from "react"
 
+<<<<<<< HEAD
 import TransformacionCTA from "@/components/TransformacionCTA"
 
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Navbar } from "@/components/Navbar"
 import { Footer } from "@/components/Footer"
+=======
+import TransformacionCTA from "src/components/TransformacionCTA"
+
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import { Navbar } from "src/components/Navbar"
+import { Footer } from "src/components/Footer"
+>>>>>>> 68ba516b3d89ff10059a4e10873ca3b301a4ddba
 
 const media = [
   { type: "image", src: "/media/nosotros1.jpg" },
