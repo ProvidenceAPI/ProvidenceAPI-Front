@@ -1,9 +1,17 @@
 import React from "react";
 import Link from "next/link";
-import { FacebookIcon, InstagramIcon,TwitterIcon, MailIcon, PhoneIcon, LocationIcon} from "./SocialIcons";
+import { FacebookIcon, InstagramIcon, TwitterIcon, MailIcon, PhoneIcon, LocationIcon } from "./SocialIcons";
 
 export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
+
+  // Datos de las actividades con sus slugs correspondientes
+  const activities = [
+    { name: "CrossFit", slug: "crossfit" },
+    { name: "Funcional", slug: "funcional" },
+    { name: "HIIT", slug: "hiit" },
+    { name: "Open Box", slug: "open-box" }
+  ];
 
   return (
     <footer className="bg-black text-white border-t-2 border-[#DC2626]">
@@ -18,7 +26,6 @@ export const Footer: React.FC = () => {
                 alt="Providence Fitness Logo" 
                 className="h-12 w-auto mb-3"
               />
-              
             </div>
             
             <p className="text-gray-400 text-sm mb-6 leading-relaxed">
@@ -43,30 +50,36 @@ export const Footer: React.FC = () => {
           <div>
             <h3 className="text-[#FFFFFF] font-bold uppercase mb-6 tracking-wider text-lg">ENLACES RÁPIDOS</h3>
             <ul className="space-y-4">
-              {["Inicio", "Nosotros", "Actividades", "Testimonios"].map((item) => (
-                <li key={item}>
+              {[
+                { name: "Inicio", href: "/" },
+                { name: "Nosotros", href: "/nosotros" },
+                { name: "Actividades", href: "/home" },
+                { name: "Testimonios", href: "/testimonios" },
+                { name: "Ubicación", href: "/ubicacion" }
+              ].map((item) => (
+                <li key={item.name}>
                   <Link 
-                    href="#" 
+                    href={item.href}
                     className="text-gray-300 hover:text-white hover:underline transition-colors text-sm"
                   >
-                    {item}
+                    {item.name}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Columna 3 - Programas */}
+          {/* Columna 3 - ACTIVIDADES (antes Programas) */}
           <div>
-            <h3 className="text-[#FFFFFF] font-bold uppercase mb-6 tracking-wider text-lg">PROGRAMAS</h3>
+            <h3 className="text-[#FFFFFF] font-bold uppercase mb-6 tracking-wider text-lg">ACTIVIDADES</h3>
             <ul className="space-y-4">
-              {["CrossFit", "Funcional", "HIIT", "Open Box"].map((program) => (
-                <li key={program}>
+              {activities.map((activity) => (
+                <li key={activity.slug}>
                   <Link 
-                    href="#" 
+                    href={`/activities/${activity.slug}`}
                     className="text-gray-300 hover:text-white hover:underline transition-colors text-sm"
                   >
-                    {program}
+                    {activity.name}
                   </Link>
                 </li>
               ))}

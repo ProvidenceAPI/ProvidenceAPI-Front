@@ -3,10 +3,10 @@
 import { useAppContext } from "src/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-
 import axios from "axios";
 import { Navbar } from "src/components/Navbar";
-
+import TransformacionCTA from "src/components/TransformacionCTA";
+import { Footer } from "src/components/Footer"; 
 interface Reserva {
   id: string;
   fecha: string;
@@ -374,6 +374,12 @@ export default function MisReservasPage() {
           </div>
         </div>
       </div>
+
+      {/* Sección de Transformación CTA */}
+      <TransformacionCTA />
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
