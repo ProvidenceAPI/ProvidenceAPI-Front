@@ -1,13 +1,7 @@
 import React from 'react';
-<<<<<<< HEAD
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
-import TransformacionCTA from '@/components/TransformacionCTA';
-=======
 import { Navbar } from 'src/components/Navbar';
 import { Footer } from 'src/components/Footer';
 import TransformacionCTA from 'src/components/TransformacionCTA';
->>>>>>> 68ba516b3d89ff10059a4e10873ca3b301a4ddba
 
 interface Testimonial {
   id: number;

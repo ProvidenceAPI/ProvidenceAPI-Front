@@ -2,97 +2,60 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import axios from "axios";
+import { useAppContext } from "src/contexts/AuthContext";
 
 export default function OAuthCallbackPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const hasProcessed = useRef(false);
+  const { setLogin } = useAppContext();
 
   useEffect(() => {
     if (hasProcessed.current) return;
+    hasProcessed.current = true;
 
-    const handleCallback = () => {
+    const token = searchParams.get("token");
+
+    if (!token) {
+      console.error("❌ No se recibió token");
+      router.push("/login?error=no-token");
+      return;
+    }
+
+    const handleCallback = async () => {
       try {
-        const token = searchParams.get("token");
-        const userEncoded = searchParams.get("user");
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
-        console.log("==========================================");
-        console.log("🔍 DEBUG - OAuth Callback");
-        console.log("==========================================");
-        console.log("Token recibido:", token ? "SÍ" : "NO");
-        console.log("User encoded recibido:", userEncoded ? "SÍ" : "NO");
-        console.log("User encoded valor:", userEncoded);
-        console.log("==========================================");
+        const response = await axios.get(`${API_URL}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
 
-        if (!token) {
-          console.error("❌ No se recibió token de Google");
-          router.push("/login?error=no-token");
-          return;
+        if (!response.data) {
+          throw new Error("No se pudo obtener el usuario");
         }
 
-        console.log("✅ Token recibido de Google");
-        hasProcessed.current = true;
+        console.log("✅ Usuario obtenido:", response.data.email);
 
-        // Guardar el token
-        localStorage.setItem("providence_token", token);
-
-        // Decodificar usuario si viene en la URL
-        let userData;
-        if (userEncoded) {
-          try {
-            // Decodificar desde base64
-            const decoded = atob(userEncoded);
-            console.log("📦 Decoded JSON string:", decoded);
-
-            userData = JSON.parse(decoded);
-            console.log("✅ Datos de usuario decodificados:", userData);
-            console.log("   - Nombre:", userData.name);
-            console.log("   - Email:", userData.email);
-            console.log("   - Foto:", userData.profileImage);
-          } catch (decodeError) {
-            console.error("❌ Error decodificando usuario:", decodeError);
-            // Fallback si falla la decodificación
-            userData = {
-              id: "google-user",
-              name: "Usuario de Google (fallback)",
-              email: "user@gmail.com",
-              rol: "user",
-              status: "Active",
-            };
-            console.log("⚠️ Usando datos de fallback");
-          }
-        } else {
-          // Fallback si no viene el usuario
-          console.warn("⚠️ No se recibieron datos de usuario del backend");
-          userData = {
-            id: "google-user",
-            name: "Usuario de Google (sin datos del backend)",
-            email: "user@gmail.com",
-            rol: "user",
-            status: "Active",
-          };
+        if (setLogin) {
+          setLogin(response.data, token);
         }
 
-        // Guardar usuario
-        localStorage.setItem("providence_user", JSON.stringify(userData));
-        console.log("💾 Usuario guardado en localStorage:", userData);
+        await new Promise(resolve => setTimeout(resolve, 100));
 
-        console.log(
-          "✅ Autenticación completada, redirigiendo al dashboard..."
-        );
-        console.log("==========================================");
-
-        setTimeout(() => {
-          window.location.href = "/dashboard";
-        }, 2000); // 2 segundos para ver los logs
-      } catch (error: any) {
-        console.error("❌ Error en OAuth callback:", error);
-        router.push("/login?error=auth-failed");
+        router.push("/dashboard");
+        router.refresh();
+        
+      } catch (err: any) {
+        console.error("❌ Error:", err.response?.data || err.message);
+        localStorage.removeItem("providence_token");
+        localStorage.removeItem("providence_user");
+        router.push("/login?error=oauth-failed");
       }
     };
-
+    
     handleCallback();
-  }, []);
+  }, [router, searchParams, setLogin]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -103,9 +66,6 @@ export default function OAuthCallbackPage() {
         </h2>
         <p className="text-gray-600 mb-4">
           Por favor espera mientras completamos tu autenticación.
-        </p>
-        <p className="text-sm text-gray-500 bg-gray-100 p-4 rounded">
-          ⚠️ MODO DEBUG: Abre la consola (F12) para ver detalles
         </p>
       </div>
     </div>

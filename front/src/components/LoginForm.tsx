@@ -64,15 +64,10 @@ export default function LoginForm() {
 
   const handleGoogleAuth = () => {
     setGoogleLoading(true);
-
-    // Backend tiene endpoints separados para signup y login
-    // Usamos el endpoint de LOGIN de Google
     const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-    const googleAuthUrl = `${API_URL}/auth/google/login`;
-
+    // ✅ CON prefijo /api
+    const googleAuthUrl = `${API_URL}/api/auth/google/login`;
     console.log("🔗 Redirigiendo a Google OAuth:", googleAuthUrl);
-
-    // Redirigir al backend para iniciar el flujo OAuth
     window.location.href = googleAuthUrl;
   };
 
@@ -86,7 +81,6 @@ export default function LoginForm() {
     }
 
     try {
-      // Usamos la función login del contexto
       const result = await login(loginForm.email, loginForm.password);
 
       setLoginForm(formInicialState);
@@ -99,7 +93,6 @@ export default function LoginForm() {
           confirmButtonText: "Continuar",
         });
 
-        // Redirigir al dashboard
         router.push("/dashboard");
       } else {
         await Swal.fire({
