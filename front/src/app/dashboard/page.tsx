@@ -4,6 +4,8 @@ import { useAppContext } from "src/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Navbar } from "src/components/Navbar";
+import TransformacionCTA from "src/components/TransformacionCTA";
+import { Footer } from "src/components/Footer"; 
 import Link from "next/link";
 import api from "../../services/api";
 
@@ -18,6 +20,7 @@ export default function DashboardPage() {
 
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({
+    name: "",
     phone: "",
     profileImage: "",
   });
@@ -42,6 +45,7 @@ export default function DashboardPage() {
       });
 
       setFormData({
+        name: user.name || "",
         phone: user.phone || "",
         profileImage: user.profileImage || "",
       });
@@ -91,8 +95,9 @@ export default function DashboardPage() {
     }
   };
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({ ...prev, phone: e.target.value }));
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSaveProfile = async () => {
@@ -102,8 +107,8 @@ export default function DashboardPage() {
       if (user && response) {
         updateUser({
           ...user,
+          name: response.name || dataToUpdate.name,
           phone: response.phone || dataToUpdate.phone,
-          name: response.name || user.name,
         });
       }
       setEditMode(false);
@@ -117,8 +122,20 @@ export default function DashboardPage() {
   const handleCancelEdit = () => {
     setEditMode(false);
     setFormData({
+      name: user?.name || "",
       phone: user?.phone || "",
       profileImage: user?.profileImage || "",
+    });
+  };
+
+  // Formatear fecha para mostrarla mejor
+  const formatDate = (dateString?: string | Date) => {
+    if (!dateString) return "No disponible";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("es-ES", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
     });
   };
 
@@ -129,6 +146,7 @@ export default function DashboardPage() {
       </div>
     );
   }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -194,10 +212,31 @@ export default function DashboardPage() {
               </div>
 
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  ¡Hola, {user?.name || "Usuario"}!
-                </h1>
+                {editMode ? (
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className="text-3xl font-bold text-gray-900 bg-transparent border-b border-gray-300 focus:border-red-600 focus:outline-none"
+                    placeholder="Tu nombre"
+                  />
+                ) : (
+                  <h1 className="text-3xl font-bold text-gray-900">
+                    ¡Hola, {user?.name || "Usuario"}!
+                  </h1>
+                )}
                 <p className="text-gray-600 mt-1">{user?.email}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    {user?.rol === "admin" ? "Administrador" : "Usuario"}
+                  </span>
+                  {user?.lastname && (
+                    <span className="text-gray-600 text-sm">
+                      {user.lastname}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -207,9 +246,10 @@ export default function DashboardPage() {
                 {editMode ? (
                   <input
                     type="tel"
+                    name="phone"
                     value={formData.phone}
-                    onChange={handlePhoneChange}
-                    className="px-2 py-1 border rounded text-gray-900"
+                    onChange={handleInputChange}
+                    className="px-2 py-1 border rounded text-gray-900 text-right w-full"
                     placeholder="Ingresa tu teléfono"
                   />
                 ) : (
@@ -223,13 +263,13 @@ export default function DashboardPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={handleSaveProfile}
-                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
                   >
                     Guardar
                   </button>
                   <button
                     onClick={handleCancelEdit}
-                    className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                    className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
                   >
                     Cancelar
                   </button>
@@ -237,11 +277,99 @@ export default function DashboardPage() {
               ) : (
                 <button
                   onClick={() => setEditMode(true)}
-                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
                 >
                   Editar Perfil
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* Información completa del usuario */}
+        <div className="bg-white rounded-lg shadow mb-8">
+          <div className="p-6 border-b">
+            <h2 className="text-xl font-bold text-gray-900">
+              Información Personal
+            </h2>
+            <p className="text-gray-600 text-sm mt-1">
+              Detalles completos de tu cuenta
+            </p>
+          </div>
+
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Información básica */}
+              <div className="space-y-4">
+                <h3 className="font-medium text-gray-900 mb-4 pb-2 border-b">
+                  Información Básica
+                </h3>
+                
+                <div>
+                  <p className="text-sm text-gray-500">Nombre completo</p>
+                  <p className="font-medium">
+                    {user?.name} {user?.lastname || ""}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-500">Email</p>
+                  <p className="font-medium">{user?.email}</p>
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-500">Rol</p>
+                  <p className="font-medium">
+                    {user?.rol === "admin" ? "Administrador" : "Usuario"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Información de contacto */}
+              <div className="space-y-4">
+                <h3 className="font-medium text-gray-900 mb-4 pb-2 border-b">
+                  Información de Contacto
+                </h3>
+
+                <div>
+                  <p className="text-sm text-gray-500">Teléfono</p>
+                  <p className="font-medium">{user?.phone || "No registrado"}</p>
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-500">Género</p>
+                  <p className="font-medium">
+                    {user?.genre === "Male"
+                      ? "Masculino"
+                      : user?.genre === "Female"
+                      ? "Femenino"
+                      : user?.genre === "Other"
+                      ? "Otro"
+                      : "No especificado"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Información adicional */}
+              <div className="space-y-4">
+                <h3 className="font-medium text-gray-900 mb-4 pb-2 border-b">
+                  Información Adicional
+                </h3>
+
+                <div>
+                  <p className="text-sm text-gray-500">DNI</p>
+                  <p className="font-medium">{user?.dni || "No registrado"}</p>
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-500">Fecha de Nacimiento</p>
+                  <p className="font-medium">
+                    {user?.birthdate
+                      ? formatDate(user.birthdate)
+                      : "No registrada"}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -306,7 +434,7 @@ export default function DashboardPage() {
             </div>
             <div className="mt-4">
               {stats.proximaClase && (
-                <button className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700">
+                <button className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition">
                   Ver detalles
                 </button>
               )}
@@ -314,6 +442,12 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Sección de Transformación CTA */}
+      <TransformacionCTA />
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
