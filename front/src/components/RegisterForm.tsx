@@ -9,7 +9,6 @@ import Swal from "sweetalert2";
 import RegisterDto from "src/interfaces/RegisterDto";
 import RegisterFormState from "src/interfaces/RegisterFormState";
 
-// Definir interfaces actualizadas
 interface FormErrors {
   name: string;
   lastname: string;
@@ -312,7 +311,7 @@ export default function RegisterForm() {
 
   const postRegister = async (registerDto: RegisterDto) => {
     return await axios.post(
-      `${process.env.NEXT_PUBLIC_API_URL}/auth/signup`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/auth/signup`,
       registerDto
     );
   };
@@ -322,7 +321,7 @@ export default function RegisterForm() {
     
     // Redirigir al endpoint de Google OAuth del backend
     // El backend manejará la redirección a Google y luego de vuelta a tu aplicación
-    const googleAuthUrl = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
+    const googleAuthUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/auth/google/login`;
     
     // Guardar la página actual para redirigir después del login
     localStorage.setItem('redirectAfterLogin', window.location.pathname);
@@ -372,7 +371,6 @@ export default function RegisterForm() {
         confirmButtonText: "Ir al Login",
       });
 
-      // ⭐⭐ REDIRECCIÓN INMEDIATA AL LOGIN ⭐⭐
       router.push("/login");
 
     } catch (error: any) {

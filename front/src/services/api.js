@@ -1,17 +1,16 @@
+
 import axios from 'axios';
 
-// URL de tu backend NestJS (ajusta según tu configuración)
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
 
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // Importante para CORS
+  withCredentials: true,
 });
 
-// Interceptor para agregar token JWT (Bearer)
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('providence_token');
@@ -20,28 +19,31 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    console.error('❌ Request error:', error);
+    return Promise.reject(error);
+  }
 );
 
-// Interceptor para manejar respuestas
 api.interceptors.response.use(
   (response) => {
-    // Tu backend devuelve data directamente
     return response.data;
   },
   (error) => {
-    console.error('API Error:', error.response?.data || error.message);
-    
-    // Manejo de errores comunes
+    console.error('❌ API Error:', error.response?.data || error.message);
+
     if (error.response?.status === 401) {
-      // Token expirado o inválido
+      console.warn('⚠️ Sesión expirada, redirigiendo a login...');
       localStorage.removeItem('providence_token');
+      localStorage.removeItem('providence_user');
+      
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
     }
-    
-    // Propaga el error para manejo específico
+    if (error.response?.status === 403) {
+      console.error('🚫 Acceso prohibido - verifica permisos');
+    }
     return Promise.reject(error.response?.data || {
       message: 'Error de conexión con el servidor',
       status: error.response?.status || 500
