@@ -27,7 +27,7 @@ const TransformacionCTA: React.FC = () => {
 
         <div className="flex justify-center">
           <Link
-            href={user ? "/activities" : "/login"}
+            href={user ? "/home" : "/login"}
             className="inline-block bg-white text-[#DC2626] px-6 py-3 rounded-md text-sm sm:text-base font-bold uppercase tracking-wider shadow-md hover:opacity-95 transition-opacity duration-200"
           >
             {user ? "RESERVAR CLASE AHORA" : "RESERVA TU CLASE HOY"}
