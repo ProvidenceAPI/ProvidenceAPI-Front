@@ -123,9 +123,9 @@ export default function LoginForm() {
         <div className="text-2xl font-bold tracking-[0.2em]">
           <Link href="/" className="flex flex-col hover:no-underline">
             <img
-              src="/logo.png"
+              src="/LOGOMEJORADO.jpeg"
               alt="Providence Fitness Logo"
-              className="h-8 w-auto"
+              className="h-auto w-auto"
             />
           </Link>
         </div>

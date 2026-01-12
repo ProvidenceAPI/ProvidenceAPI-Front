@@ -12,7 +12,7 @@ export const Navbar: React.FC = () => {
         {/* Logo */}
         <div className="text-2xl font-bold tracking-[0.2em]">
           <Link href="/" className="flex flex-col hover:no-underline">
-            <img src="/logo.png" alt="Providence Fitness Logo" className="h-8 w-auto" />
+            <img src="/LOGOMEJORADO.jpeg" alt="Providence Fitness Logo" className="h-12 sm:h-[3.625rem] md:h-14 w-auto" />
           </Link>
         </div>
 
