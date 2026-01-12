@@ -122,11 +122,10 @@ export default function LoginForm() {
       <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-center px-12 py-20">
         <div className="text-2xl font-bold tracking-[0.2em]">
           <Link href="/" className="flex flex-col hover:no-underline">
-            <img
-              src="/logo.png"
+            <img src="/logo.png"
               alt="Providence Fitness Logo"
-              className="h-8 w-auto"
-            />
+              className="h-8 w-auto">
+              </img>
           </Link>
         </div>
         <h2 className="text-5xl font-bold leading-tight mb-6">

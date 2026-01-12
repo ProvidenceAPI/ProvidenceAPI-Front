@@ -226,17 +226,8 @@ export default function DashboardPage() {
                     ¡Hola, {user?.name || "Usuario"}!
                   </h1>
                 )}
-                <p className="text-gray-600 mt-1">{user?.email}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                    {user?.rol === "admin" ? "Administrador" : "Usuario"}
-                  </span>
-                  {user?.lastname && (
-                    <span className="text-gray-600 text-sm">
-                      {user.lastname}
-                    </span>
-                  )}
-                </div>
+                
+               
               </div>
             </div>
 
@@ -292,9 +283,6 @@ export default function DashboardPage() {
             <h2 className="text-xl font-bold text-gray-900">
               Información Personal
             </h2>
-            <p className="text-gray-600 text-sm mt-1">
-              Detalles completos de tu cuenta
-            </p>
           </div>
 
           <div className="p-6">
@@ -315,13 +303,6 @@ export default function DashboardPage() {
                 <div>
                   <p className="text-sm text-gray-500">Email</p>
                   <p className="font-medium">{user?.email}</p>
-                </div>
-
-                <div>
-                  <p className="text-sm text-gray-500">Rol</p>
-                  <p className="font-medium">
-                    {user?.rol === "admin" ? "Administrador" : "Usuario"}
-                  </p>
                 </div>
               </div>
 
