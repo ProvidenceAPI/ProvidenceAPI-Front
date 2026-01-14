@@ -1,13 +1,13 @@
 import { IProduct } from "./IProduct";
-import { IUser } from "./IUser";
+import { User } from "src/contexts/AuthContext";
 
 export interface IAppContext {
-    user: IUser | null;
+    user: User | null;
     token: string | null;
     isAuthenticated: boolean;
     cart: IProduct[];
 
-    setLogin: (user: IUser, token: string) => void;
+    setLogin: (user: User, token: string) => void;
     logout: () => void;
     addProductToCart: (product: IProduct) => void;
     removeProductFromCart: (id: number) => void;

@@ -19,7 +19,9 @@
     "jsx": "preserve",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["app/src/*"]
+      "@/*": [
+        "app/src/*"
+      ]
     },
     "plugins": [
       {
@@ -31,8 +33,10 @@
     "next-env.d.ts",
     ".next/types/**/*.ts",
     "**/*.ts",
-    "**/*.tsx"
-, "app/src/services/api.js"  ],
+    "**/*.tsx",
+    "app/src/services/api.js",
+    ".next/dev/types/**/*.ts"
+  ],
   "exclude": [
     "node_modules"
   ]
