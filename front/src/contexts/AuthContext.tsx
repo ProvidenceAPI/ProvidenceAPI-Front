@@ -2,7 +2,7 @@
 
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 
-type User = {
+ export type User = {
   id: string;
   name: string;
   email: string;
