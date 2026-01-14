@@ -1,63 +1,71 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useAuth } from "src/contexts/AuthContext";
+import axios from "axios";
+import { useAppContext } from "src/contexts/AuthContext";
 
 export default function OAuthCallbackPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { handleGoogleCallback } = useAuth();
+  const hasProcessed = useRef(false);
+  const { setLogin } = useAppContext();
 
   useEffect(() => {
-    const processGoogleCallback = async () => {
-      const code = searchParams.get("code");
-      const error = searchParams.get("error");
+    if (hasProcessed.current) return;
+    hasProcessed.current = true;
 
-      if (error) {
-        console.error("Error de Google:", error);
-        router.push(`/login?error=google-auth-failed&message=${encodeURIComponent(error)}`);
-        return;
-      }
+    const token = searchParams.get("token");
 
-      if (!code) {
-        console.error("No se recibió código de autorización");
-        router.push("/login?error=no-code");
-        return;
-      }
+    if (!token) {
+      console.error("❌ No se recibió token");
+      router.push("/login?error=no-token");
+      return;
+    }
 
+    const handleCallback = async () => {
       try {
-        const result = await handleGoogleCallback(code);
-        
-        if (result.success) {
-          // Redirigir después de un breve delay
-          setTimeout(() => {
-            router.push("/dashboard");
-          }, 500);
-        } else {
-          router.push(`/login?error=oauth-failed&message=${encodeURIComponent(result.message)}`);
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
+        const response = await axios.get(`${API_URL}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (!response.data) {
+          throw new Error("No se pudo obtener el usuario");
         }
-      } catch (err) {
-        console.error("Error procesando Google callback:", err);
-        router.push(`/login?error=oauth-failed&message=${encodeURIComponent(err instanceof Error ? err.message : "Error desconocido")}`);
+
+        console.log("✅ Usuario obtenido:", response.data.email);
+
+        if (setLogin) {
+          setLogin(response.data, token);
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        router.push("/dashboard");
+        router.refresh();
+        
+      } catch (err: any) {
+        console.error("❌ Error:", err.response?.data || err.message);
+        localStorage.removeItem("providence_token");
+        localStorage.removeItem("providence_user");
+        router.push("/login?error=oauth-failed");
       }
     };
-
-    processGoogleCallback();
-  }, [router, searchParams, handleGoogleCallback]);
+    
+    handleCallback();
+  }, [router, searchParams, setLogin]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="text-center max-w-md mx-auto p-8">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-red-600 mx-auto mb-4"></div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Completando autenticación
+          Iniciando sesión con Google...
         </h2>
-        <p className="text-gray-600">
-          Estamos finalizando tu inicio de sesión con Google...
-        </p>
-        <p className="text-sm text-gray-500 mt-4">
-          Esto puede tomar unos segundos
+        <p className="text-gray-600 mb-4">
+          Por favor espera mientras completamos tu autenticación.
         </p>
       </div>
     </div>
