@@ -1,0 +1,890 @@
+"use client";
+
+import { useAuth } from "src/contexts/AuthContext";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, useRef } from "react";
+import Swal from "sweetalert2";
+
+interface FormErrors {
+  name: string;
+  lastname: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  phone: string;
+  dni: string;
+  genre: string;
+  birthdate: string;
+}
+
+interface ValidationRules {
+  name: boolean;
+  lastname: boolean;
+  email: boolean;
+  password: boolean;
+  confirmPassword: boolean;
+  phone: boolean;
+  dni: boolean;
+  genre: boolean;
+  birthdate: boolean;
+}
+
+const formInicialState = {
+  name: "",
+  lastname: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+  phone: "",
+  dni: 0,
+  genre: "",
+  birthdate: "",
+};
+
+const initialErrors: FormErrors = {
+  name: "",
+  lastname: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+  phone: "",
+  dni: "",
+  genre: "",
+  birthdate: "",
+};
+
+const initialValidations: ValidationRules = {
+  name: false,
+  lastname: false,
+  email: false,
+  password: false,
+  confirmPassword: false,
+  phone: false,
+  dni: false,
+  genre: false,
+  birthdate: false,
+};
+
+export default function RegisterForm() {
+  const { register, googleLogin, clearError } = useAuth(); // ✅ Agregamos googleLogin
+  const router = useRouter();
+  const [registerForm, setRegisterForm] = useState(formInicialState);
+  const [errors, setErrors] = useState<FormErrors>(initialErrors);
+  const [validations, setValidations] = useState<ValidationRules>(initialValidations);
+  const [isLoading, setIsLoading] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  
+  // Refs para manejar timeouts
+  const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Validaciones en tiempo real optimizadas con debounce
+  useEffect(() => {
+    if (validationTimeoutRef.current) {
+      clearTimeout(validationTimeoutRef.current);
+    }
+    
+    validationTimeoutRef.current = setTimeout(() => {
+      validateRealTime();
+    }, 100);
+    
+    return () => {
+      if (validationTimeoutRef.current) {
+        clearTimeout(validationTimeoutRef.current);
+      }
+    };
+  }, [registerForm]);
+
+  const validateRealTime = useCallback(() => {
+    const newValidations = { ...initialValidations };
+    
+    // Validación de nombre
+    newValidations.name = registerForm.name.length >= 3 && registerForm.name.length <= 80;
+    
+    // Validación de apellido
+    newValidations.lastname = registerForm.lastname.length >= 3 && registerForm.lastname.length <= 80;
+    
+    // Validación de email
+    if (registerForm.email) {
+      const emailRegex = /\S+@\S+\.\S+/;
+      newValidations.email = emailRegex.test(registerForm.email);
+    }
+    
+    // Validación de contraseña
+    if (registerForm.password) {
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/;
+      newValidations.password = registerForm.password.length >= 8 && 
+        registerForm.password.length <= 15 && 
+        passwordRegex.test(registerForm.password);
+    }
+    
+    // Validación de confirmación de contraseña
+    if (registerForm.confirmPassword) {
+      newValidations.confirmPassword = registerForm.password === registerForm.confirmPassword && 
+        registerForm.confirmPassword.length > 0;
+    }
+    
+    // Validación de teléfono
+    if (registerForm.phone) {
+      const phoneRegex = /^\d{10,15}$/;
+      newValidations.phone = phoneRegex.test(registerForm.phone.replace(/\D/g, ''));
+    }
+    
+    // Validación de DNI
+    if (registerForm.dni) {
+      const dniString = registerForm.dni.toString();
+      newValidations.dni = registerForm.dni > 0 && 
+        /^\d{7,10}$/.test(dniString) && 
+        registerForm.dni >= 1000000 && 
+        registerForm.dni <= 9999999999;
+    }
+    
+    // Validación de género
+    newValidations.genre = registerForm.genre !== "";
+    
+    // Validación de fecha de nacimiento
+    if (registerForm.birthdate) {
+      const birthDate = new Date(registerForm.birthdate);
+      const today = new Date();
+      const age = today.getFullYear() - birthDate.getFullYear();
+      newValidations.birthdate = age >= 16;
+    }
+    
+    setValidations(newValidations);
+  }, [registerForm]);
+
+  const changeHandler = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const property = e.target.name;
+    let value = e.target.value;
+    
+    if (property === "dni") {
+      const numericValue = value.replace(/\D/g, '');
+      value = numericValue;
+    } else if (property === "phone") {
+      value = value.replace(/\D/g, '');
+    }
+    
+    setRegisterForm(prev => ({
+      ...prev,
+      [property]: property === "dni" ? (value ? parseInt(value, 10) : 0) : value,
+    }));
+    
+    if (errors[property as keyof FormErrors]) {
+      setErrors(prev => ({
+        ...prev,
+        [property]: "",
+      }));
+    }
+  };
+
+  // ✅ FUNCIÓN CORREGIDA DE GOOGLE AUTH
+  const handleGoogleAuth = async () => {
+    setGoogleLoading(true);
+    clearError();
+    
+    try {
+      // Primero intentamos "despertar" el backend
+      console.log("🔄 Activando backend para Google OAuth...");
+      
+      // Redirigir usando la función del contexto (si existe)
+      if (googleLogin) {
+        googleLogin();
+      } else {
+        // Fallback: redirección directa
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://providenceapi-back.onrender.com';
+        window.location.href = `${API_URL}/api/auth/google/login`;
+      }
+    } catch (error) {
+      console.error("Error en Google OAuth:", error);
+      setGoogleLoading(false);
+      await Swal.fire({
+        title: "Error",
+        text: "No se pudo iniciar el proceso con Google",
+        icon: "error",
+        confirmButtonText: "Reintentar",
+      });
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = { ...initialErrors };
+    let isValid = true;
+    
+    if (!registerForm.name.trim()) {
+      newErrors.name = "Falta el nombre";
+      isValid = false;
+    } else if (registerForm.name.length < 3) {
+      newErrors.name = "El nombre debe tener al menos 3 caracteres";
+      isValid = false;
+    }
+    
+    if (!registerForm.lastname.trim()) {
+      newErrors.lastname = "Falta el apellido";
+      isValid = false;
+    } else if (registerForm.lastname.length < 3) {
+      newErrors.lastname = "El apellido debe tener al menos 3 caracteres";
+      isValid = false;
+    }
+    
+    if (!registerForm.email) {
+      newErrors.email = "Falta el correo electrónico";
+      isValid = false;
+    } else if (!/\S+@\S+\.\S+/.test(registerForm.email)) {
+      newErrors.email = "El correo electrónico no es válido";
+      isValid = false;
+    }
+    
+    if (!registerForm.password) {
+      newErrors.password = "Falta la contraseña";
+      isValid = false;
+    } else if (registerForm.password.length < 8) {
+      newErrors.password = "La contraseña debe tener al menos 8 caracteres";
+      isValid = false;
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/.test(registerForm.password)) {
+      newErrors.password = "Debe contener mayúsculas, minúsculas, números y caracteres especiales (!@#$%^&*)";
+      isValid = false;
+    }
+    
+    if (!registerForm.confirmPassword) {
+      newErrors.confirmPassword = "Confirma tu contraseña";
+      isValid = false;
+    } else if (registerForm.password !== registerForm.confirmPassword) {
+      newErrors.confirmPassword = "Las contraseñas no coinciden";
+      isValid = false;
+    }
+    
+    if (!registerForm.phone.trim()) {
+      newErrors.phone = "Falta el teléfono";
+      isValid = false;
+    } else if (!/^\d{10,15}$/.test(registerForm.phone)) {
+      newErrors.phone = "El teléfono debe tener entre 10 y 15 dígitos";
+      isValid = false;
+    }
+    
+    if (!registerForm.dni || registerForm.dni === 0) {
+      newErrors.dni = "Falta el DNI";
+      isValid = false;
+    } else {
+      const dniString = registerForm.dni.toString();
+      if (!/^\d{7,10}$/.test(dniString)) {
+        newErrors.dni = "El DNI debe tener entre 7 y 10 dígitos";
+        isValid = false;
+      }
+    }
+    
+    if (!registerForm.genre) {
+      newErrors.genre = "Selecciona tu género";
+      isValid = false;
+    }
+    
+    if (!registerForm.birthdate) {
+      newErrors.birthdate = "Falta la fecha de nacimiento";
+      isValid = false;
+    } else {
+      const birthDate = new Date(registerForm.birthdate);
+      const today = new Date();
+      const age = today.getFullYear() - birthDate.getFullYear();
+      if (age < 16) {
+        newErrors.birthdate = "Debes tener al menos 16 años";
+        isValid = false;
+      }
+    }
+    
+    if (!acceptTerms) {
+      // No mostramos error aquí, solo validamos
+      isValid = false;
+    }
+    
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const submitHandler = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      if (!acceptTerms) {
+        await Swal.fire({
+          title: "Acepta los términos",
+          text: "Debes aceptar los términos y condiciones para continuar",
+          icon: "warning",
+          confirmButtonText: "Entendido",
+        });
+      }
+      return;
+    }
+    
+    setIsLoading(true);
+    clearError();
+    
+    try {
+      const registerDto = {
+        name: registerForm.name,
+        lastname: registerForm.lastname,
+        email: registerForm.email,
+        password: registerForm.password,
+        phone: registerForm.phone,
+        dni: registerForm.dni,
+        genre: registerForm.genre,
+        birthdate: registerForm.birthdate,
+      };
+      
+      const result = await register({
+  ...registerDto,
+  confirmPassword: registerForm.confirmPassword
+});
+      
+      if (result.success) {
+        setRegisterForm(formInicialState);
+        setAcceptTerms(false);
+        
+        await Swal.fire({
+          title: "¡Usuario creado con éxito!",
+          text: result.message || "Te hemos enviado un email de confirmación.",
+          icon: "success",
+          confirmButtonText: "Ir al Login",
+        });
+        
+        router.push("/login");
+      } else {
+        let errorMessage = result.message || "Error al crear el usuario";
+        
+        // Manejo específico de errores de email duplicado
+        if (errorMessage.toLowerCase().includes("email") || errorMessage.toLowerCase().includes("ya existe")) {
+          setErrors(prev => ({
+            ...prev,
+            email: "Este correo ya está registrado",
+          }));
+        }
+        
+        await Swal.fire({
+          title: "Error",
+          text: errorMessage,
+          icon: "error",
+          confirmButtonText: "Reintentar",
+        });
+      }
+    } catch (error: any) {
+      console.error("Register error:", error);
+      
+      let errorMessage = "Error al crear el usuario";
+      if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      await Swal.fire({
+        title: "Error",
+        text: errorMessage,
+        icon: "error",
+        confirmButtonText: "Reintentar",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getPasswordStrength = (password: string) => {
+    if (password.length === 0) return { text: "Sin contraseña", color: "text-gray-400" };
+    if (password.length < 8) return { text: "Muy débil", color: "text-red-500" };
+    
+    const hasLower = /[a-z]/.test(password);
+    const hasUpper = /[A-Z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    const hasSpecial = /[!@#$%^&*]/.test(password);
+    const score = [hasLower, hasUpper, hasNumber, hasSpecial].filter(Boolean).length;
+    
+    if (score === 1) return { text: "Débil", color: "text-red-500" };
+    if (score === 2) return { text: "Regular", color: "text-yellow-500" };
+    if (score === 3) return { text: "Buena", color: "text-green-500" };
+    if (score === 4) return { text: "Excelente", color: "text-green-600" };
+    return { text: "Sin contraseña", color: "text-gray-400" };
+  };
+
+  // Loading combinado
+  const isLoadingAny = isLoading || googleLoading;
+
+  return (
+    <div className="min-h-screen flex">
+      {/* Left side - Black section */}
+      <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-center px-12 py-20">
+        <div className="text-2xl font-bold tracking-[0.2em]">
+          <Link href="/" className="flex flex-col hover:no-underline">
+            <img src="/LO.png" alt="Providence Fitness Logo" className="h-8 w-auto" />
+          </Link>
+        </div>
+        <h2 className="text-5xl font-bold leading-tight mb-6">
+          COMIENZA TU <br /> TRANSFORMACIÓN HOY
+        </h2>
+        <p className="text-gray-400 text-lg leading-relaxed mb-8">
+          Únete a miles de miembros que ya han alcanzado sus metas fitness.
+        </p>
+        <div className="space-y-6">
+          <div className="flex items-start space-x-3">
+            <div className="bg-[#DC2626] p-2 rounded-full mt-1">
+              <span className="text-white">💪</span>
+            </div>
+            <div>
+              <h3 className="font-bold text-lg">Rutina Personalizada</h3>
+              <p className="text-gray-400">Programa de entrenamiento adaptado a tus objetivos</p>
+            </div>
+          </div>
+          <div className="flex items-start space-x-3">
+            <div className="bg-[#DC2626] p-2 rounded-full mt-1">
+              <span className="text-white">👥</span>
+            </div>
+            <div>
+              <h3 className="font-bold text-lg">Comunidad Activa</h3>
+              <p className="text-gray-400">Conecta con personas que comparten tus mismos objetivos</p>
+            </div>
+          </div>
+          <div className="flex items-start space-x-3">
+            <div className="bg-[#DC2626] p-2 rounded-full mt-1">
+              <span className="text-white">⏰</span>
+            </div>
+            <div>
+              <h3 className="font-bold text-lg">Horario Flexible</h3>
+              <p className="text-gray-400">Entrena cuando quieras, sin restricciones de horario</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right side - Form section */}
+      <div className="w-full md:w-1/2 bg-white flex flex-col justify-center px-8 md:px-12 py-20 overflow-y-auto">
+        <div className="max-w-md mx-auto w-full">
+          {/* Header */}
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-black mb-2">CREAR CUENTA</h2>
+            <p className="text-gray-600">Completa todos los campos para unirte a Providence Fitness.</p>
+          </div>
+
+          <form onSubmit={submitHandler} className="space-y-6" noValidate>
+            {/* Nombre y Apellido */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Nombre */}
+              <div>
+                <label className={`block text-sm font-semibold mb-2 ${errors.name ? "text-red-600" : "text-black"}`}>
+                  NOMBRE (3-80 caracteres)
+                </label>
+                <div className="relative">
+                  <span className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${errors.name ? "text-red-500" : validations.name ? "text-green-500" : "text-gray-400"}`}>
+                    {validations.name ? "✓" : "👤"}
+                  </span>
+                  <input
+                    className={`w-full pl-12 pr-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DC2626] transition ${errors.name ? "border-red-500 bg-red-50 text-red-900 placeholder-red-300" : validations.name ? "border-green-500 bg-green-50 text-gray-900 focus:bg-white" : "border-gray-300 bg-gray-50 text-gray-900 focus:bg-white"}`}
+                    type="text"
+                    name="name"
+                    value={registerForm.name}
+                    onChange={changeHandler}
+                    placeholder="Nombre"
+                    disabled={isLoadingAny}
+                  />
+                </div>
+                {errors.name && (
+                  <p className="mt-2 text-sm text-red-600 flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    {errors.name}
+                  </p>
+                )}
+              </div>
+
+              {/* Apellido */}
+              <div>
+                <label className={`block text-sm font-semibold mb-2 ${errors.lastname ? "text-red-600" : "text-black"}`}>
+                  APELLIDO (3-80 caracteres)
+                </label>
+                <div className="relative">
+                  <span className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${errors.lastname ? "text-red-500" : validations.lastname ? "text-green-500" : "text-gray-400"}`}>
+                    {validations.lastname ? "✓" : "👤"}
+                  </span>
+                  <input
+                    className={`w-full pl-12 pr-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DC2626] transition ${errors.lastname ? "border-red-500 bg-red-50 text-red-900 placeholder-red-300" : validations.lastname ? "border-green-500 bg-green-50 text-gray-900 focus:bg-white" : "border-gray-300 bg-gray-50 text-gray-900 focus:bg-white"}`}
+                    type="text"
+                    name="lastname"
+                    value={registerForm.lastname}
+                    onChange={changeHandler}
+                    placeholder="Apellido"
+                    disabled={isLoadingAny}
+                  />
+                </div>
+                {errors.lastname && (
+                  <p className="mt-2 text-sm text-red-600 flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    {errors.lastname}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Email */}
+            <div>
+              <label className={`block text-sm font-semibold mb-2 ${errors.email ? "text-red-600" : "text-black"}`}>
+                CORREO ELECTRÓNICO
+              </label>
+              <div className="relative">
+                <span className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${errors.email ? "text-red-500" : validations.email ? "text-green-500" : "text-gray-400"}`}>
+                  {validations.email ? "✓" : "✉️"}
+                </span>
+                <input
+                  className={`w-full pl-12 pr-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DC2626] transition ${errors.email ? "border-red-500 bg-red-50 text-red-900 placeholder-red-300" : validations.email ? "border-green-500 bg-green-50 text-gray-900 focus:bg-white" : "border-gray-300 bg-gray-50 text-gray-900 focus:bg-white"}`}
+                  type="email"
+                  name="email"
+                  value={registerForm.email}
+                  onChange={changeHandler}
+                  placeholder="ejemplo@correo.com"
+                  disabled={isLoadingAny}
+                />
+              </div>
+              {errors.email && (
+                <p className="mt-2 text-sm text-red-600 flex items-center">
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  {errors.email}
+                </p>
+              )}
+            </div>
+
+            {/* DNI y Teléfono */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* DNI */}
+              <div>
+                <label className={`block text-sm font-semibold mb-2 ${errors.dni ? "text-red-600" : "text-black"}`}>
+                  DNI (7-10 dígitos)
+                </label>
+                <div className="relative">
+                  <span className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${errors.dni ? "text-red-500" : validations.dni ? "text-green-500" : "text-gray-400"}`}>
+                    {validations.dni ? "✓" : "🆔"}
+                  </span>
+                  <input
+                    className={`w-full pl-12 pr-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DC2626] transition ${errors.dni ? "border-red-500 bg-red-50 text-red-900 placeholder-red-300" : validations.dni ? "border-green-500 bg-green-50 text-gray-900 focus:bg-white" : "border-gray-300 bg-gray-50 text-gray-900 focus:bg-white"}`}
+                    type="text"
+                    name="dni"
+                    value={registerForm.dni || ""}
+                    onChange={changeHandler}
+                    placeholder="123456789"
+                    inputMode="numeric"
+                    maxLength={10}
+                    disabled={isLoadingAny}
+                  />
+                </div>
+                {errors.dni && (
+                  <p className="mt-2 text-sm text-red-600 flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    {errors.dni}
+                  </p>
+                )}
+              </div>
+
+              {/* Teléfono */}
+              <div>
+                <label className={`block text-sm font-semibold mb-2 ${errors.phone ? "text-red-600" : "text-black"}`}>
+                  TELÉFONO (10-15 dígitos)
+                </label>
+                <div className="relative">
+                  <span className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${errors.phone ? "text-red-500" : validations.phone ? "text-green-500" : "text-gray-400"}`}>
+                    {validations.phone ? "✓" : "📱"}
+                  </span>
+                  <input
+                    className={`w-full pl-12 pr-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DC2626] transition ${errors.phone ? "border-red-500 bg-red-50 text-red-900 placeholder-red-300" : validations.phone ? "border-green-500 bg-green-50 text-gray-900 focus:bg-white" : "border-gray-300 bg-gray-50 text-gray-900 focus:bg-white"}`}
+                    type="text"
+                    name="phone"
+                    value={registerForm.phone}
+                    onChange={changeHandler}
+                    placeholder="3157615003"
+                    inputMode="numeric"
+                    maxLength={15}
+                    disabled={isLoadingAny}
+                  />
+                </div>
+                {errors.phone && (
+                  <p className="mt-2 text-sm text-red-600 flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    {errors.phone}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Género y Fecha de Nacimiento */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Género */}
+              <div>
+                <label className={`block text-sm font-semibold mb-2 ${errors.genre ? "text-red-600" : "text-black"}`}>
+                  GÉNERO
+                </label>
+                <div className="relative">
+                  <span className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${errors.genre ? "text-red-500" : validations.genre ? "text-green-500" : "text-gray-400"}`}>
+                    {validations.genre ? "✓" : "⚤"}
+                  </span>
+                  <select
+                    className={`w-full pl-12 pr-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DC2626] transition appearance-none ${errors.genre ? "border-red-500 bg-red-50 text-red-900" : validations.genre ? "border-green-500 bg-green-50 text-gray-900 focus:bg-white" : "border-gray-300 bg-gray-50 text-gray-900 focus:bg-white"}`}
+                    name="genre"
+                    value={registerForm.genre}
+                    onChange={changeHandler}
+                    disabled={isLoadingAny}
+                  >
+                    <option value="">Seleccionar género</option>
+                    <option value="Male">Masculino</option>
+                    <option value="Female">Femenino</option>
+                    <option value="Other">Otro</option>
+                    <option value="Nonbinary">No binario</option>
+                  </select>
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+                {errors.genre && (
+                  <p className="mt-2 text-sm text-red-600 flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    {errors.genre}
+                  </p>
+                )}
+              </div>
+
+              {/* Fecha de Nacimiento */}
+              <div>
+                <label className={`block text-sm font-semibold mb-2 ${errors.birthdate ? "text-red-600" : "text-black"}`}>
+                  FECHA DE NACIMIENTO (Mínimo 16 años)
+                </label>
+                <div className="relative">
+                  <span className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${errors.birthdate ? "text-red-500" : validations.birthdate ? "text-green-500" : "text-gray-400"}`}>
+                    {validations.birthdate ? "✓" : "🎂"}
+                  </span>
+                  <input
+                    className={`w-full pl-12 pr-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DC2626] transition ${errors.birthdate ? "border-red-500 bg-red-50 text-red-900" : validations.birthdate ? "border-green-500 bg-green-50 text-gray-900 focus:bg-white" : "border-gray-300 bg-gray-50 text-gray-900 focus:bg-white"}`}
+                    type="date"
+                    name="birthdate"
+                    value={registerForm.birthdate}
+                    onChange={changeHandler}
+                    max={new Date().toISOString().split('T')[0]}
+                    disabled={isLoadingAny}
+                  />
+                </div>
+                {errors.birthdate && (
+                  <p className="mt-2 text-sm text-red-600 flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    {errors.birthdate}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Contraseña y Confirmar Contraseña */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Contraseña */}
+              <div>
+                <label className={`block text-sm font-semibold mb-2 ${errors.password ? "text-red-600" : "text-black"}`}>
+                  CONTRASEÑA (8-15 caracteres)
+                </label>
+                <div className="relative">
+                  <span className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${errors.password ? "text-red-500" : validations.password ? "text-green-500" : "text-gray-400"}`}>
+                    {validations.password ? "✓" : "🔒"}
+                  </span>
+                  <input
+                    className={`w-full pl-12 pr-12 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DC2626] transition ${errors.password ? "border-red-500 bg-red-50 text-red-900 placeholder-red-300" : validations.password ? "border-green-500 bg-green-50 text-gray-900 focus:bg-white" : "border-gray-300 bg-gray-50 text-gray-900 focus:bg-white"}`}
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={registerForm.password}
+                    onChange={changeHandler}
+                    placeholder="Contraseña123*"
+                    minLength={8}
+                    maxLength={15}
+                    disabled={isLoadingAny}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    disabled={isLoadingAny}
+                  >
+                    {showPassword ? (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L6.59 6.59m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                {errors.password ? (
+                  <p className="mt-2 text-sm text-red-600 flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    {errors.password}
+                  </p>
+                ) : (
+                  registerForm.password.length > 0 && (
+                    <div className="mt-2">
+                      <div className="flex items-center justify-between">
+                        <span className={`text-sm ${getPasswordStrength(registerForm.password).color}`}>
+                          {getPasswordStrength(registerForm.password).text}
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          {registerForm.password.length}/15
+                        </span>
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+
+              {/* Confirmar Contraseña */}
+              <div>
+                <label className={`block text-sm font-semibold mb-2 ${errors.confirmPassword ? "text-red-600" : "text-black"}`}>
+                  CONFIRMAR CONTRASEÑA
+                </label>
+                <div className="relative">
+                  <span className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${errors.confirmPassword ? "text-red-500" : validations.confirmPassword ? "text-green-500" : "text-gray-400"}`}>
+                    {validations.confirmPassword ? "✓" : "🔒"}
+                  </span>
+                  <input
+                    className={`w-full pl-12 pr-12 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DC2626] transition ${errors.confirmPassword ? "border-red-500 bg-red-50 text-red-900 placeholder-red-300" : validations.confirmPassword ? "border-green-500 bg-green-50 text-gray-900 focus:bg-white" : "border-gray-300 bg-gray-50 text-gray-900 focus:bg-white"}`}
+                    type={showConfirmPassword ? "text" : "password"}
+                    name="confirmPassword"
+                    value={registerForm.confirmPassword}
+                    onChange={changeHandler}
+                    placeholder="Repite tu contraseña"
+                    disabled={isLoadingAny}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    disabled={isLoadingAny}
+                  >
+                    {showConfirmPassword ? (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L6.59 6.59m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                {errors.confirmPassword && (
+                  <p className="mt-2 text-sm text-red-600 flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    {errors.confirmPassword}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Términos y Condiciones */}
+            <div className="flex items-start space-x-3">
+              <input
+                type="checkbox"
+                id="terms"
+                checked={acceptTerms}
+                onChange={(e) => setAcceptTerms(e.target.checked)}
+                className={`mt-1 w-4 h-4 rounded border-2 cursor-pointer transition ${acceptTerms ? "border-green-500 bg-green-500" : "border-gray-300"}`}
+                disabled={isLoadingAny}
+              />
+              <label htmlFor="terms" className="text-sm text-gray-700">
+                Acepto los términos y condiciones y la política de privacidad
+              </label>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              className={`w-full py-3 rounded-lg font-bold text-white text-lg transition-all uppercase tracking-wider ${isLoadingAny || !acceptTerms ? "bg-gray-400 cursor-not-allowed" : "bg-[#DC2626] hover:bg-[#B01C1C]"}`}
+              disabled={isLoadingAny || !acceptTerms}
+            >
+              {isLoading ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Creando cuenta...
+                </span>
+              ) : (
+                <>
+                  CREAR CUENTA
+                  <span className="ml-2">→</span>
+                </>
+              )}
+            </button>
+
+            {/* Social Login */}
+            <div className="relative py-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">O regístrate con</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              <button
+                type="button"
+                onClick={handleGoogleAuth}
+                className="flex items-center justify-center w-full py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isLoadingAny}
+              >
+                {googleLoading ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Conectando con Google...
+                  </span>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                    </svg>
+                    <span className="text-sm font-medium">Continuar con Google</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Login Link */}
+            <div className="text-center pt-4 border-t border-gray-200">
+              <p className="text-gray-700">
+                ¿Ya tienes una cuenta?{" "}
+                <Link href="/login" className="text-[#DC2626] font-bold hover:underline">
+                  Iniciar Sesión
+                </Link>
+              </p>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
