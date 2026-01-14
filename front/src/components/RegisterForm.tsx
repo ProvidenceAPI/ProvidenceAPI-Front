@@ -1,11 +1,10 @@
 "use client";
+
+import { useAuth } from "src/contexts/AuthContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
-import axios from "axios";
 import Swal from "sweetalert2";
-import RegisterDto from "src/interfaces/RegisterDto";
-import RegisterFormState from "src/interfaces/RegisterFormState";
 
 interface FormErrors {
   name: string;
@@ -31,7 +30,7 @@ interface ValidationRules {
   birthdate: boolean;
 }
 
-const formInicialState: RegisterFormState = {
+const formInicialState = {
   name: "",
   lastname: "",
   email: "",
@@ -68,33 +67,29 @@ const initialValidations: ValidationRules = {
 };
 
 export default function RegisterForm() {
+  const { register, googleLogin, clearError } = useAuth(); // ✅ Agregamos googleLogin
   const router = useRouter();
-  const [registerForm, setRegisterForm] = useState<RegisterFormState>(formInicialState);
+  const [registerForm, setRegisterForm] = useState(formInicialState);
   const [errors, setErrors] = useState<FormErrors>(initialErrors);
   const [validations, setValidations] = useState<ValidationRules>(initialValidations);
   const [isLoading, setIsLoading] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
-  const [emailChecking, setEmailChecking] = useState(false);
-  const [emailExists, setEmailExists] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   
   // Refs para manejar timeouts
-  const emailCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Validaciones en tiempo real optimizadas con debounce
   useEffect(() => {
-    // Limpiar timeout anterior
     if (validationTimeoutRef.current) {
       clearTimeout(validationTimeoutRef.current);
     }
     
-    // Solo validar después de un pequeño delay (debounce)
     validationTimeoutRef.current = setTimeout(() => {
       validateRealTime();
-    }, 100); // 100ms de delay
+    }, 100);
     
     return () => {
       if (validationTimeoutRef.current) {
@@ -106,10 +101,10 @@ export default function RegisterForm() {
   const validateRealTime = useCallback(() => {
     const newValidations = { ...initialValidations };
     
-    // Validación de nombre (3-80 caracteres)
+    // Validación de nombre
     newValidations.name = registerForm.name.length >= 3 && registerForm.name.length <= 80;
     
-    // Validación de apellido (3-80 caracteres)
+    // Validación de apellido
     newValidations.lastname = registerForm.lastname.length >= 3 && registerForm.lastname.length <= 80;
     
     // Validación de email
@@ -118,7 +113,7 @@ export default function RegisterForm() {
       newValidations.email = emailRegex.test(registerForm.email);
     }
     
-    // Validación de contraseña (8-15 caracteres, con mayúsculas, minúsculas, números y caracteres especiales)
+    // Validación de contraseña
     if (registerForm.password) {
       const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/;
       newValidations.password = registerForm.password.length >= 8 && 
@@ -132,13 +127,13 @@ export default function RegisterForm() {
         registerForm.confirmPassword.length > 0;
     }
     
-    // Validación de teléfono (10-15 dígitos)
+    // Validación de teléfono
     if (registerForm.phone) {
       const phoneRegex = /^\d{10,15}$/;
       newValidations.phone = phoneRegex.test(registerForm.phone.replace(/\D/g, ''));
     }
     
-    // Validación de DNI (7-10 dígitos, positivo)
+    // Validación de DNI
     if (registerForm.dni) {
       const dniString = registerForm.dni.toString();
       newValidations.dni = registerForm.dni > 0 && 
@@ -147,10 +142,10 @@ export default function RegisterForm() {
         registerForm.dni <= 9999999999;
     }
     
-    // Validación de género (debe tener un valor seleccionado)
+    // Validación de género
     newValidations.genre = registerForm.genre !== "";
     
-    // Validación de fecha de nacimiento (mínimo 16 años)
+    // Validación de fecha de nacimiento
     if (registerForm.birthdate) {
       const birthDate = new Date(registerForm.birthdate);
       const today = new Date();
@@ -165,23 +160,18 @@ export default function RegisterForm() {
     const property = e.target.name;
     let value = e.target.value;
     
-    // Manejo especial para DNI
     if (property === "dni") {
       const numericValue = value.replace(/\D/g, '');
       value = numericValue;
-    }
-    // Manejo especial para teléfono (solo números)
-    else if (property === "phone") {
+    } else if (property === "phone") {
       value = value.replace(/\D/g, '');
     }
     
-    // Actualizar el estado inmediatamente
     setRegisterForm(prev => ({
       ...prev,
       [property]: property === "dni" ? (value ? parseInt(value, 10) : 0) : value,
     }));
     
-    // Limpiar error cuando el usuario empiece a escribir
     if (errors[property as keyof FormErrors]) {
       setErrors(prev => ({
         ...prev,
@@ -190,131 +180,74 @@ export default function RegisterForm() {
     }
   };
 
-  const handleEmailChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+  // ✅ FUNCIÓN CORREGIDA DE GOOGLE AUTH
+  const handleGoogleAuth = async () => {
+    setGoogleLoading(true);
+    clearError();
     
-    // Actualizar estado inmediatamente
-    setRegisterForm(prev => ({ ...prev, email: value }));
-    
-    // Limpiar error si existe
-    if (errors.email) {
-      setErrors(prev => ({ ...prev, email: "" }));
-    }
-    
-    // Resetear estado de verificación de email
-    setEmailExists(false);
-    
-    // Verificar email con debounce (solo si tiene @ y longitud mínima)
-    if (emailCheckTimeoutRef.current) {
-      clearTimeout(emailCheckTimeoutRef.current);
-    }
-    
-    emailCheckTimeoutRef.current = setTimeout(() => {
-      if (value.includes("@") && value.length > 3) {
-        checkEmailAvailability(value);
-      } else {
-        setEmailChecking(false);
-      }
-    }, 500); // 500ms después de que el usuario deje de escribir
-  }, [errors.email]);
-
-  const checkEmailAvailability = async (email: string) => {
-    // Solo verificar si el email parece válido
-    const emailRegex = /\S+@\S+\.\S+/;
-    if (!emailRegex.test(email)) {
-      setEmailChecking(false);
-      setEmailExists(false);
-      return;
-    }
-    
-    setEmailChecking(true);
     try {
-      // Aquí deberías hacer la llamada real a tu backend
-      // Ejemplo: const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/check-email/${email}`);
-      // setEmailExists(response.data.exists);
+      // Primero intentamos "despertar" el backend
+      console.log("🔄 Activando backend para Google OAuth...");
       
-      // Simulación - en producción, quitar esto y usar la llamada real
-      await new Promise(resolve => setTimeout(resolve, 300)); // Simular delay de red
-      
-      setEmailChecking(false);
-      // Simulando que el email no existe
-      setEmailExists(false);
-      
+      // Redirigir usando la función del contexto (si existe)
+      if (googleLogin) {
+        googleLogin();
+      } else {
+        // Fallback: redirección directa
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://providenceapi-back.onrender.com';
+        window.location.href = `${API_URL}/api/auth/google/login`;
+      }
     } catch (error) {
-      console.error("Error checking email:", error);
-      setEmailChecking(false);
-      setEmailExists(false);
+      console.error("Error en Google OAuth:", error);
+      setGoogleLoading(false);
+      await Swal.fire({
+        title: "Error",
+        text: "No se pudo iniciar el proceso con Google",
+        icon: "error",
+        confirmButtonText: "Reintentar",
+      });
     }
   };
-
-  // Limpieza de timeouts al desmontar el componente
-  useEffect(() => {
-    return () => {
-      if (emailCheckTimeoutRef.current) {
-        clearTimeout(emailCheckTimeoutRef.current);
-      }
-      if (validationTimeoutRef.current) {
-        clearTimeout(validationTimeoutRef.current);
-      }
-    };
-  }, []);
 
   const validateForm = () => {
     const newErrors = { ...initialErrors };
     let isValid = true;
     
-    // Validación de nombre (3-80 caracteres)
     if (!registerForm.name.trim()) {
       newErrors.name = "Falta el nombre";
       isValid = false;
     } else if (registerForm.name.length < 3) {
       newErrors.name = "El nombre debe tener al menos 3 caracteres";
       isValid = false;
-    } else if (registerForm.name.length > 80) {
-      newErrors.name = "El nombre no debe exceder 80 caracteres";
-      isValid = false;
     }
     
-    // Validación de apellido (3-80 caracteres)
     if (!registerForm.lastname.trim()) {
       newErrors.lastname = "Falta el apellido";
       isValid = false;
     } else if (registerForm.lastname.length < 3) {
       newErrors.lastname = "El apellido debe tener al menos 3 caracteres";
       isValid = false;
-    } else if (registerForm.lastname.length > 80) {
-      newErrors.lastname = "El apellido no debe exceder 80 caracteres";
-      isValid = false;
     }
     
-    // Validación de email
     if (!registerForm.email) {
       newErrors.email = "Falta el correo electrónico";
       isValid = false;
     } else if (!/\S+@\S+\.\S+/.test(registerForm.email)) {
       newErrors.email = "El correo electrónico no es válido";
       isValid = false;
-    } else if (emailExists) {
-      newErrors.email = "Este correo ya está registrado";
-      isValid = false;
     }
     
-    // Validación de contraseña (8-15 caracteres, con mayúsculas, minúsculas, números y caracteres especiales)
     if (!registerForm.password) {
       newErrors.password = "Falta la contraseña";
       isValid = false;
     } else if (registerForm.password.length < 8) {
       newErrors.password = "La contraseña debe tener al menos 8 caracteres";
       isValid = false;
-    } else if (registerForm.password.length > 15) {
-      newErrors.password = "La contraseña no debe exceder 15 caracteres";
-      isValid = false;
     } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/.test(registerForm.password)) {
       newErrors.password = "Debe contener mayúsculas, minúsculas, números y caracteres especiales (!@#$%^&*)";
       isValid = false;
     }
     
-    // Validación de confirmación de contraseña
     if (!registerForm.confirmPassword) {
       newErrors.confirmPassword = "Confirma tu contraseña";
       isValid = false;
@@ -323,7 +256,6 @@ export default function RegisterForm() {
       isValid = false;
     }
     
-    // Validación de teléfono (10-15 dígitos)
     if (!registerForm.phone.trim()) {
       newErrors.phone = "Falta el teléfono";
       isValid = false;
@@ -332,7 +264,6 @@ export default function RegisterForm() {
       isValid = false;
     }
     
-    // Validación de DNI (7-10 dígitos, positivo)
     if (!registerForm.dni || registerForm.dni === 0) {
       newErrors.dni = "Falta el DNI";
       isValid = false;
@@ -341,22 +272,14 @@ export default function RegisterForm() {
       if (!/^\d{7,10}$/.test(dniString)) {
         newErrors.dni = "El DNI debe tener entre 7 y 10 dígitos";
         isValid = false;
-      } else if (registerForm.dni < 1000000) {
-        newErrors.dni = "El DNI debe ser mayor a 1,000,000";
-        isValid = false;
-      } else if (registerForm.dni > 9999999999) {
-        newErrors.dni = "El DNI debe ser menor a 9,999,999,999";
-        isValid = false;
       }
     }
     
-    // Validación de género
     if (!registerForm.genre) {
       newErrors.genre = "Selecciona tu género";
       isValid = false;
     }
     
-    // Validación de fecha de nacimiento (mínimo 16 años)
     if (!registerForm.birthdate) {
       newErrors.birthdate = "Falta la fecha de nacimiento";
       isValid = false;
@@ -370,8 +293,8 @@ export default function RegisterForm() {
       }
     }
     
-    // Validación de términos y condiciones
     if (!acceptTerms) {
+      // No mostramos error aquí, solo validamos
       isValid = false;
     }
     
@@ -379,25 +302,9 @@ export default function RegisterForm() {
     return isValid;
   };
 
-  const postRegister = async (registerDto: RegisterDto) => {
-    return await axios.post(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/auth/signup`,
-      registerDto
-    );
-  };
-
-  const handleGoogleAuth = () => {
-    setGoogleLoading(true);
-    // Redirigir al endpoint de Google OAuth del backend
-    const googleAuthUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/auth/google/login`;
-    // Guardar la página actual para redirigir después del login
-    localStorage.setItem('redirectAfterLogin', window.location.pathname);
-    // Redirigir al backend para iniciar el flujo OAuth
-    window.location.href = googleAuthUrl;
-  };
-
   const submitHandler = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
     if (!validateForm()) {
       if (!acceptTerms) {
         await Swal.fire({
@@ -411,42 +318,61 @@ export default function RegisterForm() {
     }
     
     setIsLoading(true);
+    clearError();
+    
     try {
-      const registerDto: RegisterDto = {
+      const registerDto = {
         name: registerForm.name,
         lastname: registerForm.lastname,
         email: registerForm.email,
         password: registerForm.password,
         phone: registerForm.phone,
         dni: registerForm.dni,
-        confirmPassword: registerForm.confirmPassword,
         genre: registerForm.genre,
         birthdate: registerForm.birthdate,
       };
       
-      await postRegister(registerDto);
-      setRegisterForm(formInicialState);
-      setAcceptTerms(false);
+      const result = await register({
+  ...registerDto,
+  confirmPassword: registerForm.confirmPassword
+});
       
-      await Swal.fire({
-        title: "¡Usuario creado con éxito!",
-        text: "Te hemos enviado un email de confirmación. Por favor, revisa tu bandeja de entrada.",
-        icon: "success",
-        confirmButtonText: "Ir al Login",
-      });
-      
-      router.push("/login");
-    } catch (error: any) {
-      let errorMessage = "Error al crear el usuario";
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-        if (errorMessage.includes("email") || errorMessage.includes("correo")) {
+      if (result.success) {
+        setRegisterForm(formInicialState);
+        setAcceptTerms(false);
+        
+        await Swal.fire({
+          title: "¡Usuario creado con éxito!",
+          text: result.message || "Te hemos enviado un email de confirmación.",
+          icon: "success",
+          confirmButtonText: "Ir al Login",
+        });
+        
+        router.push("/login");
+      } else {
+        let errorMessage = result.message || "Error al crear el usuario";
+        
+        // Manejo específico de errores de email duplicado
+        if (errorMessage.toLowerCase().includes("email") || errorMessage.toLowerCase().includes("ya existe")) {
           setErrors(prev => ({
             ...prev,
             email: "Este correo ya está registrado",
           }));
-          setEmailExists(true);
         }
+        
+        await Swal.fire({
+          title: "Error",
+          text: errorMessage,
+          icon: "error",
+          confirmButtonText: "Reintentar",
+        });
+      }
+    } catch (error: any) {
+      console.error("Register error:", error);
+      
+      let errorMessage = "Error al crear el usuario";
+      if (error.message) {
+        errorMessage = error.message;
       }
       
       await Swal.fire({
@@ -477,13 +403,16 @@ export default function RegisterForm() {
     return { text: "Sin contraseña", color: "text-gray-400" };
   };
 
+  // Loading combinado
+  const isLoadingAny = isLoading || googleLoading;
+
   return (
     <div className="min-h-screen flex">
       {/* Left side - Black section */}
       <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-center px-12 py-20">
         <div className="text-2xl font-bold tracking-[0.2em]">
           <Link href="/" className="flex flex-col hover:no-underline">
-            <img src="/logo_1.png" alt="Providence Fitness Logo" className="h-8 w-auto" />
+            <img src="/LO.png" alt="Providence Fitness Logo" className="h-8 w-auto" />
           </Link>
         </div>
         <h2 className="text-5xl font-bold leading-tight mb-6">
@@ -533,7 +462,7 @@ export default function RegisterForm() {
           </div>
 
           <form onSubmit={submitHandler} className="space-y-6" noValidate>
-            {/* Nombre y Apellido en una fila */}
+            {/* Nombre y Apellido */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Nombre */}
               <div>
@@ -551,18 +480,16 @@ export default function RegisterForm() {
                     value={registerForm.name}
                     onChange={changeHandler}
                     placeholder="Nombre"
-                    disabled={isLoading}
+                    disabled={isLoadingAny}
                   />
                 </div>
-                {errors.name ? (
+                {errors.name && (
                   <p className="mt-2 text-sm text-red-600 flex items-center">
                     <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
                     {errors.name}
                   </p>
-                ) : registerForm.name.length > 0 && !validations.name && (
-                  <p className="mt-2 text-sm text-yellow-600">Debe tener entre 3 y 80 caracteres</p>
                 )}
               </div>
 
@@ -582,18 +509,16 @@ export default function RegisterForm() {
                     value={registerForm.lastname}
                     onChange={changeHandler}
                     placeholder="Apellido"
-                    disabled={isLoading}
+                    disabled={isLoadingAny}
                   />
                 </div>
-                {errors.lastname ? (
+                {errors.lastname && (
                   <p className="mt-2 text-sm text-red-600 flex items-center">
                     <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
                     {errors.lastname}
                   </p>
-                ) : registerForm.lastname.length > 0 && !validations.lastname && (
-                  <p className="mt-2 text-sm text-yellow-600">Debe tener entre 3 y 80 caracteres</p>
                 )}
               </div>
             </div>
@@ -602,42 +527,32 @@ export default function RegisterForm() {
             <div>
               <label className={`block text-sm font-semibold mb-2 ${errors.email ? "text-red-600" : "text-black"}`}>
                 CORREO ELECTRÓNICO
-                {emailChecking && (
-                  <span className="ml-2 text-xs text-blue-500">(verificando...)</span>
-                )}
               </label>
               <div className="relative">
                 <span className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${errors.email ? "text-red-500" : validations.email ? "text-green-500" : "text-gray-400"}`}>
                   {validations.email ? "✓" : "✉️"}
                 </span>
                 <input
-                  className={`w-full pl-12 pr-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DC2626] transition ${errors.email ? "border-red-500 bg-red-50 text-red-900 placeholder-red-300" : emailExists ? "border-yellow-500 bg-yellow-50" : validations.email ? "border-green-500 bg-green-50 text-gray-900 focus:bg-white" : "border-gray-300 bg-gray-50 text-gray-900 focus:bg-white"}`}
+                  className={`w-full pl-12 pr-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DC2626] transition ${errors.email ? "border-red-500 bg-red-50 text-red-900 placeholder-red-300" : validations.email ? "border-green-500 bg-green-50 text-gray-900 focus:bg-white" : "border-gray-300 bg-gray-50 text-gray-900 focus:bg-white"}`}
                   type="email"
                   name="email"
                   value={registerForm.email}
-                  onChange={handleEmailChange}
+                  onChange={changeHandler}
                   placeholder="ejemplo@correo.com"
-                  disabled={isLoading || emailChecking}
+                  disabled={isLoadingAny}
                 />
-                {emailExists && !errors.email && (
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <span className="text-yellow-600 text-sm">⚠️ Email registrado</span>
-                  </div>
-                )}
               </div>
-              {errors.email ? (
+              {errors.email && (
                 <p className="mt-2 text-sm text-red-600 flex items-center">
                   <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                   </svg>
                   {errors.email}
                 </p>
-              ) : registerForm.email.length > 0 && !validations.email && (
-                <p className="mt-2 text-sm text-yellow-600">Introduce un email válido (ejemplo@correo.com)</p>
               )}
             </div>
 
-            {/* DNI y Teléfono en una fila */}
+            {/* DNI y Teléfono */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* DNI */}
               <div>
@@ -656,20 +571,17 @@ export default function RegisterForm() {
                     onChange={changeHandler}
                     placeholder="123456789"
                     inputMode="numeric"
-                    pattern="[0-9]*"
                     maxLength={10}
-                    disabled={isLoading}
+                    disabled={isLoadingAny}
                   />
                 </div>
-                {errors.dni ? (
+                {errors.dni && (
                   <p className="mt-2 text-sm text-red-600 flex items-center">
                     <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
                     {errors.dni}
                   </p>
-                ) : registerForm.dni > 0 && !validations.dni && (
-                  <p className="mt-2 text-sm text-yellow-600">Debe tener entre 7 y 10 dígitos</p>
                 )}
               </div>
 
@@ -690,25 +602,22 @@ export default function RegisterForm() {
                     onChange={changeHandler}
                     placeholder="3157615003"
                     inputMode="numeric"
-                    pattern="[0-9]*"
                     maxLength={15}
-                    disabled={isLoading}
+                    disabled={isLoadingAny}
                   />
                 </div>
-                {errors.phone ? (
+                {errors.phone && (
                   <p className="mt-2 text-sm text-red-600 flex items-center">
                     <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
                     {errors.phone}
                   </p>
-                ) : registerForm.phone.length > 0 && !validations.phone && (
-                  <p className="mt-2 text-sm text-yellow-600">Debe tener entre 10 y 15 dígitos</p>
                 )}
               </div>
             </div>
 
-            {/* Género y Fecha de Nacimiento en una fila */}
+            {/* Género y Fecha de Nacimiento */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Género */}
               <div>
@@ -724,7 +633,7 @@ export default function RegisterForm() {
                     name="genre"
                     value={registerForm.genre}
                     onChange={changeHandler}
-                    disabled={isLoading}
+                    disabled={isLoadingAny}
                   >
                     <option value="">Seleccionar género</option>
                     <option value="Male">Masculino</option>
@@ -764,23 +673,21 @@ export default function RegisterForm() {
                     value={registerForm.birthdate}
                     onChange={changeHandler}
                     max={new Date().toISOString().split('T')[0]}
-                    disabled={isLoading}
+                    disabled={isLoadingAny}
                   />
                 </div>
-                {errors.birthdate ? (
+                {errors.birthdate && (
                   <p className="mt-2 text-sm text-red-600 flex items-center">
                     <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
                     {errors.birthdate}
                   </p>
-                ) : registerForm.birthdate && !validations.birthdate && (
-                  <p className="mt-2 text-sm text-yellow-600">Debes tener al menos 16 años</p>
                 )}
               </div>
             </div>
 
-            {/* Contraseña y Confirmar Contraseña en una fila */}
+            {/* Contraseña y Confirmar Contraseña */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Contraseña */}
               <div>
@@ -800,12 +707,13 @@ export default function RegisterForm() {
                     placeholder="Contraseña123*"
                     minLength={8}
                     maxLength={15}
-                    disabled={isLoading}
+                    disabled={isLoadingAny}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    disabled={isLoadingAny}
                   >
                     {showPassword ? (
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -827,34 +735,18 @@ export default function RegisterForm() {
                     {errors.password}
                   </p>
                 ) : (
-                  <div className="mt-2 space-y-1">
-                    {registerForm.password.length > 0 && (
-                      <>
-                        <div className="flex items-center justify-between">
-                          <span className={`text-sm ${getPasswordStrength(registerForm.password).color}`}>
-                            Seguridad: {getPasswordStrength(registerForm.password).text}
-                          </span>
-                          <span className={`text-sm ${registerForm.password.length < 8 ? 'text-red-500' : registerForm.password.length > 15 ? 'text-red-500' : 'text-green-600'}`}>
-                            {registerForm.password.length}/15
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className={`flex items-center ${/[a-z]/.test(registerForm.password) ? 'text-green-600' : 'text-gray-400'}`}>
-                            <span className="mr-1">{/[a-z]/.test(registerForm.password) ? '✓' : '○'}</span> Minúscula
-                          </div>
-                          <div className={`flex items-center ${/[A-Z]/.test(registerForm.password) ? 'text-green-600' : 'text-gray-400'}`}>
-                            <span className="mr-1">{/[A-Z]/.test(registerForm.password) ? '✓' : '○'}</span> Mayúscula
-                          </div>
-                          <div className={`flex items-center ${/\d/.test(registerForm.password) ? 'text-green-600' : 'text-gray-400'}`}>
-                            <span className="mr-1">{/\d/.test(registerForm.password) ? '✓' : '○'}</span> Número
-                          </div>
-                          <div className={`flex items-center ${/[!@#$%^&*]/.test(registerForm.password) ? 'text-green-600' : 'text-gray-400'}`}>
-                            <span className="mr-1">{/[!@#$%^&*]/.test(registerForm.password) ? '✓' : '○'}</span> Especial
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
+                  registerForm.password.length > 0 && (
+                    <div className="mt-2">
+                      <div className="flex items-center justify-between">
+                        <span className={`text-sm ${getPasswordStrength(registerForm.password).color}`}>
+                          {getPasswordStrength(registerForm.password).text}
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          {registerForm.password.length}/15
+                        </span>
+                      </div>
+                    </div>
+                  )
                 )}
               </div>
 
@@ -874,12 +766,13 @@ export default function RegisterForm() {
                     value={registerForm.confirmPassword}
                     onChange={changeHandler}
                     placeholder="Repite tu contraseña"
-                    disabled={isLoading}
+                    disabled={isLoadingAny}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    disabled={isLoadingAny}
                   >
                     {showConfirmPassword ? (
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -893,15 +786,13 @@ export default function RegisterForm() {
                     )}
                   </button>
                 </div>
-                {errors.confirmPassword ? (
+                {errors.confirmPassword && (
                   <p className="mt-2 text-sm text-red-600 flex items-center">
                     <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
                     {errors.confirmPassword}
                   </p>
-                ) : registerForm.confirmPassword.length > 0 && !validations.confirmPassword && (
-                  <p className="mt-2 text-sm text-yellow-600">Las contraseñas no coinciden</p>
                 )}
               </div>
             </div>
@@ -914,7 +805,7 @@ export default function RegisterForm() {
                 checked={acceptTerms}
                 onChange={(e) => setAcceptTerms(e.target.checked)}
                 className={`mt-1 w-4 h-4 rounded border-2 cursor-pointer transition ${acceptTerms ? "border-green-500 bg-green-500" : "border-gray-300"}`}
-                disabled={isLoading}
+                disabled={isLoadingAny}
               />
               <label htmlFor="terms" className="text-sm text-gray-700">
                 Acepto los términos y condiciones y la política de privacidad
@@ -924,8 +815,8 @@ export default function RegisterForm() {
             {/* Submit Button */}
             <button
               type="submit"
-              className={`w-full py-3 rounded-lg font-bold text-white text-lg transition-all uppercase tracking-wider ${isLoading || !acceptTerms ? "bg-gray-400 cursor-not-allowed" : "bg-[#DC2626] hover:bg-[#B01C1C]"}`}
-              disabled={isLoading || !acceptTerms}
+              className={`w-full py-3 rounded-lg font-bold text-white text-lg transition-all uppercase tracking-wider ${isLoadingAny || !acceptTerms ? "bg-gray-400 cursor-not-allowed" : "bg-[#DC2626] hover:bg-[#B01C1C]"}`}
+              disabled={isLoadingAny || !acceptTerms}
             >
               {isLoading ? (
                 <span className="flex items-center justify-center">
@@ -958,7 +849,7 @@ export default function RegisterForm() {
                 type="button"
                 onClick={handleGoogleAuth}
                 className="flex items-center justify-center w-full py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={googleLoading || isLoading}
+                disabled={isLoadingAny}
               >
                 {googleLoading ? (
                   <span className="flex items-center justify-center">
