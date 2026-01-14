@@ -1,6 +1,6 @@
 "use client";
 
-import { useAppContext } from "src/contexts/AuthContext";
+import { useAuth } from "src/contexts/AuthContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -17,13 +17,12 @@ const formInicialState: LoginFormState = {
 };
 
 export default function LoginForm() {
-  const { login } = useAppContext();
+  const { login, googleLogin, clearError, loading: authLoading } = useAuth(); // ✅ Ahora incluye googleLogin
   const router = useRouter();
   const [loginForm, setLoginForm] = useState<LoginFormState>(formInicialState);
   const [errors, setErrors] = useState({ email: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // Nuevo estado para mostrar/ocultar contraseña
+  const [showPassword, setShowPassword] = useState(false);
 
   const changeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     const property = e.target.name;
@@ -63,18 +62,16 @@ export default function LoginForm() {
     return isValid;
   };
 
+  // ✅ Función de Google OAuth simplificada
   const handleGoogleAuth = () => {
-    setGoogleLoading(true);
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-    // ✅ CON prefijo /api
-    const googleAuthUrl = `${API_URL}/api/auth/google/login`;
-    console.log("🔗 Redirigiendo a Google OAuth:", googleAuthUrl);
-    window.location.href = googleAuthUrl;
+    clearError();
+    googleLogin(); // Usa la función del AuthContext
   };
 
   const submitHandler = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
+    clearError();
 
     if (!validateForm()) {
       setIsLoading(false);
@@ -116,16 +113,20 @@ export default function LoginForm() {
     }
   };
 
+  // Loading combinado
+  const isLoadingAny = isLoading || authLoading;
+
   return (
     <div className="min-h-screen flex">
       {/* Left side - Black section */}
       <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-center px-12 py-20">
         <div className="text-2xl font-bold tracking-[0.2em]">
           <Link href="/" className="flex flex-col hover:no-underline">
-            <img src="/logo.png"
+            <img 
+              src="/logo.png"
               alt="Providence Fitness Logo"
-              className="h-8 w-auto">
-              </img>
+              className="h-8 w-auto"
+            />
           </Link>
         </div>
         <h2 className="text-5xl font-bold leading-tight mb-6">
@@ -181,7 +182,7 @@ export default function LoginForm() {
                   value={loginForm.email}
                   onChange={changeHandler}
                   placeholder="tu@email.com"
-                  disabled={isLoading}
+                  disabled={isLoadingAny}
                 />
               </div>
               {errors.email && (
@@ -230,14 +231,13 @@ export default function LoginForm() {
                   value={loginForm.password}
                   onChange={changeHandler}
                   placeholder="•••••••"
-                  disabled={isLoading}
+                  disabled={isLoadingAny}
                 />
-                {/* Botón para mostrar/ocultar contraseña */}
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-                  disabled={isLoading}
+                  disabled={isLoadingAny}
                   aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                 >
                   {showPassword ? (
@@ -299,13 +299,13 @@ export default function LoginForm() {
             <button
               type="submit"
               className={`w-full py-3 rounded-lg font-bold text-white text-lg transition-all uppercase tracking-wider ${
-                isLoading
+                isLoadingAny
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-[#DC2626] hover:bg-[#B01C1C]"
               }`}
-              disabled={isLoading}
+              disabled={isLoadingAny}
             >
-              {isLoading ? (
+              {isLoadingAny ? (
                 <span className="flex items-center justify-center">
                   <svg
                     className="animate-spin h-5 w-5 mr-2"
@@ -352,9 +352,9 @@ export default function LoginForm() {
                 type="button"
                 onClick={handleGoogleAuth}
                 className="flex items-center justify-center w-full py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={googleLoading || isLoading}
+                disabled={isLoadingAny}
               >
-                {googleLoading ? (
+                {isLoadingAny ? (
                   <span className="flex items-center justify-center">
                     <svg
                       className="animate-spin h-5 w-5 mr-2"

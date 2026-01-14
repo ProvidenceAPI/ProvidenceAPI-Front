@@ -1,6 +1,6 @@
 "use client";
 
-import { useAppContext } from "src/contexts/AuthContext";
+import { useAuth } from "src/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -32,7 +32,7 @@ interface Actividad {
 }
 
 export default function MisReservasPage() {
-  const { user, isAuthenticated, loading } = useAppContext();
+  const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [actividades, setActividades] = useState<Actividad[]>([]);
