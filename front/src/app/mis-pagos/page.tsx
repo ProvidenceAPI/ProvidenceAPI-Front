@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "src/contexts/AuthContext";
+import { useAppContext } from "src/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -30,7 +30,7 @@ interface ProductoPago {
 }
 
 export default function MisPagosPage() {
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, loading } = useAppContext();
   const router = useRouter();
   const [pagos, setPagos] = useState<Pago[]>([]);
   const [productos, setProductos] = useState<ProductoPago[]>([]);
