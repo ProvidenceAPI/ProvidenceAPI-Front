@@ -79,19 +79,17 @@ export default function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  
-  // Refs para manejar timeouts
+
   const emailCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Validaciones en tiempo real optimizadas con debounce
+
   useEffect(() => {
     // Limpiar timeout anterior
     if (validationTimeoutRef.current) {
       clearTimeout(validationTimeoutRef.current);
     }
-    
-    // Solo validar después de un pequeño delay (debounce)
+
     validationTimeoutRef.current = setTimeout(() => {
       validateRealTime();
     }, 100); // 100ms de delay
@@ -105,40 +103,33 @@ export default function RegisterForm() {
 
   const validateRealTime = useCallback(() => {
     const newValidations = { ...initialValidations };
-    
-    // Validación de nombre (3-80 caracteres)
+
     newValidations.name = registerForm.name.length >= 3 && registerForm.name.length <= 80;
-    
-    // Validación de apellido (3-80 caracteres)
+
     newValidations.lastname = registerForm.lastname.length >= 3 && registerForm.lastname.length <= 80;
-    
-    // Validación de email
+
     if (registerForm.email) {
       const emailRegex = /\S+@\S+\.\S+/;
       newValidations.email = emailRegex.test(registerForm.email);
     }
-    
-    // Validación de contraseña (8-15 caracteres, con mayúsculas, minúsculas, números y caracteres especiales)
+
     if (registerForm.password) {
       const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/;
       newValidations.password = registerForm.password.length >= 8 && 
         registerForm.password.length <= 15 && 
         passwordRegex.test(registerForm.password);
     }
-    
-    // Validación de confirmación de contraseña
+
     if (registerForm.confirmPassword) {
       newValidations.confirmPassword = registerForm.password === registerForm.confirmPassword && 
         registerForm.confirmPassword.length > 0;
     }
-    
-    // Validación de teléfono (10-15 dígitos)
+
     if (registerForm.phone) {
       const phoneRegex = /^\d{10,15}$/;
       newValidations.phone = phoneRegex.test(registerForm.phone.replace(/\D/g, ''));
     }
-    
-    // Validación de DNI (7-10 dígitos, positivo)
+
     if (registerForm.dni) {
       const dniString = registerForm.dni.toString();
       newValidations.dni = registerForm.dni > 0 && 
@@ -146,11 +137,9 @@ export default function RegisterForm() {
         registerForm.dni >= 1000000 && 
         registerForm.dni <= 9999999999;
     }
-    
-    // Validación de género (debe tener un valor seleccionado)
+
     newValidations.genre = registerForm.genre !== "";
-    
-    // Validación de fecha de nacimiento (mínimo 16 años)
+
     if (registerForm.birthdate) {
       const birthDate = new Date(registerForm.birthdate);
       const today = new Date();
@@ -164,24 +153,20 @@ export default function RegisterForm() {
   const changeHandler = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const property = e.target.name;
     let value = e.target.value;
-    
-    // Manejo especial para DNI
+
     if (property === "dni") {
       const numericValue = value.replace(/\D/g, '');
       value = numericValue;
     }
-    // Manejo especial para teléfono (solo números)
     else if (property === "phone") {
       value = value.replace(/\D/g, '');
     }
-    
-    // Actualizar el estado inmediatamente
+
     setRegisterForm(prev => ({
       ...prev,
       [property]: property === "dni" ? (value ? parseInt(value, 10) : 0) : value,
     }));
-    
-    // Limpiar error cuando el usuario empiece a escribir
+
     if (errors[property as keyof FormErrors]) {
       setErrors(prev => ({
         ...prev,
@@ -192,19 +177,15 @@ export default function RegisterForm() {
 
   const handleEmailChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    
-    // Actualizar estado inmediatamente
+
     setRegisterForm(prev => ({ ...prev, email: value }));
-    
-    // Limpiar error si existe
+
     if (errors.email) {
       setErrors(prev => ({ ...prev, email: "" }));
     }
-    
-    // Resetear estado de verificación de email
+
     setEmailExists(false);
-    
-    // Verificar email con debounce (solo si tiene @ y longitud mínima)
+
     if (emailCheckTimeoutRef.current) {
       clearTimeout(emailCheckTimeoutRef.current);
     }
@@ -215,11 +196,10 @@ export default function RegisterForm() {
       } else {
         setEmailChecking(false);
       }
-    }, 500); // 500ms después de que el usuario deje de escribir
+    }, 500);
   }, [errors.email]);
 
   const checkEmailAvailability = async (email: string) => {
-    // Solo verificar si el email parece válido
     const emailRegex = /\S+@\S+\.\S+/;
     if (!emailRegex.test(email)) {
       setEmailChecking(false);
@@ -234,10 +214,9 @@ export default function RegisterForm() {
       // setEmailExists(response.data.exists);
       
       // Simulación - en producción, quitar esto y usar la llamada real
-      await new Promise(resolve => setTimeout(resolve, 300)); // Simular delay de red
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       setEmailChecking(false);
-      // Simulando que el email no existe
       setEmailExists(false);
       
     } catch (error) {
@@ -247,7 +226,6 @@ export default function RegisterForm() {
     }
   };
 
-  // Limpieza de timeouts al desmontar el componente
   useEffect(() => {
     return () => {
       if (emailCheckTimeoutRef.current) {
@@ -262,8 +240,7 @@ export default function RegisterForm() {
   const validateForm = () => {
     const newErrors = { ...initialErrors };
     let isValid = true;
-    
-    // Validación de nombre (3-80 caracteres)
+
     if (!registerForm.name.trim()) {
       newErrors.name = "Falta el nombre";
       isValid = false;
@@ -274,8 +251,7 @@ export default function RegisterForm() {
       newErrors.name = "El nombre no debe exceder 80 caracteres";
       isValid = false;
     }
-    
-    // Validación de apellido (3-80 caracteres)
+
     if (!registerForm.lastname.trim()) {
       newErrors.lastname = "Falta el apellido";
       isValid = false;
@@ -286,8 +262,7 @@ export default function RegisterForm() {
       newErrors.lastname = "El apellido no debe exceder 80 caracteres";
       isValid = false;
     }
-    
-    // Validación de email
+
     if (!registerForm.email) {
       newErrors.email = "Falta el correo electrónico";
       isValid = false;
@@ -298,8 +273,7 @@ export default function RegisterForm() {
       newErrors.email = "Este correo ya está registrado";
       isValid = false;
     }
-    
-    // Validación de contraseña (8-15 caracteres, con mayúsculas, minúsculas, números y caracteres especiales)
+
     if (!registerForm.password) {
       newErrors.password = "Falta la contraseña";
       isValid = false;
@@ -313,8 +287,7 @@ export default function RegisterForm() {
       newErrors.password = "Debe contener mayúsculas, minúsculas, números y caracteres especiales (!@#$%^&*)";
       isValid = false;
     }
-    
-    // Validación de confirmación de contraseña
+
     if (!registerForm.confirmPassword) {
       newErrors.confirmPassword = "Confirma tu contraseña";
       isValid = false;
@@ -322,8 +295,7 @@ export default function RegisterForm() {
       newErrors.confirmPassword = "Las contraseñas no coinciden";
       isValid = false;
     }
-    
-    // Validación de teléfono (10-15 dígitos)
+
     if (!registerForm.phone.trim()) {
       newErrors.phone = "Falta el teléfono";
       isValid = false;
@@ -331,8 +303,7 @@ export default function RegisterForm() {
       newErrors.phone = "El teléfono debe tener entre 10 y 15 dígitos";
       isValid = false;
     }
-    
-    // Validación de DNI (7-10 dígitos, positivo)
+
     if (!registerForm.dni || registerForm.dni === 0) {
       newErrors.dni = "Falta el DNI";
       isValid = false;
@@ -349,14 +320,12 @@ export default function RegisterForm() {
         isValid = false;
       }
     }
-    
-    // Validación de género
+
     if (!registerForm.genre) {
       newErrors.genre = "Selecciona tu género";
       isValid = false;
     }
-    
-    // Validación de fecha de nacimiento (mínimo 16 años)
+
     if (!registerForm.birthdate) {
       newErrors.birthdate = "Falta la fecha de nacimiento";
       isValid = false;
@@ -369,8 +338,7 @@ export default function RegisterForm() {
         isValid = false;
       }
     }
-    
-    // Validación de términos y condiciones
+
     if (!acceptTerms) {
       isValid = false;
     }
@@ -388,11 +356,8 @@ export default function RegisterForm() {
 
   const handleGoogleAuth = () => {
     setGoogleLoading(true);
-    // Redirigir al endpoint de Google OAuth del backend
     const googleAuthUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/auth/google/login`;
-    // Guardar la página actual para redirigir después del login
     localStorage.setItem('redirectAfterLogin', window.location.pathname);
-    // Redirigir al backend para iniciar el flujo OAuth
     window.location.href = googleAuthUrl;
   };
 

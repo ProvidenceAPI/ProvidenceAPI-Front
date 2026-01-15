@@ -2,59 +2,78 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "src/contexts/AuthContext";
 import axios from "axios";
-import { useAppContext } from "src/contexts/AuthContext";
 
 export default function OAuthCallbackPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { setLogin } = useAuth();
   const hasProcessed = useRef(false);
-  const { setLogin } = useAppContext();
 
   useEffect(() => {
+  
     if (hasProcessed.current) return;
     hasProcessed.current = true;
 
-    const token = searchParams.get("token");
+    const processGoogleCallback = async () => {
 
-    if (!token) {
-      console.error("❌ No se recibió token");
-      router.push("/login?error=no-token");
-      return;
-    }
+      const token = searchParams.get("token");
+      const error = searchParams.get("error");
+
+      if (error) {
+        console.error("❌ Error de Google:", error);
+        router.push(`/login?error=google-auth-failed&message=${encodeURIComponent(error)}`);
+        return;
+      }
+
+      if (!token) {
+        console.error("❌ No se recibió token de autorización");
+        router.push("/login?error=no-token");
+        return;
+      }
 
     const handleCallback = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+        console.log("✅ Token recibido, obteniendo usuario...");
 
-        const response = await axios.get(`${API_URL}/api/auth/me`, {
+
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+        
+        const response = await axios.get(`${API_URL}/auth/me`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
         if (!response.data) {
-          throw new Error("No se pudo obtener el usuario");
+          throw new Error("No se pudo obtener datos del usuario");
         }
 
         console.log("✅ Usuario obtenido:", response.data.email);
+
 
         if (setLogin) {
           setLogin(response.data, token);
         }
 
-        await new Promise(resolve => setTimeout(resolve, 100));
 
-        router.push("/dashboard");
-        router.refresh();
-        
+        setTimeout(() => {
+          router.push("/dashboard");
+          router.refresh();
+        }, 500);
+
       } catch (err: any) {
-        console.error("❌ Error:", err.response?.data || err.message);
+        console.error("❌ Error procesando Google callback:", err);
+        const errorMessage = err.response?.data?.message || err.message || "Error desconocido";
+        
+
         localStorage.removeItem("providence_token");
         localStorage.removeItem("providence_user");
-        router.push("/login?error=oauth-failed");
+        
+        router.push(`/login?error=oauth-failed&message=${encodeURIComponent(errorMessage)}`);
       }
     };
-    
-    handleCallback();
+
+    processGoogleCallback();
   }, [router, searchParams, setLogin]);
 
   return (
@@ -65,7 +84,10 @@ export default function OAuthCallbackPage() {
           Iniciando sesión con Google...
         </h2>
         <p className="text-gray-600 mb-4">
-          Por favor espera mientras completamos tu autenticación.
+          Estamos finalizando tu autenticación, por favor espera.
+        </p>
+        <p className="text-sm text-gray-500">
+          Esto puede tomar unos segundos
         </p>
       </div>
     </div>

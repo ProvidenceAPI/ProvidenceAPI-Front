@@ -17,13 +17,13 @@ const formInicialState: LoginFormState = {
 };
 
 export default function LoginForm() {
-  const { login } = useAppContext();
+  const { login } = useAuth();
   const router = useRouter();
   const [loginForm, setLoginForm] = useState<LoginFormState>(formInicialState);
   const [errors, setErrors] = useState({ email: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // Nuevo estado para mostrar/ocultar contraseña
+  const [showPassword, setShowPassword] = useState(false);
 
   const changeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     const property = e.target.name;
@@ -66,7 +66,6 @@ export default function LoginForm() {
   const handleGoogleAuth = () => {
     setGoogleLoading(true);
     const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-    // ✅ CON prefijo /api
     const googleAuthUrl = `${API_URL}/api/auth/google/login`;
     console.log("🔗 Redirigiendo a Google OAuth:", googleAuthUrl);
     window.location.href = googleAuthUrl;
