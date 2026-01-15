@@ -1,9 +1,8 @@
 "use client";
 
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import axios from 'axios';
 
- export type User = {
+type User = {
   id: string;
   name: string;
   email: string;
@@ -17,28 +16,31 @@ import axios from 'axios';
   dni?: number;
 };
 
+type AuthResponse = {
+  success: boolean;
+  message: string;
+  data?: any;
+};
+
 type AuthContextType = {
   user: User | null;
   loading: boolean;
   error: string | null;
-  login: (email: string, password: string) => Promise<{ success: boolean; message: string; mode?: string }>;
-  register: (userData: any) => Promise<{ success: boolean; message: string; mode?: string }>;
+  login: (email: string, password: string) => Promise<AuthResponse>;
+  register: (userData: any, confirmPassword?: string) => Promise<AuthResponse>;
   logout: () => void;
   updateUser: (updatedData: Partial<User>) => void;
+  updateProfile: (userData: Partial<User>) => Promise<AuthResponse>;
+  uploadProfileImage: (file: File) => Promise<AuthResponse>;
   isAuthenticated: boolean;
-  mode: 'real';
-  setLogin?: (user: User, token: string) => void;
+  clearError: () => void;
+  setLogin: (userData: User, userToken: string) => void;
+  googleLogin: () => void;
+  handleGoogleCallback: (code: string) => Promise<AuthResponse>;
+  checkAuth: () => boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const useAppContext = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAppContext debe usarse dentro de AuthProvider');
-  }
-  return context;
-};
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -48,151 +50,396 @@ export const useAuth = () => {
   return context;
 };
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://providenceapi-back.onrender.com';
+
+export default function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [mode] = useState<'real'>('real');
-  const [token, setToken] = useState<string | null>(null);
 
+  // Cargar usuario al iniciar
   useEffect(() => {
-    const loadAuthData = () => {
+    const loadUser = async () => {
       const token = localStorage.getItem('providence_token');
       const savedUser = localStorage.getItem('providence_user');
 
-      if (token && savedUser && savedUser !== 'undefined') {
+      if (token && savedUser) {
         try {
-          setToken(token);
-          setUser(JSON.parse(savedUser));
-          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        } catch (error) {
-          console.error('Error parseando usuario guardado', error);
-          localStorage.removeItem('providence_token');
-          localStorage.removeItem('providence_user');
-          setUser(null);
+          const userData = JSON.parse(savedUser);
+          setUser(userData);
+          
+          const response = await fetch(`${API_URL}/api/auth/me`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+
+          if (response.ok) {
+            const freshUserData = await response.json();
+            setUser(freshUserData);
+            localStorage.setItem('providence_user', JSON.stringify(freshUserData));
+          } else {
+            logout();
+          }
+        } catch (err) {
+          console.error('Error cargando usuario:', err);
+          logout();
         }
       }
-
       setLoading(false);
     };
 
-    loadAuthData();
+    loadUser();
   }, []);
 
-  const loadUser = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('providence_token');
-
-      if (!token) throw new Error('No hay token');
-
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-
-      const response = await axios.get(`${API_URL}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      setUser(response.data);
-      localStorage.setItem('providence_user', JSON.stringify(response.data));
-      setError(null);
-    } catch (err: any) {
-      console.error('Error cargando usuario:', err);
-      logout();
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const login = async (email: string, password: string) => {
+  // LOGIN NORMAL
+  const login = async (email: string, password: string): Promise<AuthResponse> => {
     try {
       setLoading(true);
       setError(null);
 
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-
-      const response = await axios.post(`${API_URL}/api/auth/signin`, {
-        email,
-        password,
+      const response = await fetch(`${API_URL}/api/auth/signin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
       });
 
-      const { access_token } = response.data;
+      const data = await response.json();
 
-      if (!access_token) {
-        throw new Error('No se recibió token de acceso');
+      if (!response.ok) {
+        throw new Error(data.message || 'Error en login');
       }
 
-      localStorage.setItem('providence_token', access_token);
-      setToken(access_token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+      if (!data.access_token) {
+        throw new Error('No se recibió token');
+      }
 
-      const profileResponse = await axios.get(`${API_URL}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${access_token}` },
+      localStorage.setItem('providence_token', data.access_token);
+
+      const userResponse = await fetch(`${API_URL}/api/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${data.access_token}`,
+        },
       });
 
-      setUser(profileResponse.data);
-      localStorage.setItem('providence_user', JSON.stringify(profileResponse.data));
+      if (!userResponse.ok) {
+        throw new Error('Error obteniendo usuario');
+      }
 
-      return { success: true, message: 'Login exitoso', mode: 'real' };
-    } catch (err: any) {
-      console.error('Login error:', err);
-      const message = err.response?.data?.message || 'Error al iniciar sesión';
-      setError(message);
-
-      localStorage.removeItem('providence_token');
-      localStorage.removeItem('providence_user');
-      delete axios.defaults.headers.common['Authorization'];
+      const userData = await userResponse.json();
       
-      return { success: false, message };
+      setUser(userData);
+      localStorage.setItem('providence_user', JSON.stringify(userData));
+
+      return { 
+        success: true, 
+        message: 'Login exitoso',
+        data: userData
+      };
+    } catch (err: any) {
+      const message = err.message || 'Error en login';
+      setError(message);
+      
+      return { 
+        success: false, 
+        message 
+      };
     } finally {
       setLoading(false);
     }
   };
 
-  const setLogin = (userData: User, userToken: string) => {
-    setUser(userData);
-    setToken(userToken);
-    localStorage.setItem('providence_token', userToken);
-    localStorage.setItem('providence_user', JSON.stringify(userData));
-    axios.defaults.headers.common['Authorization'] = `Bearer ${userToken}`;
-  };
-
-  const register = async (userData: any): Promise<{ success: boolean; message: string; mode?: string }> => {
+  // REGISTER
+  const register = async (userData: any, confirmPassword?: string): Promise<AuthResponse> => {
     try {
       setLoading(true);
       setError(null);
 
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-      const response = await axios.post(`${API_URL}/api/auth/signup`, userData);
+      const finalConfirmPassword = confirmPassword || userData.confirmPassword;
+      
+      if (!finalConfirmPassword) {
+        throw new Error('Debes confirmar tu contraseña');
+      }
 
-      return { success: true, message: 'Registro exitoso', mode: 'real' };
+      if (userData.password !== finalConfirmPassword) {
+        throw new Error('Las contraseñas no coinciden');
+      }
+
+      const registrationData = {
+        name: userData.name,
+        lastname: userData.lastname,
+        email: userData.email,
+        password: userData.password,
+        confirmPassword: finalConfirmPassword,
+        phone: userData.phone,
+        dni: userData.dni,
+        genre: userData.genre,
+        birthdate: userData.birthdate,
+      };
+
+      const response = await fetch(`${API_URL}/api/auth/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(registrationData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Error en registro');
+      }
+
+      return { 
+        success: true, 
+        message: data.message || 'Registro exitoso. Por favor inicia sesión.',
+        data
+      };
     } catch (err: any) {
-      const message = err.response?.data?.message || 'Error en el registro';
+      const message = err.message || 'Error en registro';
       setError(message);
-      return { success: false, message };
+      
+      return { 
+        success: false, 
+        message 
+      };
     } finally {
       setLoading(false);
     }
   };
 
+  // ACTUALIZAR PERFIL
+  const updateProfile = async (userData: Partial<User>): Promise<AuthResponse> => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const token = localStorage.getItem('providence_token');
+      
+      if (!token) {
+        throw new Error('No hay sesión activa');
+      }
+
+      const response = await fetch(`${API_URL}/api/users/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(userData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Error al actualizar perfil');
+      }
+
+      if (user) {
+        const updatedUser = { ...user, ...data };
+        setUser(updatedUser);
+        localStorage.setItem('providence_user', JSON.stringify(updatedUser));
+      }
+
+      return { 
+        success: true, 
+        message: 'Perfil actualizado exitosamente',
+        data
+      };
+    } catch (err: any) {
+      const message = err.message || 'Error al actualizar perfil';
+      setError(message);
+      
+      return { 
+        success: false, 
+        message 
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // SUBIR IMAGEN DE PERFIL - VERSIÓN SIMPLIFICADA QUE FUNCIONA
+  const uploadProfileImage = async (file: File): Promise<AuthResponse> => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const token = localStorage.getItem('providence_token');
+      
+      if (!token) {
+        throw new Error('No hay sesión activa');
+      }
+
+      console.log('🖼️ Subiendo imagen...');
+
+      // 1. Preview inmediato (Blob URL)
+      const previewUrl = URL.createObjectURL(file);
+      if (user) {
+        const tempUser = { ...user, profileImage: previewUrl };
+        setUser(tempUser);
+        localStorage.setItem('providence_user', JSON.stringify(tempUser));
+      }
+
+      // 2. Crear FormData
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // 3. Enviar al backend
+      const response = await fetch(`${API_URL}/api/users/profile/image`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      console.log('📥 Respuesta backend:', { status: response.status, data });
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Error al subir imagen');
+      }
+
+      // 4. URL de Cloudinary puede venir en diferentes propiedades
+      const cloudinaryUrl = data.profileImage || data.image || data.url || data.secure_url || data.imageUrl;
+      
+      // 5. Si no hay URL, usar el preview como fallback
+      const finalUrl = cloudinaryUrl || previewUrl;
+
+      // 6. Actualizar usuario
+      if (user) {
+        const updatedUser = { 
+          ...user, 
+          profileImage: finalUrl 
+        };
+        setUser(updatedUser);
+        localStorage.setItem('providence_user', JSON.stringify(updatedUser));
+        
+        // 7. Si tenemos URL de Cloudinary, actualizar también el perfil
+        if (cloudinaryUrl) {
+          try {
+            await updateProfile({ profileImage: cloudinaryUrl });
+          } catch (err) {
+            console.log('⚠️ No se pudo guardar URL en perfil, pero se muestra');
+          }
+        }
+      }
+
+      return { 
+        success: true, 
+        message: cloudinaryUrl ? 'Imagen subida exitosamente' : 'Imagen mostrada (local)',
+        data: { profileImage: finalUrl }
+      };
+      
+    } catch (err: any) {
+      const message = err.message || 'Error al subir imagen';
+      setError(message);
+      console.error('❌ Error subiendo imagen:', err);
+      
+      // Mantener el preview local aunque falle
+      return { 
+        success: false, 
+        message: 'La imagen se muestra localmente. Error: ' + message 
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // GOOGLE LOGIN
+  const googleLogin = () => {
+    window.location.href = `${API_URL}/api/auth/google/login`;
+  };
+
+  // GOOGLE CALLBACK
+  const handleGoogleCallback = async (code: string): Promise<AuthResponse> => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(`${API_URL}/api/auth/google/callback`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          code,
+          redirectUri: `${window.location.origin}/auth/google/callback`
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Error en autenticación Google');
+      }
+
+      if (!data.access_token || !data.user) {
+        throw new Error('Datos incompletos de Google');
+      }
+
+      localStorage.setItem('providence_token', data.access_token);
+      localStorage.setItem('providence_user', JSON.stringify(data.user));
+      setUser(data.user);
+
+      return {
+        success: true,
+        message: 'Autenticación Google exitosa',
+        data: data.user
+      };
+    } catch (err: any) {
+      const message = err.message || 'Error en Google OAuth';
+      setError(message);
+      
+      return {
+        success: false,
+        message
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // LOGOUT
   const logout = () => {
     localStorage.removeItem('providence_token');
     localStorage.removeItem('providence_user');
     setUser(null);
-    setToken(null);
     setError(null);
-    delete axios.defaults.headers.common['Authorization'];
-
+    
     if (typeof window !== 'undefined') {
       window.location.href = '/login';
     }
   };
 
+  // Actualizar usuario localmente
   const updateUser = (updatedData: Partial<User>) => {
     if (!user) return;
 
     const updatedUser = { ...user, ...updatedData };
     setUser(updatedUser);
     localStorage.setItem('providence_user', JSON.stringify(updatedUser));
+  };
+
+  // Para Google OAuth
+  const setLogin = (userData: User, userToken: string) => {
+    setUser(userData);
+    localStorage.setItem('providence_token', userToken);
+    localStorage.setItem('providence_user', JSON.stringify(userData));
+  };
+
+  // Verificar autenticación
+  const checkAuth = (): boolean => {
+    return !!localStorage.getItem('providence_token');
+  };
+
+  const clearError = () => {
+    setError(null);
   };
 
   const isAuthenticated = !!user;
@@ -205,10 +452,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     register,
     logout,
     updateUser,
+    updateProfile,
+    uploadProfileImage,
     isAuthenticated,
-    mode,
+    clearError,
     setLogin,
+    googleLogin,
+    handleGoogleCallback,
+    checkAuth,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+}

@@ -356,7 +356,7 @@ export default function RegisterForm() {
 
   const handleGoogleAuth = () => {
     setGoogleLoading(true);
-    const googleAuthUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/auth/google/login`;
+    const googleAuthUrl = `${process .env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/google/login`;
     localStorage.setItem('redirectAfterLogin', window.location.pathname);
     window.location.href = googleAuthUrl;
   };
