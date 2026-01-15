@@ -33,6 +33,7 @@ export default function OAuthCallbackPage() {
         return;
       }
 
+    const handleCallback = async () => {
       try {
         console.log("✅ Token recibido, obteniendo usuario...");
 

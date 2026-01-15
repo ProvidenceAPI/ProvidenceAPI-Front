@@ -85,13 +85,14 @@ export default function RegisterForm() {
 
 
   useEffect(() => {
+    // Limpiar timeout anterior
     if (validationTimeoutRef.current) {
       clearTimeout(validationTimeoutRef.current);
     }
 
     validationTimeoutRef.current = setTimeout(() => {
       validateRealTime();
-    }, 100);
+    }, 100); // 100ms de delay
     
     return () => {
       if (validationTimeoutRef.current) {

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import axios from 'axios';
 
  export type User = {
   id: string;
@@ -16,31 +17,28 @@ import React, { createContext, useState, useContext, useEffect, ReactNode } from
   dni?: number;
 };
 
-type AuthResponse = {
-  success: boolean;
-  message: string;
-  data?: any;
-};
-
 type AuthContextType = {
   user: User | null;
   loading: boolean;
   error: string | null;
-  login: (email: string, password: string) => Promise<AuthResponse>;
-  register: (userData: any, confirmPassword?: string) => Promise<AuthResponse>;
+  login: (email: string, password: string) => Promise<{ success: boolean; message: string; mode?: string }>;
+  register: (userData: any) => Promise<{ success: boolean; message: string; mode?: string }>;
   logout: () => void;
   updateUser: (updatedData: Partial<User>) => void;
-  updateProfile: (userData: Partial<User>) => Promise<AuthResponse>;
-  uploadProfileImage: (file: File) => Promise<AuthResponse>;
   isAuthenticated: boolean;
-  clearError: () => void;
-  setLogin: (userData: User, userToken: string) => void;
-  googleLogin: () => void;
-  handleGoogleCallback: (code: string) => Promise<AuthResponse>;
-  checkAuth: () => boolean;
+  mode: 'real';
+  setLogin?: (user: User, token: string) => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const useAppContext = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAppContext debe usarse dentro de AuthProvider');
+  }
+  return context;
+};
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -50,375 +48,151 @@ export const useAuth = () => {
   return context;
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://providenceapi-back.onrender.com';
-
-export default function AuthProvider({ children }: { children: ReactNode }) {
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [mode] = useState<'real'>('real');
+  const [token, setToken] = useState<string | null>(null);
 
-  // Cargar usuario al iniciar
   useEffect(() => {
-    const loadUser = async () => {
+    const loadAuthData = () => {
       const token = localStorage.getItem('providence_token');
       const savedUser = localStorage.getItem('providence_user');
 
-      if (token && savedUser) {
+      if (token && savedUser && savedUser !== 'undefined') {
         try {
-          const userData = JSON.parse(savedUser);
-          setUser(userData);
-          
-          const response = await fetch(`${API_URL}/api/auth/me`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          });
-
-          if (response.ok) {
-            const freshUserData = await response.json();
-            setUser(freshUserData);
-            localStorage.setItem('providence_user', JSON.stringify(freshUserData));
-          } else {
-            logout();
-          }
-        } catch (err) {
-          console.error('Error cargando usuario:', err);
-          logout();
+          setToken(token);
+          setUser(JSON.parse(savedUser));
+          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        } catch (error) {
+          console.error('Error parseando usuario guardado', error);
+          localStorage.removeItem('providence_token');
+          localStorage.removeItem('providence_user');
+          setUser(null);
         }
       }
+
       setLoading(false);
     };
 
-    loadUser();
+    loadAuthData();
   }, []);
 
-  // LOGIN NORMAL
-  const login = async (email: string, password: string): Promise<AuthResponse> => {
+  const loadUser = async () => {
     try {
       setLoading(true);
-      setError(null);
-
-      const response = await fetch(`${API_URL}/api/auth/signin`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Error en login');
-      }
-
-      if (!data.access_token) {
-        throw new Error('No se recibió token');
-      }
-
-      localStorage.setItem('providence_token', data.access_token);
-
-      const userResponse = await fetch(`${API_URL}/api/auth/me`, {
-        headers: {
-          'Authorization': `Bearer ${data.access_token}`,
-        },
-      });
-
-      if (!userResponse.ok) {
-        throw new Error('Error obteniendo usuario');
-      }
-
-      const userData = await userResponse.json();
-      
-      setUser(userData);
-      localStorage.setItem('providence_user', JSON.stringify(userData));
-
-      return { 
-        success: true, 
-        message: 'Login exitoso',
-        data: userData
-      };
-    } catch (err: any) {
-      const message = err.message || 'Error en login';
-      setError(message);
-      
-      return { 
-        success: false, 
-        message 
-      };
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // REGISTER
-  const register = async (userData: any, confirmPassword?: string): Promise<AuthResponse> => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const finalConfirmPassword = confirmPassword || userData.confirmPassword;
-      
-      if (!finalConfirmPassword) {
-        throw new Error('Debes confirmar tu contraseña');
-      }
-
-      if (userData.password !== finalConfirmPassword) {
-        throw new Error('Las contraseñas no coinciden');
-      }
-
-      const registrationData = {
-        name: userData.name,
-        lastname: userData.lastname,
-        email: userData.email,
-        password: userData.password,
-        confirmPassword: finalConfirmPassword,
-        phone: userData.phone,
-        dni: userData.dni,
-        genre: userData.genre,
-        birthdate: userData.birthdate,
-      };
-
-      const response = await fetch(`${API_URL}/api/auth/signup`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(registrationData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Error en registro');
-      }
-
-      return { 
-        success: true, 
-        message: data.message || 'Registro exitoso. Por favor inicia sesión.',
-        data
-      };
-    } catch (err: any) {
-      const message = err.message || 'Error en registro';
-      setError(message);
-      
-      return { 
-        success: false, 
-        message 
-      };
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ACTUALIZAR PERFIL
-  const updateProfile = async (userData: Partial<User>): Promise<AuthResponse> => {
-    try {
-      setLoading(true);
-      setError(null);
-
       const token = localStorage.getItem('providence_token');
-      
-      if (!token) {
-        throw new Error('No hay sesión activa');
-      }
 
-      const response = await fetch(`${API_URL}/api/users/profile`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(userData),
+      if (!token) throw new Error('No hay token');
+
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
+      const response = await axios.get(`${API_URL}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Error al actualizar perfil');
-      }
-
-      if (user) {
-        const updatedUser = { ...user, ...data };
-        setUser(updatedUser);
-        localStorage.setItem('providence_user', JSON.stringify(updatedUser));
-      }
-
-      return { 
-        success: true, 
-        message: 'Perfil actualizado exitosamente',
-        data
-      };
+      setUser(response.data);
+      localStorage.setItem('providence_user', JSON.stringify(response.data));
+      setError(null);
     } catch (err: any) {
-      const message = err.message || 'Error al actualizar perfil';
-      setError(message);
-      
-      return { 
-        success: false, 
-        message 
-      };
+      console.error('Error cargando usuario:', err);
+      logout();
     } finally {
       setLoading(false);
     }
   };
 
-  // SUBIR IMAGEN DE PERFIL - USA LA MISMA LÓGICA QUE TU DASHBOARD
-const uploadProfileImage = async (file: File): Promise<AuthResponse> => {
-  try {
-    setLoading(true);
-    setError(null);
-
-    console.log('🖼️ Subiendo imagen...');
-
-    const token = localStorage.getItem('providence_token');
-    
-    if (!token) {
-      throw new Error('No hay sesión activa');
-    }
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    // USA EXACTAMENTE LA MISMA URL Y MÉTODO QUE TU DASHBOARD
-    const response = await fetch(`${API_URL}/users/profile/image`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        // NO incluyas 'Content-Type' para FormData
-      },
-      body: formData,
-    });
-
-    const data = await response.json();
-
-    console.log('📥 Respuesta imagen:', { status: response.status, data });
-
-    if (!response.ok) {
-      throw new Error(data.message || `Error ${response.status} al subir imagen`);
-    }
-
-    // Obtener URL - según lo que devuelve tu backend
-    const imageUrl = data.profileImage || data.url || data.imageUrl;
-
-    // Actualizar usuario
-    if (user && imageUrl) {
-      const updatedUser = { 
-        ...user, 
-        profileImage: imageUrl 
-      };
-      setUser(updatedUser);
-      localStorage.setItem('providence_user', JSON.stringify(updatedUser));
-    }
-
-    return { 
-      success: true, 
-      message: 'Imagen actualizada exitosamente',
-      data
-    };
-    
-  } catch (err: any) {
-    const message = err.message || 'Error al subir imagen';
-    setError(message);
-    console.error('❌ Error subiendo imagen:', err);
-    
-    return { 
-      success: false, 
-      message 
-    };
-  } finally {
-    setLoading(false);
-  }
-};
-
-  // GOOGLE LOGIN
-  const googleLogin = () => {
-    window.location.href = `${API_URL}/api/auth/google/login`;
-  };
-
-  // GOOGLE CALLBACK
-  const handleGoogleCallback = async (code: string): Promise<AuthResponse> => {
+  const login = async (email: string, password: string) => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_URL}/api/auth/google/callback`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          code,
-          redirectUri: `${window.location.origin}/auth/google/callback`
-        }),
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
+      const response = await axios.post(`${API_URL}/api/auth/signin`, {
+        email,
+        password,
       });
 
-      const data = await response.json();
+      const { access_token } = response.data;
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Error en autenticación Google');
+      if (!access_token) {
+        throw new Error('No se recibió token de acceso');
       }
 
-      if (!data.access_token || !data.user) {
-        throw new Error('Datos incompletos de Google');
-      }
+      localStorage.setItem('providence_token', access_token);
+      setToken(access_token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
 
-      localStorage.setItem('providence_token', data.access_token);
-      localStorage.setItem('providence_user', JSON.stringify(data.user));
-      setUser(data.user);
+      const profileResponse = await axios.get(`${API_URL}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${access_token}` },
+      });
 
-      return {
-        success: true,
-        message: 'Autenticación Google exitosa',
-        data: data.user
-      };
+      setUser(profileResponse.data);
+      localStorage.setItem('providence_user', JSON.stringify(profileResponse.data));
+
+      return { success: true, message: 'Login exitoso', mode: 'real' };
     } catch (err: any) {
-      const message = err.message || 'Error en Google OAuth';
+      console.error('Login error:', err);
+      const message = err.response?.data?.message || 'Error al iniciar sesión';
       setError(message);
+
+      localStorage.removeItem('providence_token');
+      localStorage.removeItem('providence_user');
+      delete axios.defaults.headers.common['Authorization'];
       
-      return {
-        success: false,
-        message
-      };
+      return { success: false, message };
     } finally {
       setLoading(false);
     }
   };
 
-  // LOGOUT
+  const setLogin = (userData: User, userToken: string) => {
+    setUser(userData);
+    setToken(userToken);
+    localStorage.setItem('providence_token', userToken);
+    localStorage.setItem('providence_user', JSON.stringify(userData));
+    axios.defaults.headers.common['Authorization'] = `Bearer ${userToken}`;
+  };
+
+  const register = async (userData: any): Promise<{ success: boolean; message: string; mode?: string }> => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+      const response = await axios.post(`${API_URL}/api/auth/signup`, userData);
+
+      return { success: true, message: 'Registro exitoso', mode: 'real' };
+    } catch (err: any) {
+      const message = err.response?.data?.message || 'Error en el registro';
+      setError(message);
+      return { success: false, message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('providence_token');
     localStorage.removeItem('providence_user');
     setUser(null);
+    setToken(null);
     setError(null);
-    
+    delete axios.defaults.headers.common['Authorization'];
+
     if (typeof window !== 'undefined') {
       window.location.href = '/login';
     }
   };
 
-  // Actualizar usuario localmente
   const updateUser = (updatedData: Partial<User>) => {
     if (!user) return;
 
     const updatedUser = { ...user, ...updatedData };
     setUser(updatedUser);
     localStorage.setItem('providence_user', JSON.stringify(updatedUser));
-  };
-
-  // Para Google OAuth
-  const setLogin = (userData: User, userToken: string) => {
-    setUser(userData);
-    localStorage.setItem('providence_token', userToken);
-    localStorage.setItem('providence_user', JSON.stringify(userData));
-  };
-
-  // Verificar autenticación
-  const checkAuth = (): boolean => {
-    return !!localStorage.getItem('providence_token');
-  };
-
-  const clearError = () => {
-    setError(null);
   };
 
   const isAuthenticated = !!user;
@@ -431,19 +205,10 @@ const uploadProfileImage = async (file: File): Promise<AuthResponse> => {
     register,
     logout,
     updateUser,
-    updateProfile,
-    uploadProfileImage,
     isAuthenticated,
-    clearError,
+    mode,
     setLogin,
-    googleLogin,
-    handleGoogleCallback,
-    checkAuth,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
