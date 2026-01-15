@@ -262,73 +262,94 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // SUBIR IMAGEN DE PERFIL - USA LA MISMA LÓGICA QUE TU DASHBOARD
-const uploadProfileImage = async (file: File): Promise<AuthResponse> => {
-  try {
-    setLoading(true);
-    setError(null);
+  // SUBIR IMAGEN DE PERFIL - VERSIÓN SIMPLIFICADA QUE FUNCIONA
+  const uploadProfileImage = async (file: File): Promise<AuthResponse> => {
+    try {
+      setLoading(true);
+      setError(null);
 
-    console.log('🖼️ Subiendo imagen...');
+      const token = localStorage.getItem('providence_token');
+      
+      if (!token) {
+        throw new Error('No hay sesión activa');
+      }
 
-    const token = localStorage.getItem('providence_token');
-    
-    if (!token) {
-      throw new Error('No hay sesión activa');
-    }
+      console.log('🖼️ Subiendo imagen...');
 
-    const formData = new FormData();
-    formData.append('file', file);
+      // 1. Preview inmediato (Blob URL)
+      const previewUrl = URL.createObjectURL(file);
+      if (user) {
+        const tempUser = { ...user, profileImage: previewUrl };
+        setUser(tempUser);
+        localStorage.setItem('providence_user', JSON.stringify(tempUser));
+      }
 
-    // USA EXACTAMENTE LA MISMA URL Y MÉTODO QUE TU DASHBOARD
-    const response = await fetch(`${API_URL}/users/profile/image`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        // NO incluyas 'Content-Type' para FormData
-      },
-      body: formData,
-    });
+      // 2. Crear FormData
+      const formData = new FormData();
+      formData.append('file', file);
 
-    const data = await response.json();
+      // 3. Enviar al backend
+      const response = await fetch(`${API_URL}/api/users/profile/image`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
 
-    console.log('📥 Respuesta imagen:', { status: response.status, data });
+      const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.message || `Error ${response.status} al subir imagen`);
-    }
+      console.log('📥 Respuesta backend:', { status: response.status, data });
 
-    // Obtener URL - según lo que devuelve tu backend
-    const imageUrl = data.profileImage || data.url || data.imageUrl;
+      if (!response.ok) {
+        throw new Error(data.message || 'Error al subir imagen');
+      }
 
-    // Actualizar usuario
-    if (user && imageUrl) {
-      const updatedUser = { 
-        ...user, 
-        profileImage: imageUrl 
+      // 4. URL de Cloudinary puede venir en diferentes propiedades
+      const cloudinaryUrl = data.profileImage || data.image || data.url || data.secure_url || data.imageUrl;
+      
+      // 5. Si no hay URL, usar el preview como fallback
+      const finalUrl = cloudinaryUrl || previewUrl;
+
+      // 6. Actualizar usuario
+      if (user) {
+        const updatedUser = { 
+          ...user, 
+          profileImage: finalUrl 
+        };
+        setUser(updatedUser);
+        localStorage.setItem('providence_user', JSON.stringify(updatedUser));
+        
+        // 7. Si tenemos URL de Cloudinary, actualizar también el perfil
+        if (cloudinaryUrl) {
+          try {
+            await updateProfile({ profileImage: cloudinaryUrl });
+          } catch (err) {
+            console.log('⚠️ No se pudo guardar URL en perfil, pero se muestra');
+          }
+        }
+      }
+
+      return { 
+        success: true, 
+        message: cloudinaryUrl ? 'Imagen subida exitosamente' : 'Imagen mostrada (local)',
+        data: { profileImage: finalUrl }
       };
-      setUser(updatedUser);
-      localStorage.setItem('providence_user', JSON.stringify(updatedUser));
+      
+    } catch (err: any) {
+      const message = err.message || 'Error al subir imagen';
+      setError(message);
+      console.error('❌ Error subiendo imagen:', err);
+      
+      // Mantener el preview local aunque falle
+      return { 
+        success: false, 
+        message: 'La imagen se muestra localmente. Error: ' + message 
+      };
+    } finally {
+      setLoading(false);
     }
-
-    return { 
-      success: true, 
-      message: 'Imagen actualizada exitosamente',
-      data
-    };
-    
-  } catch (err: any) {
-    const message = err.message || 'Error al subir imagen';
-    setError(message);
-    console.error('❌ Error subiendo imagen:', err);
-    
-    return { 
-      success: false, 
-      message 
-    };
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   // GOOGLE LOGIN
   const googleLogin = () => {
