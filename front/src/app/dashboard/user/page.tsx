@@ -7,7 +7,8 @@ import { Navbar } from "src/components/Navbar";
 import TransformacionCTA from "src/components/TransformacionCTA";
 import { Footer } from "src/components/Footer"; 
 import UserProfileSection from "src/components/UserProfileSection";
-import DashboardStats from "src/components/DashboardStats"
+import DashboardStats from "src/components/DashboardStats";
+
 
 export default function DashboardPage() {
   const { user, isAuthenticated, loading, updateUser } = useAuth();
@@ -32,7 +33,7 @@ export default function DashboardPage() {
   }
 
   if (!isAuthenticated) {
-    return null;
+    return null; 
   }
 
   return (
@@ -40,19 +41,19 @@ export default function DashboardPage() {
       <Navbar />
 
       <div className="container mx-auto px-4 py-8">
-      
+        
         <UserProfileSection user={user} updateUser={updateUser} />
         
-   
+      
         <div className="mt-8">
           <DashboardStats />
         </div>
       </div>
 
-     
+      
       <TransformacionCTA />
 
-   
+     
       <Footer />
     </div>
   );

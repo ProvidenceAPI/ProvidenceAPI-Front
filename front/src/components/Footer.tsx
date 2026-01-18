@@ -5,7 +5,7 @@ import { FacebookIcon, InstagramIcon, TwitterIcon, MailIcon, PhoneIcon, Location
 export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
 
-  // Datos de las actividades con sus slugs correspondientes
+
   const activities = [
     { name: "CrossFit", slug: "crossfit" },
     { name: "Funcional", slug: "funcional" },
@@ -17,10 +17,10 @@ export const Footer: React.FC = () => {
     <footer className="bg-black text-white border-t-2 border-[#DC2626]">
       <div className="max-w-7xl mx-auto px-6 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
-          {/* Columna 1 - Brand con logo */}
+   
           <div>
             <div className="mb-4">
-              {/* Logo */}
+        
               <img 
                 src="/logo.png" 
                 alt="Providence Fitness Logo" 
@@ -46,7 +46,7 @@ export const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* Columna 2 - Enlaces rápidos */}
+ 
           <div>
             <h3 className="text-[#FFFFFF] font-bold uppercase mb-6 tracking-wider text-lg">ENLACES RÁPIDOS</h3>
             <ul className="space-y-4">
@@ -69,7 +69,7 @@ export const Footer: React.FC = () => {
             </ul>
           </div>
 
-          {/* Columna 3 - ACTIVIDADES (antes Programas) */}
+        
           <div>
             <h3 className="text-[#FFFFFF] font-bold uppercase mb-6 tracking-wider text-lg">ACTIVIDADES</h3>
             <ul className="space-y-4">
@@ -86,7 +86,7 @@ export const Footer: React.FC = () => {
             </ul>
           </div>
 
-          {/* Columna 4 - Contacto */}
+          
           <div>
             <h3 className="text-[#FFFFFF] font-bold uppercase mb-6 tracking-wider text-lg">CONTACTO</h3>
             <ul className="space-y-5 text-gray-300 text-sm">
@@ -106,7 +106,7 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
-        {/* Línea divisoria y derechos */}
+       
         <div className="mt-12 pt-8 border-t border-gray-800">
           <div className="text-center">
             <p className="text-gray-500 text-sm">

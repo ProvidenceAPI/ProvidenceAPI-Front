@@ -1,240 +1,356 @@
 "use client";
 
-import Link from "next/link";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { useAuth } from "src/contexts/AuthContext";
+import { reservationService } from "src/app/lib/ReservationService";
+import { Reservation } from "src/interfaces/Reservation";
 
-interface DashboardStatsProps {
-  // Props opcionales si quieres pasar datos desde el padre
-}
-
-interface Stats {
-  reservasActivas: number;
-  pagosPendientes: number;
-  proximaClase: string | null;
-}
-
-export default function DashboardStats({ }: DashboardStatsProps) {
-  const [stats, setStats] = useState<Stats>({
-    reservasActivas: 0,
-    pagosPendientes: 0,
-    proximaClase: null,
-  });
+export default function DashboardStats() {
+  const { user } = useAuth();
+  const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
-  // Cargar estadísticas reales del backend
   useEffect(() => {
-    const loadStats = async () => {
-      try {
-        const token = localStorage.getItem('providence_token');
-        if (!token) return;
+    if (user?.id) {
+      loadUserReservations();
+    }
+  }, [user]);
 
-        // Ejemplo: podrías cargar estadísticas reales aquí
-        // const response = await fetch(`${API_URL}/api/reservations/stats`, {
-        //   headers: { 'Authorization': `Bearer ${token}` }
-        // });
-        // const data = await response.json();
-        
-        // Por ahora, usamos datos de ejemplo
-        setStats({
-          reservasActivas: 3,
-          pagosPendientes: 1,
-          proximaClase: "2024-01-20 18:00 - CrossFit Avanzado",
-        });
-      } catch (error) {
-        console.error("Error cargando estadísticas:", error);
-      } finally {
-        setLoading(false);
-      }
+  const loadUserReservations = async () => {
+    if (!user?.id) return;
+
+    setLoading(true);
+    try {
+      const userReservations = await reservationService.getUserReservations();
+      console.log("Reservations loaded:", userReservations);
+      setReservations(userReservations);
+    } catch (error) {
+      console.error("Error loading reservations:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelReservation = async (reservationId: string) => {
+    const confirmed = window.confirm(
+      "¿Estás seguro de que deseas cancelar esta reserva?"
+    );
+
+    if (!confirmed) return;
+
+    setCancellingId(reservationId);
+    try {
+      await reservationService.cancelReservation(reservationId);
+      alert("Reserva cancelada exitosamente");
+      await loadUserReservations();
+    } catch (error: any) {
+      console.error("Error cancelling reservation:", error);
+      alert(error.message || "Error al cancelar la reserva");
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const days = [
+      "Domingo",
+      "Lunes",
+      "Martes",
+      "Miércoles",
+      "Jueves",
+      "Viernes",
+      "Sábado",
+    ];
+    const months = [
+      "Enero",
+      "Febrero",
+      "Marzo",
+      "Abril",
+      "Mayo",
+      "Junio",
+      "Julio",
+      "Agosto",
+      "Septiembre",
+      "Octubre",
+      "Noviembre",
+      "Diciembre",
+    ];
+
+    return `${days[date.getDay()]} ${date.getDate()} de ${
+      months[date.getMonth()]
+    }`;
+  };
+
+  const getStatusBadge = (status: string) => {
+    const badges = {
+      active: {
+        bg: "bg-green-100",
+        text: "text-green-800",
+        label: "Activa",
+      },
+      pending: {
+        bg: "bg-yellow-100",
+        text: "text-yellow-800",
+        label: "Pendiente",
+      },
+      confirmed: {
+        bg: "bg-green-100",
+        text: "text-green-800",
+        label: "Confirmada",
+      },
+      completed: {
+        bg: "bg-blue-100",
+        text: "text-blue-800",
+        label: "Completada",
+      },
+      cancelled: {
+        bg: "bg-red-100",
+        text: "text-red-800",
+        label: "Cancelada",
+      },
     };
 
-    loadStats();
-  }, []);
+    const badge = badges[status as keyof typeof badges] || badges.pending;
+
+    return (
+      <span
+        className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${badge.bg} ${badge.text}`}
+      >
+        {badge.label}
+      </span>
+    );
+  };
+
+
+  const activeReservations = reservations.filter(
+    (r) => r.status === "active" || r.status === "confirmed" || r.status === "pending"
+  );
+  const completedReservations = reservations.filter(
+    (r) => r.status === "completed"
+  );
+  const cancelledReservations = reservations.filter(
+    (r) => r.status === "cancelled"
+  );
 
   if (loading) {
     return (
-      <div className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-              <div className="animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
-                <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-                <div className="h-10 bg-gray-200 rounded"></div>
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="flex justify-center items-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[#DC2626]"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Tarjetas de estadísticas */}
+    <div className="space-y-6">
+   
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Reservas Activas */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow duration-300">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-bold text-gray-900">Reservas Activas</h3>
+              <p className="text-sm font-medium text-gray-600">
+                Reservas Activas
+              </p>
               <p className="text-3xl font-bold text-gray-900 mt-2">
-                {stats.reservasActivas}
+                {activeReservations.length}
               </p>
             </div>
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            <div className="bg-green-100 rounded-full p-3">
+              <svg
+                className="w-8 h-8 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             </div>
-          </div>
-          <div className="mt-6">
-            <Link
-              href="/mis-reservas"
-              className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
-            >
-              Ver todas las reservas
-              <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
-            </Link>
           </div>
         </div>
 
-        {/* Pagos Pendientes */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow duration-300">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-bold text-gray-900">Pagos Pendientes</h3>
+              <p className="text-sm font-medium text-gray-600">
+                Clases Completadas
+              </p>
               <p className="text-3xl font-bold text-gray-900 mt-2">
-                {stats.pagosPendientes}
+                {completedReservations.length}
               </p>
             </div>
-            <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <div className="bg-blue-100 rounded-full p-3">
+              <svg
+                className="w-8 h-8 text-blue-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             </div>
-          </div>
-          <div className="mt-6">
-            <Link
-              href="/mis-pagos"
-              className="inline-flex items-center text-green-600 hover:text-green-800 font-medium"
-            >
-              Gestionar pagos
-              <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
-            </Link>
           </div>
         </div>
 
-        {/* Próxima Clase */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow duration-300">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-bold text-gray-900">Próxima Clase</h3>
-              <p className="text-xl font-bold text-gray-900 mt-2">
-                {stats.proximaClase || "No hay clases programadas"}
+              <p className="text-sm font-medium text-gray-600">Total Reservas</p>
+              <p className="text-3xl font-bold text-gray-900 mt-2">
+                {reservations.length}
               </p>
             </div>
-            <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <div className="bg-purple-100 rounded-full p-3">
+              <svg
+                className="w-8 h-8 text-purple-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
               </svg>
             </div>
           </div>
-          {stats.proximaClase && (
-            <div className="mt-6">
-              <button className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-medium rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-300">
-                Ver detalles
-                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Acciones rápidas */}
-      <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
-        <h3 className="text-2xl font-bold text-gray-900 mb-6">Acciones Rápidas</h3>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Link
-            href="/activities"
-            className="p-5 border border-gray-200 rounded-xl hover:border-red-300 hover:bg-red-50 transition-all duration-300 text-left group"
-          >
-            <div className="flex items-center">
-              <div className="p-3 bg-red-100 rounded-lg group-hover:bg-red-200 transition-colors duration-300">
-                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <h4 className="font-bold text-gray-900">Ver Actividades</h4>
-                <p className="text-sm text-gray-600 mt-1">Explora clases disponibles</p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/mis-reservas"
-            className="p-5 border border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-all duration-300 text-left group"
-          >
-            <div className="flex items-center">
-              <div className="p-3 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors duration-300">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <h4 className="font-bold text-gray-900">Mis Reservas</h4>
-                <p className="text-sm text-gray-600 mt-1">Gestiona tus clases</p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/mis-pagos"
-            className="p-5 border border-gray-200 rounded-xl hover:border-green-300 hover:bg-green-50 transition-all duration-300 text-left group"
-          >
-            <div className="flex items-center">
-              <div className="p-3 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors duration-300">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <h4 className="font-bold text-gray-900">Mis Pagos</h4>
-                <p className="text-sm text-gray-600 mt-1">Historial de pagos</p>
-              </div>
-            </div>
-          </Link>
-
-          <button
-            onClick={() => {
-              if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
-                localStorage.removeItem('providence_token');
-                localStorage.removeItem('providence_user');
-                window.location.href = '/login';
-              }
-            }}
-            className="p-5 border border-gray-200 rounded-xl hover:border-gray-300 hover:bg-gray-50 transition-all duration-300 text-left group"
-          >
-            <div className="flex items-center">
-              <div className="p-3 bg-gray-100 rounded-lg group-hover:bg-gray-200 transition-colors duration-300">
-                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <h4 className="font-bold text-gray-900">Cerrar Sesión</h4>
-                <p className="text-sm text-gray-600 mt-1">Salir de tu cuenta</p>
-              </div>
-            </div>
-          </button>
+ 
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-xl font-bold text-gray-900">Mis Reservas</h2>
         </div>
+
+        {reservations.length === 0 ? (
+          <div className="p-12 text-center">
+            <svg
+              className="mx-auto h-12 w-12 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">
+              No tienes reservas
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Comienza reservando tu primera clase
+            </p>
+            <div className="mt-6">
+              <a
+                href="/home"
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#DC2626] hover:bg-[#B01C1C]"
+              >
+                Ver Actividades
+              </a>
+            </div>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actividad
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Fecha y Hora
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Estado
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Pago
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {reservations.map((reservation) => (
+                  <tr key={reservation.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {reservation.activityName || 'Actividad'}
+                      </div>
+                      {(reservation.isFreeReservation || reservation.isFree) && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-1">
+                          🎉 Clase Gratis
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {reservation.date ? formatDate(reservation.date) : 'Sin fecha'}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {reservation.hour || 'Sin hora'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getStatusBadge(reservation.status)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {reservation.isPaid ? (
+                        <span className="text-green-600 text-sm font-medium">
+                          ✓ Pagado
+                        </span>
+                      ) : (reservation.isFreeReservation || reservation.isFree) ? (
+                        <span className="text-blue-600 text-sm font-medium">
+                          Gratis
+                        </span>
+                      ) : (
+                        <span className="text-yellow-600 text-sm font-medium">
+                          Pendiente
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      {(reservation.status === "active" || 
+                        reservation.status === "pending" || 
+                        reservation.status === "confirmed") && (
+                        <button
+                          onClick={() => handleCancelReservation(reservation.id)}
+                          disabled={cancellingId === reservation.id}
+                          className={`text-red-600 hover:text-red-900 ${
+                            cancellingId === reservation.id
+                              ? "opacity-50 cursor-not-allowed"
+                              : ""
+                          }`}
+                        >
+                          {cancellingId === reservation.id
+                            ? "Cancelando..."
+                            : "Cancelar"}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

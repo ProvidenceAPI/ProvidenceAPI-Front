@@ -45,7 +45,7 @@ export default function UserProfileSection({ user, updateUser }: UserProfileSect
       const formDataToSend = new FormData();
       formDataToSend.append("file", file);
 
-      // Usar fetch directamente
+      
       const response = await fetch(`${API_URL}/api/users/profile/image`, {
         method: 'PUT',
         headers: {
@@ -136,11 +136,11 @@ export default function UserProfileSection({ user, updateUser }: UserProfileSect
 
   return (
     <div className="space-y-8">
-      {/* Header con foto de perfil grande */}
+     
       <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
         <div className="flex flex-col lg:flex-row items-start gap-10">
           
-          {/* Imagen de perfil GRANDE */}
+         
           <div className="lg:w-2/5">
             <div className="relative group">
               <div className="w-72 h-72 rounded-2xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 border-8 border-white shadow-2xl mx-auto">
@@ -172,7 +172,7 @@ export default function UserProfileSection({ user, updateUser }: UserProfileSect
                 )}
               </div>
               
-              {/* Botón para cambiar foto */}
+             
               <div className="mt-6 text-center">
                 <button
                   onClick={() => fileInputRef.current?.click()}
@@ -207,7 +207,7 @@ export default function UserProfileSection({ user, updateUser }: UserProfileSect
             </div>
           </div>
 
-          {/* Información del usuario */}
+       
           <div className="lg:w-3/5">
             <div className="flex flex-col h-full">
               <div className="flex-1">
@@ -239,7 +239,7 @@ export default function UserProfileSection({ user, updateUser }: UserProfileSect
                     </div>
                   </div>
                   
-                  {/* Botón de editar/guardar */}
+                 
                   <div className="flex flex-col items-end space-y-4">
                     <div className="text-right">
                       <p className="text-sm text-gray-500 mb-1">Teléfono</p>
@@ -285,7 +285,7 @@ export default function UserProfileSection({ user, updateUser }: UserProfileSect
                   </div>
                 </div>
 
-                {/* Información completa */}
+               
                 <div className="bg-gray-50 rounded-xl p-6">
                   <h3 className="text-xl font-bold text-gray-900 mb-6 pb-3 border-b">
                     Información Personal Completa

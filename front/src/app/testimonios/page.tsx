@@ -63,7 +63,7 @@ export default function TestimoniosPage() {
     <>
       <Navbar />
       <main className="min-h-screen bg-white">
-        {/* Header Section */}
+        
         <section className="py-16 px-6 md:px-12 text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-black mb-4">
             HISTORIAS DE <span className="text-red-600">ÉXITO</span>
@@ -73,7 +73,7 @@ export default function TestimoniosPage() {
           </p>
         </section>
 
-        {/* Testimonials Grid */}
+      
         <section className="py-12 px-6 md:px-12 max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {testimonials.map((testimonial) => (
@@ -85,7 +85,7 @@ export default function TestimoniosPage() {
                     : 'bg-gray-50 border border-gray-200'
                 }`}
               >
-                {/* Stars */}
+              
                 <div className="flex gap-1 mb-4">
                   {[...Array(testimonial.rating)].map((_, i) => (
                     <span key={i} className="text-yellow-400 text-2xl">
@@ -94,12 +94,12 @@ export default function TestimoniosPage() {
                   ))}
                 </div>
 
-                {/* Quote */}
+           
                 <p className="text-gray-700 italic mb-6 leading-relaxed">
                   "{testimonial.quote}"
                 </p>
 
-                {/* Author */}
+              
                 <div>
                   <p className="font-bold text-black text-lg">{testimonial.author}</p>
                   <p className="text-blue-600 text-sm">{testimonial.role}</p>

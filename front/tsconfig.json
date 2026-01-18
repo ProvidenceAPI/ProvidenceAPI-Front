@@ -34,9 +34,9 @@
     ".next/types/**/*.ts",
     "**/*.ts",
     "**/*.tsx",
-    "app/src/services/api.js",
+  
     ".next/dev/types/**/*.ts"
-  ],
+, "src/interfaces/Payments", "src/interfaces/ValidationRules"  ],
   "exclude": [
     "node_modules"
   ]

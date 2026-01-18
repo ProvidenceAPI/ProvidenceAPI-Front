@@ -1,5 +1,5 @@
 import { IProduct } from "./IProduct";
-import { User } from "src/contexts/AuthContext";
+import  { User } from "./IUser";
 
 export interface IAppContext {
     user: User | null;
