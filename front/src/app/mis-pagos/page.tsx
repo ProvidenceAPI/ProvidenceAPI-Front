@@ -7,7 +7,8 @@ import { Navbar } from "src/components/Navbar";
 import TransformacionCTA from "src/components/TransformacionCTA";
 import { Footer } from "src/components/Footer";
 
-// ✅ IMPORTAR DESDE LOS SERVICIOS
+import Swal from "sweetalert2";
+
 import { paymentService, isValidUUID, activityService } from "src/app/lib";
 import { Payment } from "src/interfaces/Payments";
 import { Activity } from "src/interfaces/Activity";
@@ -15,79 +16,100 @@ import { Activity } from "src/interfaces/Activity";
 export default function MisPagosPage() {
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
-  
-  // Estados
-  const [pagos, setPagos] = useState<Payment[]>([])
-  const [selectedActivity, setSelectedActivity] = useState<string>("")
-  const [activities,setActivities] = useState<Activity[]>([])
+
+  const [pagos] = useState<Payment[]>([]);
+  const [selectedActivity, setSelectedActivity] = useState<string>("");
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string>("");
   const [successMessage, setSuccessMessage] = useState<string>("");
   const [warningMessage, setWarningMessage] = useState<string>("");
 
-  // Redireccionar si no está autenticado
+
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       router.push("/login");
     }
   }, [isAuthenticated, loading, router]);
 
-  // Cargar datos iniciales
-  useEffect(() => {
-    if (isAuthenticated) {
-    }
-  }, [isAuthenticated]);
 
-  // Verificar si viene desde MercadoPago con status
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error,
+        confirmButtonColor: "#dc2626",
+      });
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (successMessage) {
+      Swal.fire({
+        icon: "success",
+        title: "¡Éxito!",
+        text: successMessage,
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    }
+  }, [successMessage]);
+
+  useEffect(() => {
+    if (warningMessage) {
+      Swal.fire({
+        icon: "warning",
+        title: "Atención",
+        text: warningMessage,
+        confirmButtonColor: "#f59e0b",
+      });
+    }
+  }, [warningMessage]);
+
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
-      const status = params.get('status');
-      
-      if (status === 'approved') {
-        setSuccessMessage('¡Pago aprobado exitosamente! Recargando historial...');
+      const status = params.get("status");
+
+      if (status === "approved") {
+        setSuccessMessage("¡Pago aprobado exitosamente! Recargando historial...");
         setTimeout(() => {
-          setSuccessMessage('');
-          window.history.replaceState({}, '', '/mis-pagos');
+          window.history.replaceState({}, "", "/mis-pagos");
         }, 2000);
       }
     }
   }, []);
 
-  useEffect(()=>{
-   const fetchReservations= async()=> {
-      setIsLoading(true)
-  
-      try{
-        const activities= await activityService.getActiveActivities()
-        setActivities(activities)
-        setIsLoading(false)
-      }
-      catch(error){
-        console.error(error)
-        setIsLoading(false)
-      }
-    }
-      fetchReservations()
-  },[])
 
-  // ==========================================
-  // FUNCIÓN PRINCIPAL DE PAGO
-  // ==========================================
+  useEffect(() => {
+    const fetchReservations = async () => {
+      setIsLoading(true);
+      try {
+        const activities = await activityService.getActiveActivities();
+        setActivities(activities);
+      } catch (error) {
+        console.error(error);
+        setError("Error al cargar las actividades");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchReservations();
+  }, []);
 
+ 
   const iniciarPagoMercadoPago = async () => {
     if (!selectedActivity) {
       setError("Por favor selecciona una actividad");
       return;
     }
 
-    // ✅ Validación con helper de validación
     if (!isValidUUID(selectedActivity)) {
       setError(
-        "La reserva seleccionada no tiene un ID válido. " +
-        "No se puede procesar el pago. " +
-        "Por favor contacta al administrador."
+        "La reserva seleccionada no tiene un ID válido. Por favor contacta al administrador."
       );
       return;
     }
@@ -97,32 +119,32 @@ export default function MisPagosPage() {
       setError("");
       setWarningMessage("");
 
-      console.log("=== INICIANDO PROCESO DE PAGO ===");
-      console.log("Reservation ID (UUID):", selectedActivity);
-
-    
       const initPoint = await paymentService.createPaymentPreference(
-   selectedActivity
+        selectedActivity
       );
-      
+
       if (initPoint) {
-        console.log("✅ Redirigiendo a MercadoPago:", initPoint);
-        window.location.href = initPoint;
+        Swal.fire({
+          icon: "info",
+          title: "Redirigiendo a MercadoPago",
+          text: "Serás redirigido para completar el pago",
+          timer: 1500,
+          showConfirmButton: false,
+        }).then(() => {
+          window.location.href = initPoint;
+        });
       } else {
-        console.error("❌ No se recibió el link de pago");
-        setError("No se pudo generar el link de pago. Por favor intenta nuevamente.");
+        setError("No se pudo generar el link de pago. Intenta nuevamente.");
       }
     } catch (error: any) {
-      console.error("❌ Error en proceso de pago:", error);
-      
-      const errorMessage = error.message || "Error al procesar el pago. Por favor intenta nuevamente.";
-      
-      setError(errorMessage);
+      setError(
+        error.message ||
+          "Error al procesar el pago. Por favor intenta nuevamente."
+      );
     } finally {
       setIsProcessing(false);
     }
   };
-
 
 
   const getEstadoColor = (estado: string) => {
@@ -144,19 +166,18 @@ export default function MisPagosPage() {
       approved: "Aprobado",
       pending: "Pendiente",
       rejected: "Rechazado",
-      cancelled: "Cancelado"
+      cancelled: "Cancelado",
     };
     return estados[estado] || estado;
   };
 
   const descargarRecibo = async (pagoId: string) => {
-    try {
-      console.log("Descargando recibo:", pagoId);
-      alert(`Funcionalidad de descarga de recibo #${pagoId} próximamente`);
-    } catch (error) {
-      console.error("Error descargando recibo:", error);
-      alert("Error al descargar el recibo");
-    }
+    Swal.fire({
+      icon: "info",
+      title: "Próximamente",
+      text: `La descarga del recibo #${pagoId} estará disponible pronto`,
+      confirmButtonColor: "#2563eb",
+    });
   };
 
 
@@ -171,8 +192,11 @@ export default function MisPagosPage() {
     );
   }
 
-  const actividadSeleccionada = activities.find(a => a.id === selectedActivity);
+  const actividadSeleccionada = activities.find(
+    (a) => a.id === selectedActivity
+  );
 
+ 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />

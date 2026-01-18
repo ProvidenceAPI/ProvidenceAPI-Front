@@ -62,7 +62,7 @@ export const reservationService = {
   cancelReservation: async (reservationId: string | number): Promise<void> => {
     try {
       console.log('🗑️ Cancelando reserva:', reservationId);
-      await apiClient.patch(`/api/reservations/${reservationId}/cancel`);
+      await apiClient.put(`/api/reservations/${reservationId}/cancel`);
       console.log('✅ Reserva cancelada exitosamente');
     } catch (error) {
       console.error('❌ Error cancelando reserva:', error);

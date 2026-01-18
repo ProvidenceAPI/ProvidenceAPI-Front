@@ -9,7 +9,6 @@ import { Footer } from "src/components/Footer";
 import UserProfileSection from "src/components/UserProfileSection";
 import DashboardStats from "src/components/DashboardStats";
 
-
 export default function DashboardPage() {
   const { user, isAuthenticated, loading, updateUser } = useAuth();
   const router = useRouter();
