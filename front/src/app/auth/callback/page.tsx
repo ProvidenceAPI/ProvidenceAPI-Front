@@ -24,10 +24,10 @@ export default function AuthCallbackPage() {
 
     const handleCallback = async () => {
       try {
-        // 1️⃣ Guardar token (persistencia)
+        
         localStorage.setItem("providence_token", token);
 
-        // 2️⃣ Obtener usuario
+        
         const API_URL =
           process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -39,12 +39,12 @@ export default function AuthCallbackPage() {
           throw new Error("No se pudo obtener el usuario");
         }
 
-        // 3️⃣ Setear contexto (NO redirige aquí)
+      
         if (setLogin) {
           setLogin(response.data, token);
         }
 
-        // 4️⃣ Navegar
+       
         router.replace("/dashboard");
       } catch (error: any) {
         console.error("❌ OAuth error:", error.response?.data || error.message);

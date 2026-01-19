@@ -6,30 +6,9 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import RegisterDto from "src/interfaces/RegisterDto";
 import RegisterFormState from "src/interfaces/RegisterFormState";
+import { FormErrors} from "src/interfaces/FormErrors"
+import {ValidationRules } from "src/interfaces/ValidationRules"
 
-interface FormErrors {
-  name: string;
-  lastname: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  phone: string;
-  dni: string;
-  genre: string;
-  birthdate: string;
-}
-
-interface ValidationRules {
-  name: boolean;
-  lastname: boolean;
-  email: boolean;
-  password: boolean;
-  confirmPassword: boolean;
-  phone: boolean;
-  dni: boolean;
-  genre: boolean;
-  birthdate: boolean;
-}
 
 const formInicialState: RegisterFormState = {
   name: "",
@@ -85,14 +64,14 @@ export default function RegisterForm() {
 
 
   useEffect(() => {
-    // Limpiar timeout anterior
+   
     if (validationTimeoutRef.current) {
       clearTimeout(validationTimeoutRef.current);
     }
 
     validationTimeoutRef.current = setTimeout(() => {
       validateRealTime();
-    }, 100); // 100ms de delay
+    }, 100); 
     
     return () => {
       if (validationTimeoutRef.current) {
@@ -444,7 +423,7 @@ export default function RegisterForm() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left side - Black section */}
+    
       <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-center px-12 py-20">
         <div className="text-2xl font-bold tracking-[0.2em]">
           <Link href="/" className="flex flex-col hover:no-underline">
@@ -488,19 +467,19 @@ export default function RegisterForm() {
         </div>
       </div>
 
-      {/* Right side - Form section */}
+    
       <div className="w-full md:w-1/2 bg-white flex flex-col justify-center px-8 md:px-12 py-20 overflow-y-auto">
         <div className="max-w-md mx-auto w-full">
-          {/* Header */}
+          
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-black mb-2">CREAR CUENTA</h2>
             <p className="text-gray-600">Completa todos los campos para unirte a Providence Fitness.</p>
           </div>
 
           <form onSubmit={submitHandler} className="space-y-6" noValidate>
-            {/* Nombre y Apellido en una fila */}
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Nombre */}
+             
               <div>
                 <label className={`block text-sm font-semibold mb-2 ${errors.name ? "text-red-600" : "text-black"}`}>
                   NOMBRE (3-80 caracteres)
@@ -531,7 +510,7 @@ export default function RegisterForm() {
                 )}
               </div>
 
-              {/* Apellido */}
+             
               <div>
                 <label className={`block text-sm font-semibold mb-2 ${errors.lastname ? "text-red-600" : "text-black"}`}>
                   APELLIDO (3-80 caracteres)
@@ -563,7 +542,7 @@ export default function RegisterForm() {
               </div>
             </div>
 
-            {/* Email */}
+          
             <div>
               <label className={`block text-sm font-semibold mb-2 ${errors.email ? "text-red-600" : "text-black"}`}>
                 CORREO ELECTRÓNICO
@@ -602,9 +581,9 @@ export default function RegisterForm() {
               )}
             </div>
 
-            {/* DNI y Teléfono en una fila */}
+    
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* DNI */}
+            
               <div>
                 <label className={`block text-sm font-semibold mb-2 ${errors.dni ? "text-red-600" : "text-black"}`}>
                   DNI (7-10 dígitos)
@@ -638,7 +617,7 @@ export default function RegisterForm() {
                 )}
               </div>
 
-              {/* Teléfono */}
+         
               <div>
                 <label className={`block text-sm font-semibold mb-2 ${errors.phone ? "text-red-600" : "text-black"}`}>
                   TELÉFONO (10-15 dígitos)
@@ -673,9 +652,9 @@ export default function RegisterForm() {
               </div>
             </div>
 
-            {/* Género y Fecha de Nacimiento en una fila */}
+           
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Género */}
+           
               <div>
                 <label className={`block text-sm font-semibold mb-2 ${errors.genre ? "text-red-600" : "text-black"}`}>
                   GÉNERO
@@ -713,7 +692,7 @@ export default function RegisterForm() {
                 )}
               </div>
 
-              {/* Fecha de Nacimiento */}
+             
               <div>
                 <label className={`block text-sm font-semibold mb-2 ${errors.birthdate ? "text-red-600" : "text-black"}`}>
                   FECHA DE NACIMIENTO (Mínimo 16 años)
@@ -745,9 +724,9 @@ export default function RegisterForm() {
               </div>
             </div>
 
-            {/* Contraseña y Confirmar Contraseña en una fila */}
+          
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Contraseña */}
+           
               <div>
                 <label className={`block text-sm font-semibold mb-2 ${errors.password ? "text-red-600" : "text-black"}`}>
                   CONTRASEÑA (8-15 caracteres)
@@ -823,7 +802,7 @@ export default function RegisterForm() {
                 )}
               </div>
 
-              {/* Confirmar Contraseña */}
+         
               <div>
                 <label className={`block text-sm font-semibold mb-2 ${errors.confirmPassword ? "text-red-600" : "text-black"}`}>
                   CONFIRMAR CONTRASEÑA
@@ -871,7 +850,7 @@ export default function RegisterForm() {
               </div>
             </div>
 
-            {/* Términos y Condiciones */}
+          
             <div className="flex items-start space-x-3">
               <input
                 type="checkbox"
@@ -886,7 +865,7 @@ export default function RegisterForm() {
               </label>
             </div>
 
-            {/* Submit Button */}
+          
             <button
               type="submit"
               className={`w-full py-3 rounded-lg font-bold text-white text-lg transition-all uppercase tracking-wider ${isLoading || !acceptTerms ? "bg-gray-400 cursor-not-allowed" : "bg-[#DC2626] hover:bg-[#B01C1C]"}`}
@@ -908,7 +887,7 @@ export default function RegisterForm() {
               )}
             </button>
 
-            {/* Social Login */}
+          
             <div className="relative py-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300"></div>
@@ -947,7 +926,7 @@ export default function RegisterForm() {
               </button>
             </div>
 
-            {/* Login Link */}
+        
             <div className="text-center pt-4 border-t border-gray-200">
               <p className="text-gray-700">
                 ¿Ya tienes una cuenta?{" "}

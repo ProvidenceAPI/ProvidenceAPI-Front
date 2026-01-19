@@ -3,12 +3,12 @@ export interface User {
   name: string;
   email: string;
   phone?: string;
-  profileImage?: string; // URL de Cloudinary
-  rol: "user" | "admin";
-  status: "Active" | "Inactive";
-  genre?: "Male" | "Female" | "Other";
+  profileImage?: string;
+  rol: "user" | "admin" | "superAdmin";
+  status: "Active" | "Inactive" | "Cancelled" | "Banned";
+  genre?: "Male" | "Female" | "Other" | string;
   lastname?: string;
   dni?: number;
   birthdate?: string;
-  updatedAt?: string | Date; // Añade esto
+  updatedAt?: string | Date;
 }

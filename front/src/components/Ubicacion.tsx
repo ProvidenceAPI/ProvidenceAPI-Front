@@ -1,4 +1,3 @@
-// app/ubicacion/page.tsx
 
 import { 
   MapPin, 
@@ -13,7 +12,7 @@ export default function Ubicacion() {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         
-        {/* Título Principal - IDÉNTICO a "Historias de Éxito" */}
+       
         <div className="text-center mb-16">
           <h1 className="text-5xl  text-gray-900 mb-6 tracking-tight">
             UBICACIÓN
@@ -25,10 +24,10 @@ export default function Ubicacion() {
 
         <div className="grid lg:grid-cols-2 gap-16 items-start">
           
-          {/* Información de Contacto - Estilo más minimalista */}
+         
           <div className="space-y-12">
             
-            {/* Dirección */}
+            
             <div className="space-y-4">
               <div className="flex items-center space-x-4 mb-2">
                 <div className="bg-gray-100 p-3 rounded-full">
@@ -51,10 +50,10 @@ export default function Ubicacion() {
               </a>
             </div>
 
-            {/* Separador */}
+          
             <div className="border-t border-gray-300 pt-8"></div>
 
-            {/* Teléfono */}
+       
             <div className="space-y-4">
               <div className="flex items-center space-x-4 mb-2">
                 <div className="bg-gray-100 p-3 rounded-full">
@@ -70,10 +69,10 @@ export default function Ubicacion() {
               </a>
             </div>
 
-            {/* Separador */}
+        
             <div className="border-t border-gray-300 pt-8"></div>
 
-            {/* Email */}
+
             <div className="space-y-4">
               <div className="flex items-center space-x-4 mb-2">
                 <div className="bg-gray-100 p-3 rounded-full">
@@ -89,10 +88,10 @@ export default function Ubicacion() {
               </a>
             </div>
 
-            {/* Separador */}
+
             <div className="border-t border-gray-300 pt-8"></div>
 
-            {/* Horarios */}
+  
             <div className="space-y-4">
               <div className="flex items-center space-x-4 mb-2">
                 <div className="bg-gray-100 p-3 rounded-full">
@@ -114,10 +113,9 @@ export default function Ubicacion() {
             </div>
           </div>
 
-          {/* Mapa y Features */}
+
           <div className="space-y-8">
-            
-            {/* Mapa */}
+      
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
               <div className="h-96 w-full">
                 <iframe

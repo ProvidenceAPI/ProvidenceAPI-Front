@@ -1,4 +1,4 @@
-// components/TransformacionCTA.tsx (Versión Simple)
+
 "use client";
 
 import React from "react";
