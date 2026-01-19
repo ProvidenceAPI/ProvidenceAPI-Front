@@ -1,20 +1,9 @@
 "use client";
 
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import { User } from 'src/interfaces/IUser';
 
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  lastname?: string;
-  phone?: string;
-  rol?: 'user' | 'admin' | 'superAdmin';
-  status?: 'Active' | 'Cancelled' | 'Banned';
-  profileImage?: string;
-  genre?: string;
-  birthdate?: string;
-  dni?: number;
-};
+
 
 type AuthResponse = {
   success: boolean;
@@ -57,7 +46,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Cargar usuario al iniciar
+
   useEffect(() => {
     const loadUser = async () => {
       const token = localStorage.getItem('providence_token');
@@ -92,7 +81,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     loadUser();
   }, []);
 
-  // LOGIN NORMAL
+ 
   const login = async (email: string, password: string): Promise<AuthResponse> => {
     try {
       setLoading(true);
@@ -151,7 +140,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // REGISTER
+ 
   const register = async (userData: any, confirmPassword?: string): Promise<AuthResponse> => {
     try {
       setLoading(true);
@@ -211,7 +200,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // ACTUALIZAR PERFIL
+  
   const updateProfile = async (userData: Partial<User>): Promise<AuthResponse> => {
     try {
       setLoading(true);
@@ -262,7 +251,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // SUBIR IMAGEN DE PERFIL - VERSIÓN SIMPLIFICADA QUE FUNCIONA
+  
   const uploadProfileImage = async (file: File): Promise<AuthResponse> => {
     try {
       setLoading(true);
@@ -276,7 +265,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
 
       console.log('🖼️ Subiendo imagen...');
 
-      // 1. Preview inmediato (Blob URL)
+      
       const previewUrl = URL.createObjectURL(file);
       if (user) {
         const tempUser = { ...user, profileImage: previewUrl };
@@ -284,11 +273,11 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('providence_user', JSON.stringify(tempUser));
       }
 
-      // 2. Crear FormData
+      
       const formData = new FormData();
       formData.append('file', file);
 
-      // 3. Enviar al backend
+      
       const response = await fetch(`${API_URL}/api/users/profile/image`, {
         method: 'PUT',
         headers: {
@@ -305,13 +294,13 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.message || 'Error al subir imagen');
       }
 
-      // 4. URL de Cloudinary puede venir en diferentes propiedades
+      
       const cloudinaryUrl = data.profileImage || data.image || data.url || data.secure_url || data.imageUrl;
       
-      // 5. Si no hay URL, usar el preview como fallback
+     
       const finalUrl = cloudinaryUrl || previewUrl;
 
-      // 6. Actualizar usuario
+      
       if (user) {
         const updatedUser = { 
           ...user, 
@@ -320,7 +309,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         setUser(updatedUser);
         localStorage.setItem('providence_user', JSON.stringify(updatedUser));
         
-        // 7. Si tenemos URL de Cloudinary, actualizar también el perfil
+        
         if (cloudinaryUrl) {
           try {
             await updateProfile({ profileImage: cloudinaryUrl });
@@ -341,7 +330,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       setError(message);
       console.error('❌ Error subiendo imagen:', err);
       
-      // Mantener el preview local aunque falle
+     
       return { 
         success: false, 
         message: 'La imagen se muestra localmente. Error: ' + message 
@@ -351,12 +340,12 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // GOOGLE LOGIN
+ 
   const googleLogin = () => {
     window.location.href = `${API_URL}/api/auth/google/login`;
   };
 
-  // GOOGLE CALLBACK
+  
   const handleGoogleCallback = async (code: string): Promise<AuthResponse> => {
     try {
       setLoading(true);
@@ -405,7 +394,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // LOGOUT
+ 
   const logout = () => {
     localStorage.removeItem('providence_token');
     localStorage.removeItem('providence_user');
@@ -417,7 +406,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Actualizar usuario localmente
+ 
   const updateUser = (updatedData: Partial<User>) => {
     if (!user) return;
 
@@ -426,14 +415,14 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('providence_user', JSON.stringify(updatedUser));
   };
 
-  // Para Google OAuth
+ 
   const setLogin = (userData: User, userToken: string) => {
     setUser(userData);
     localStorage.setItem('providence_token', userToken);
     localStorage.setItem('providence_user', JSON.stringify(userData));
   };
 
-  // Verificar autenticación
+  
   const checkAuth = (): boolean => {
     return !!localStorage.getItem('providence_token');
   };

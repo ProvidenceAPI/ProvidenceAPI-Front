@@ -3,9 +3,9 @@ export default interface RegisterFormState {
   lastname: string;
   email: string;
   password: string;
-  confirmPassword: string; // Cambiar de repeatPassword a confirmPassword
+  confirmPassword: string; 
   phone: string;
   dni: number;
   genre: string;
-  birthdate: string;      // Formato: "1991-03-12"
+  birthdate: string;    
 }

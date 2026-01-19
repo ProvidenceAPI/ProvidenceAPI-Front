@@ -1,44 +1,20 @@
 "use client";
 
-import { useAppContext } from "src/contexts/AuthContext";
+import { useAuth } from "src/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { Navbar } from "src/components/Navbar";
 import TransformacionCTA from "src/components/TransformacionCTA";
-import { Footer } from "src/components/Footer"; 
-interface Reserva {
-  id: string;
-  fecha: string;
-  hora: string;
-  actividad: string;
-  estado: "confirmada" | "pendiente" | "cancelada";
-  instructor: string;
-  duracion: number;
-  sala: string;
-  usuarioId: string;
-}
-
-interface Actividad {
-  id: string;
-  nombre: string;
-  descripcion: string;
-  horarios: Array<{
-    dia: string;
-    hora: string;
-    instructor: string;
-    cupos: number;
-  }>;
-}
+import { Footer } from "src/components/Footer";
+import { Reservation } from "src/interfaces/Reservation";
+import { reservationService } from "src/app/lib";
 
 export default function MisReservasPage() {
-  const { user, isAuthenticated, loading } = useAppContext();
+  const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
-  const [reservas, setReservas] = useState<Reserva[]>([]);
-  const [actividades, setActividades] = useState<Actividad[]>([]);
+  const [reservas, setReservas] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedActividad, setSelectedActividad] = useState<string>("");
-  const [selectedHorario, setSelectedHorario] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -47,152 +23,72 @@ export default function MisReservasPage() {
   }, [isAuthenticated, loading, router]);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && user?.id) {
       fetchMisReservas();
-      fetchActividades();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
 
   const fetchMisReservas = async () => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('providence_token');
+      setError(null);
       
-      // TODO: Cambiar por tu endpoint real del backend
-      // const response = await axios.get('http://localhost:3000/reservas', {
-      //   headers: { Authorization: `Bearer ${token}` }
-      // });
+ 
+      const data = await reservationService.getUserReservations();
       
-      // Datos mock para pruebas
-      setReservas([
-        { 
-          id: "1", 
-          fecha: "2024-01-20", 
-          hora: "18:00", 
-          actividad: "CrossFit", 
-          estado: "confirmada", 
-          instructor: "Carlos Ruiz",
-          duracion: 60,
-          sala: "Sala 1",
-          usuarioId: user?.id || ""
-        },
-        { 
-          id: "2", 
-          fecha: "2024-01-21", 
-          hora: "09:00", 
-          actividad: "Yoga", 
-          estado: "pendiente", 
-          instructor: "Ana López",
-          duracion: 45,
-          sala: "Sala 2",
-          usuarioId: user?.id || ""
-        },
-      ]);
-    } catch (error) {
+      setReservas(data);
+    } catch (error: any) {
       console.error("Error cargando reservas:", error);
+      setError(error.message || "Error al cargar tus reservas");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const fetchActividades = async () => {
-    try {
-      // TODO: Cambiar por tu endpoint real
-      // const response = await axios.get('http://localhost:3000/actividades');
-      
-      setActividades([
-        {
-          id: "1",
-          nombre: "CrossFit",
-          descripcion: "Entrenamiento funcional de alta intensidad",
-          horarios: [
-            { dia: "Lunes", hora: "18:00", instructor: "Carlos Ruiz", cupos: 10 },
-            { dia: "Miércoles", hora: "18:00", instructor: "Carlos Ruiz", cupos: 8 },
-            { dia: "Viernes", hora: "19:00", instructor: "Juan Pérez", cupos: 12 }
-          ]
-        },
-        {
-          id: "2",
-          nombre: "Yoga",
-          descripcion: "Clase de yoga para todos los niveles",
-          horarios: [
-            { dia: "Martes", hora: "09:00", instructor: "Ana López", cupos: 15 },
-            { dia: "Jueves", hora: "09:00", instructor: "Ana López", cupos: 15 },
-            { dia: "Sábado", hora: "10:00", instructor: "María García", cupos: 20 }
-          ]
-        }
-      ]);
-    } catch (error) {
-      console.error("Error cargando actividades:", error);
-    }
-  };
-
   const cancelarReserva = async (id: string) => {
-    try {
-      const token = localStorage.getItem('providence_token');
-      
-      // TODO: Cambiar por tu endpoint real
-      // await axios.delete(`http://localhost:3000/reservas/${id}`, {
-      //   headers: { Authorization: `Bearer ${token}` }
-      // });
-      
-      // Actualizar estado local
-      setReservas(reservas.map(r => 
-        r.id === id ? { ...r, estado: "cancelada" } : r
-      ));
-      
-      alert("Reserva cancelada exitosamente");
-    } catch (error) {
-      console.error("Error cancelando reserva:", error);
-      alert("Error al cancelar la reserva");
-    }
-  };
-
-  const crearReserva = async () => {
-    if (!selectedActividad || !selectedHorario) {
-      alert("Por favor selecciona una actividad y horario");
+    if (!confirm("¿Estás seguro de que deseas cancelar esta reserva?")) {
       return;
     }
 
     try {
-      const token = localStorage.getItem('providence_token');
+     
+      await reservationService.cancelReservation(id);
       
-      // TODO: Cambiar por tu endpoint real
-      // const response = await axios.post('http://localhost:3000/reservas', {
-      //   actividadId: selectedActividad,
-      //   horario: selectedHorario,
-      //   usuarioId: user?.id
-      // }, {
-      //   headers: { Authorization: `Bearer ${token}` }
-      // });
       
-      // Agregar nueva reserva a la lista
-      const actividad = actividades.find(a => a.id === selectedActividad);
-      const horarioInfo = actividad?.horarios.find(h => 
-        `${h.dia} ${h.hora}` === selectedHorario
-      );
+      await fetchMisReservas();
       
-      const nuevaReserva: Reserva = {
-        id: Date.now().toString(),
-        fecha: new Date().toISOString().split('T')[0],
-        hora: horarioInfo?.hora || "",
-        actividad: actividad?.nombre || "",
-        estado: "pendiente",
-        instructor: horarioInfo?.instructor || "",
-        duracion: 60,
-        sala: "Por asignar",
-        usuarioId: user?.id || ""
-      };
-      
-      setReservas([...reservas, nuevaReserva]);
-      setSelectedActividad("");
-      setSelectedHorario("");
-      
-      alert("Reserva creada exitosamente");
+      alert("Reserva cancelada exitosamente");
     } catch (error: any) {
-      console.error("Error creando reserva:", error);
-      alert(error.response?.data?.message || "Error al crear la reserva");
+      console.error("Error cancelando reserva:", error);
+      alert(error.message || "Error al cancelar la reserva");
     }
+  };
+
+  const getEstadoColor = (estado: string) => {
+    switch (estado) {
+      case "confirmed":
+      case "active":
+        return "bg-green-100 text-green-800";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
+      case "completed":
+        return "bg-blue-100 text-blue-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getEstadoTexto = (estado: string) => {
+    const estados: Record<string, string> = {
+      active: "Activa",
+      pending: "Pendiente",
+      confirmed: "Confirmada",
+      cancelled: "Cancelada",
+      completed: "Completada"
+    };
+    return estados[estado] || estado;
   };
 
   if (loading || isLoading) {
@@ -208,7 +104,7 @@ export default function MisReservasPage() {
       <Navbar />
       
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
+       
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Mis Reservas</h1>
           <p className="text-gray-600 mt-2">
@@ -216,169 +112,122 @@ export default function MisReservasPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Formulario para nueva reserva */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">
-                Nueva Reserva
-              </h2>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Actividad
-                  </label>
-                  <select
-                    value={selectedActividad}
-                    onChange={(e) => setSelectedActividad(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                  >
-                    <option value="">Seleccionar actividad</option>
-                    {actividades.map((actividad) => (
-                      <option key={actividad.id} value={actividad.id}>
-                        {actividad.nombre}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {selectedActividad && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Horario Disponible
-                    </label>
-                    <select
-                      value={selectedHorario}
-                      onChange={(e) => setSelectedHorario(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                    >
-                      <option value="">Seleccionar horario</option>
-                      {actividades
-                        .find(a => a.id === selectedActividad)
-                        ?.horarios.map((horario, index) => (
-                          <option 
-                            key={index} 
-                            value={`${horario.dia} ${horario.hora}`}
-                          >
-                            {horario.dia} {horario.hora} - {horario.instructor} 
-                            (Cupos: {horario.cupos})
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-                )}
-
-                <button
-                  onClick={crearReserva}
-                  disabled={!selectedActividad || !selectedHorario}
-                  className="w-full bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                  Reservar
-                </button>
-              </div>
-            </div>
+      
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+            {error}
           </div>
+        )}
 
-          {/* Lista de reservas */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Fecha y Hora
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actividad
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Instructor / Sala
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Estado
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Acciones
-                      </th>
+       
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Fecha y Hora
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actividad
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Detalles
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Estado
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {reservas.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                      No tienes reservas aún. 
+                      <a 
+                        href="/home" 
+                        className="text-red-600 hover:text-red-700 font-medium ml-1"
+                      >
+                        ¡Reserva tu primera clase!
+                      </a>
+                    </td>
+                  </tr>
+                ) : (
+                  reservas.map((reserva) => (
+                    <tr key={reserva.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {new Date(reserva.date).toLocaleDateString('es-ES', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {reserva.hour}
+                          {reserva.activity?.duration && ` (${reserva.activity.duration} min)`}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm font-medium text-gray-900">
+                          {reserva.activityName || reserva.activity?.name}
+                        </div>
+                        {reserva.isFree && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 mt-1">
+                            Clase Gratis
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          Capacidad: {reserva.activity?.capacity || '-'}
+                        </div>
+                        {reserva.turn?.availableSpots !== undefined && (
+                          <div className="text-sm text-gray-500">
+                            Cupos disponibles: {reserva.turn.availableSpots}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getEstadoColor(reserva.status)}`}>
+                          {getEstadoTexto(reserva.status)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
+                        {(reserva.status === "pending" || reserva.status === "active" || reserva.status === "confirmed") && (
+                          <button
+                            onClick={() => cancelarReserva(reserva.id)}
+                            className="text-red-600 hover:text-red-900 font-medium"
+                          >
+                            Cancelar
+                          </button>
+                        )}
+                        {reserva.activity && (
+                          <button 
+                            onClick={() => router.push(`/actividades/${reserva.activityId}`)}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            Ver actividad
+                          </button>
+                        )}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {reservas.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                          No tienes reservas aún
-                        </td>
-                      </tr>
-                    ) : (
-                      reservas.map((reserva) => (
-                        <tr key={reserva.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">
-                              {new Date(reserva.fecha).toLocaleDateString('es-ES', {
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                              })}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {reserva.hora} ({reserva.duracion} min)
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              {reserva.actividad}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">
-                              {reserva.instructor}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {reserva.sala}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              reserva.estado === "confirmada" 
-                                ? "bg-green-100 text-green-800" 
-                                : reserva.estado === "pendiente"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-red-100 text-red-800"
-                            }`}>
-                              {reserva.estado.charAt(0).toUpperCase() + reserva.estado.slice(1)}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
-                            {reserva.estado === "pendiente" && (
-                              <button
-                                onClick={() => cancelarReserva(reserva.id)}
-                                className="text-red-600 hover:text-red-900 font-medium"
-                              >
-                                Cancelar
-                              </button>
-                            )}
-                            <button className="text-blue-600 hover:text-blue-900">
-                              Detalles
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
 
-      {/* Sección de Transformación CTA */}
+
       <TransformacionCTA />
 
-      {/* Footer */}
+
       <Footer />
     </div>
   );

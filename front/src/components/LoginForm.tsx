@@ -61,7 +61,7 @@ export default function LoginForm() {
     return isValid;
   };
 
-  // 🔐 Google OAuth (redirect al backend)
+  
   const handleGoogleAuth = () => {
     clearError();
     setGoogleLoading(true);
@@ -126,7 +126,7 @@ export default function LoginForm() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left */}
+     
       <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-center px-12 py-20">
         <Link href="/">
           <img src="/logo.png" alt="Logo" className="h-8 mb-10" />
@@ -143,7 +143,7 @@ export default function LoginForm() {
         </p>
       </div>
 
-      {/* Right */}
+    
       <div className="w-full md:w-1/2 bg-white flex justify-center items-center px-8">
         <div className="max-w-md w-full">
           <h2 className="text-3xl font-bold mb-2">
@@ -158,7 +158,7 @@ export default function LoginForm() {
             className="space-y-6"
             noValidate
           >
-            {/* Email */}
+         
             <input
               type="email"
               name="email"
@@ -174,7 +174,7 @@ export default function LoginForm() {
               </p>
             )}
 
-            {/* Password */}
+           
             <input
               type={showPassword ? "text" : "password"}
               name="password"
