@@ -39,7 +39,7 @@ export default function LoginForm() {
     if (errors[name as keyof typeof errors]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
-    
+
     // Limpiar error general de API
     if (apiError) {
       setApiError("");
@@ -72,7 +72,7 @@ export default function LoginForm() {
     setGoogleLoading(true);
     setApiError("");
 
-    const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
     const googleAuthUrl = `${base}/api/auth/google/login`;
 
     localStorage.setItem("redirectAfterLogin", window.location.pathname);
@@ -81,7 +81,7 @@ export default function LoginForm() {
 
   const submitHandler = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     // Limpiar errores previos
     setApiError("");
 
@@ -104,23 +104,25 @@ export default function LoginForm() {
 
       // Redirigir al dashboard
       router.push("/dashboard");
-
     } catch (error: any) {
       console.error("Login error:", error);
-      
+
       // Manejar diferentes tipos de error
       let errorMessage = "Error al iniciar sesión";
-      
+
       if (error.message.includes("Credenciales incorrectas")) {
         errorMessage = "Email o contraseña incorrectos";
-      } else if (error.message.includes("NetworkError") || error.message.includes("Failed to fetch")) {
+      } else if (
+        error.message.includes("NetworkError") ||
+        error.message.includes("Failed to fetch")
+      ) {
         errorMessage = "Error de conexión. Verifica tu internet";
       } else if (error.message.includes("No se recibió token")) {
         errorMessage = "Error del servidor. Contacta al administrador";
       } else {
         errorMessage = error.message || "Error al iniciar sesión";
       }
-      
+
       setApiError(errorMessage);
 
       await Swal.fire({
@@ -138,13 +140,18 @@ export default function LoginForm() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left Panel - Desktop only */}
-      <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-center px-8 lg:px-12 py-12 lg:py-20">
-        <Link href="/" className="mb-8 lg:mb-10">
-          <Image src="/logo.png" alt="Logo" width={120} height={40} className="h-8 lg:h-10 w-auto" />
-        </Link>
-
-        <h2 className="text-3xl lg:text-5xl font-bold mb-4 lg:mb-6 leading-tight">
+      {/* Left side - Black section */}
+      <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-center px-12 py-20">
+        <div className="text-2xl font-bold tracking-[0.2em]">
+          <Link href="/" className="flex flex-col hover:no-underline">
+            <img
+              src="/LOGOMEJORADO.jpeg"
+              alt="Providence Fitness Logo"
+              className="h-auto w-auto"
+            />
+          </Link>
+        </div>
+        <h2 className="text-5xl font-bold leading-tight mb-6">
           BIENVENIDO
           <br />
           DE VUELTA
@@ -153,10 +160,12 @@ export default function LoginForm() {
         <p className="text-gray-400 text-base lg:text-lg">
           Continúa tu transformación. Inicia sesión.
         </p>
-        
+
         {/* Información adicional responsiva */}
         <div className="mt-8 lg:mt-12 p-4 lg:p-6 bg-gray-900 rounded-lg">
-          <h3 className="text-lg lg:text-xl font-semibold mb-2">Providence Fitness</h3>
+          <h3 className="text-lg lg:text-xl font-semibold mb-2">
+            Providence Fitness
+          </h3>
           <ul className="text-sm lg:text-base text-gray-300 space-y-1">
             <li>✅ Reserva tus actividades favoritas</li>
             <li>✅ Gestiona tus pagos mensuales</li>
@@ -172,7 +181,13 @@ export default function LoginForm() {
           {/* Logo para mobile */}
           <div className="md:hidden mb-6 text-center">
             <Link href="/">
-              <Image src="/logo.png" alt="Logo" width={120} height={40} className="h-8 w-auto mx-auto" />
+              <Image
+                src="/logo.png"
+                alt="Logo"
+                width={120}
+                height={40}
+                className="h-8 w-auto mx-auto"
+              />
             </Link>
             <h1 className="text-2xl font-bold mt-2">PROVIDENCE FITNESS</h1>
           </div>
@@ -230,7 +245,9 @@ export default function LoginForm() {
                   placeholder="Contraseña"
                   disabled={isLoadingAny}
                   className={`w-full p-3 border rounded-lg pr-10 text-sm sm:text-base ${
-                    errors.password ? "border-red-500 bg-red-50" : "border-gray-300"
+                    errors.password
+                      ? "border-red-500 bg-red-50"
+                      : "border-gray-300"
                   } ${isLoadingAny ? "bg-gray-100 cursor-not-allowed" : "bg-white"}`}
                 />
                 <button
@@ -238,7 +255,9 @@ export default function LoginForm() {
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={isLoadingAny}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 disabled:text-gray-300 disabled:cursor-not-allowed text-lg"
-                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  aria-label={
+                    showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+                  }
                 >
                   {showPassword ? "🙈" : "👁️"}
                 </button>
@@ -253,15 +272,12 @@ export default function LoginForm() {
             {/* Recordar contraseña */}
             <div className="flex items-center justify-between">
               <label className="flex items-center text-sm sm:text-base">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 text-red-600 mr-2"
-                />
+                <input type="checkbox" className="h-4 w-4 text-red-600 mr-2" />
                 <span className="text-gray-700">Recordarme</span>
               </label>
               <button
                 type="button"
-                onClick={() => router.push('/forgot-password')}
+                onClick={() => router.push("/forgot-password")}
                 className="text-sm text-red-600 hover:text-red-700 disabled:text-gray-400"
                 disabled={isLoadingAny}
               >
@@ -274,14 +290,30 @@ export default function LoginForm() {
               type="submit"
               disabled={isLoadingAny}
               className={`w-full bg-red-600 text-white py-3 rounded-lg font-bold hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center text-sm sm:text-base ${
-                isLoadingAny ? 'opacity-80' : ''
+                isLoadingAny ? "opacity-80" : ""
               }`}
             >
               {loginLoading ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Iniciando sesión...
                 </>
@@ -300,43 +332,71 @@ export default function LoginForm() {
                 <div className="w-full border-t border-gray-300"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-3 bg-white text-gray-500">O continúa con</span>
+                <span className="px-3 bg-white text-gray-500">
+                  O continúa con
+                </span>
               </div>
             </div>
 
             <button
-                type="button"
-                onClick={handleGoogleAuth}
-                className="flex items-center justify-center w-full py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={googleLoading}
-              >
-                {googleLoading ? (
-                  <span className="flex items-center justify-center">
-                    <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Conectando con Google...
+              type="button"
+              onClick={handleGoogleAuth}
+              className="flex items-center justify-center w-full py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={googleLoading}
+            >
+              {googleLoading ? (
+                <span className="flex items-center justify-center">
+                  <svg
+                    className="animate-spin h-5 w-5 mr-2"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  Conectando con Google...
+                </span>
+              ) : (
+                <>
+                  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                    <path
+                      fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    />
+                  </svg>
+                  <span className="text-sm font-medium">
+                    Continuar con Google
                   </span>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                    </svg>
-                    <span className="text-sm font-medium">Continuar con Google</span>
-                  </>
-                )}
-              </button>
+                </>
+              )}
+            </button>
 
             <p className="text-center text-gray-700">
               ¿No tienes cuenta?{" "}
-              <Link
-                href="/register"
-                className="text-red-600 font-bold"
-              >
+              <Link href="/register" className="text-red-600 font-bold">
                 Regístrate
               </Link>
             </p>
