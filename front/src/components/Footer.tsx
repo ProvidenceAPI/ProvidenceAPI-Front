@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { FacebookIcon, InstagramIcon, TwitterIcon, MailIcon, PhoneIcon, LocationIcon } from "./SocialIcons";
 
 export const Footer: React.FC = () => {
@@ -20,10 +21,11 @@ export const Footer: React.FC = () => {
    
           <div>
             <div className="mb-4">
-        
-              <img 
-                src="/logo.png" 
-                alt="Providence Fitness Logo" 
+              <Image
+                src="/logo.png"
+                alt="Providence Fitness Logo"
+                width={160}
+                height={48}
                 className="h-12 w-auto mb-3"
               />
             </div>

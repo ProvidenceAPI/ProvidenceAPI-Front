@@ -1,23 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useAuth } from "src/contexts/AuthContext";
+import React, { useState, useEffect, useCallback } from "react";
+import { useAppContext } from "src/contexts/AppContext";
 import { reservationService } from "src/app/lib/ReservationService";
 import { Reservation } from "src/interfaces/Reservation";
 
 export default function DashboardStats() {
-  const { user } = useAuth();
+  const { user } = useAppContext();
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user?.id) {
-      loadUserReservations();
-    }
-  }, [user]);
-
-  const loadUserReservations = async () => {
+  const loadUserReservations = useCallback(async () => {
     if (!user?.id) return;
 
     setLoading(true);
@@ -30,7 +24,13 @@ export default function DashboardStats() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (user?.id) {
+      loadUserReservations();
+    }
+  }, [user?.id, loadUserReservations]);
 
   const handleCancelReservation = async (reservationId: string) => {
     const confirmed = window.confirm(
@@ -294,7 +294,7 @@ export default function DashboardStats() {
                       <div className="text-sm font-medium text-gray-900">
                         {reservation.activityName || 'Actividad'}
                       </div>
-                      {(reservation.isFreeReservation || reservation.isFree) && (
+                      {(reservation.isFree || reservation.isFree) && (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-1">
                           🎉 Clase Gratis
                         </span>
@@ -302,21 +302,21 @@ export default function DashboardStats() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {reservation.date ? formatDate(reservation.date) : 'Sin fecha'}
+                        {reservation.activityDate ? formatDate(reservation.activityDate) : 'Sin fecha'}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {reservation.hour || 'Sin hora'}
+                        {reservation.startTime || 'Sin hora'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(reservation.status)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {reservation.isPaid ? (
+                      {(reservation as any).isPaid ? (
                         <span className="text-green-600 text-sm font-medium">
                           ✓ Pagado
                         </span>
-                      ) : (reservation.isFreeReservation || reservation.isFree) ? (
+                      ) : reservation.isFree ? (
                         <span className="text-blue-600 text-sm font-medium">
                           Gratis
                         </span>

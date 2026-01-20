@@ -28,3 +28,51 @@
     -moz-osx-font-smoothing: grayscale;
   }
 }
+/* Animaciones */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Mejoras de responsividad */
+@media (max-width: 768px) {
+  .min-h-screen {
+    min-height: 100vh;
+    overflow-y: auto;
+  }
+}
+
+/* Estados de loading */
+.disabled\:cursor-not-allowed:disabled {
+  cursor: not-allowed;
+}
+
+/* Mejorar visualización de inputs en móviles */
+@media (max-width: 640px) {
+  input, button {
+    font-size: 16px !important; /* Evita zoom en iOS */
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}

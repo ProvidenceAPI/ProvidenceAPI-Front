@@ -1,4 +1,4 @@
- export interface ValidationRules {
+export interface ValidationRules {
   name: boolean;
   lastname: boolean;
   email: boolean;

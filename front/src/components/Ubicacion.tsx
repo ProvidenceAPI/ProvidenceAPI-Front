@@ -1,18 +1,9 @@
-
-import { 
-  MapPin, 
-  Phone, 
-  Mail, 
-  Clock,
-  Navigation, 
-} from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, Navigation } from "lucide-react";
 
 export default function Ubicacion() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
-        
-       
         <div className="text-center mb-16">
           <h1 className="text-5xl  text-gray-900 mb-6 tracking-tight">
             UBICACIÓN
@@ -23,11 +14,7 @@ export default function Ubicacion() {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-16 items-start">
-          
-         
           <div className="space-y-12">
-            
-            
             <div className="space-y-4">
               <div className="flex items-center space-x-4 mb-2">
                 <div className="bg-gray-100 p-3 rounded-full">
@@ -36,10 +23,11 @@ export default function Ubicacion() {
                 <h2 className="text-3xl font-bold text-gray-900">Dirección</h2>
               </div>
               <p className="text-xl text-gray-800 leading-relaxed pl-16">
-                Provincia de Buenos Aires 760,<br />
+                Provincia de Buenos Aires 760,
+                <br />
                 Cipoletti, Argentina
               </p>
-              <a 
+              <a
                 href="https://maps.google.com/?q=Provincia+de+Buenos+Aires+760,Cipoletti,Río+Negro,Argentina"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -50,10 +38,8 @@ export default function Ubicacion() {
               </a>
             </div>
 
-          
             <div className="border-t border-gray-300 pt-8"></div>
 
-       
             <div className="space-y-4">
               <div className="flex items-center space-x-4 mb-2">
                 <div className="bg-gray-100 p-3 rounded-full">
@@ -61,7 +47,7 @@ export default function Ubicacion() {
                 </div>
                 <h2 className="text-3xl font-bold text-gray-900">Teléfono</h2>
               </div>
-              <a 
+              <a
                 href="tel:+5551234567"
                 className="text-xl text-gray-800 hover:text-gray-900 transition-colors block pl-16"
               >
@@ -69,9 +55,7 @@ export default function Ubicacion() {
               </a>
             </div>
 
-        
             <div className="border-t border-gray-300 pt-8"></div>
-
 
             <div className="space-y-4">
               <div className="flex items-center space-x-4 mb-2">
@@ -80,7 +64,7 @@ export default function Ubicacion() {
                 </div>
                 <h2 className="text-3xl font-bold text-gray-900">Email</h2>
               </div>
-              <a 
+              <a
                 href="mailto:info@providencefitness.com"
                 className="text-xl text-gray-800 hover:text-gray-900 transition-colors block pl-16"
               >
@@ -88,10 +72,8 @@ export default function Ubicacion() {
               </a>
             </div>
 
-
             <div className="border-t border-gray-300 pt-8"></div>
 
-  
             <div className="space-y-4">
               <div className="flex items-center space-x-4 mb-2">
                 <div className="bg-gray-100 p-3 rounded-full">
@@ -101,21 +83,18 @@ export default function Ubicacion() {
               </div>
               <div className="space-y-3 pl-16">
                 <p className="text-xl text-gray-800">
-                  <span className="font-semibold">Lunes a Viernes:</span> 07:00 - 22:00
+                  <span className="font-semibold">Lunes a Viernes:</span> 07:00
+                  - 22:00
                 </p>
                 <p className="text-xl text-gray-800">
                   <span className="font-semibold">Sábados:</span> 09:00 - 14:00
                 </p>
-                <p className="text-gray-600 text-lg mt-4">
-                  * Domingo cerrado
-                </p>
+                <p className="text-gray-600 text-lg mt-4">* Domingo cerrado</p>
               </div>
             </div>
           </div>
 
-
           <div className="space-y-8">
-      
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
               <div className="h-96 w-full">
                 <iframe
@@ -131,14 +110,8 @@ export default function Ubicacion() {
                 />
               </div>
             </div>
-
-            
-
-            
           </div>
         </div>
-
-       
       </div>
     </div>
   );

@@ -1,8 +1,8 @@
 export interface Turn {
-  id: string; 
+  id: string;
   activityId: string;
-  date: string; 
-  time: string; 
+  date: string;
+  startTime: string;
   capacity: number;
   availableSpots: number;
   status?: string;

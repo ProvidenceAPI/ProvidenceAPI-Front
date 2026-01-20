@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Navbar } from "src/components/Navbar";
-import { Footer } from "src/components/Footer";
 import Image from "next/image";
 import Link from "next/link";
-import { useAuth } from "src/contexts/AuthContext";
+import Swal from "sweetalert2";
+import { useAppContext } from "src/contexts/AppContext";
 import ScheduleList from "src/components/ScheduleList";
 import { Turn } from "src/interfaces/Turn";
 import { ReservationRequest } from "src/interfaces/ReservationRequest";
@@ -26,7 +25,7 @@ const ACTIVITY_SLUG_MAP: Record<string, string> = {
 export default function ActivityPage() {
   const params = useParams();
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAppContext();
   const activitySlug = params.activity as string;
   
   const [activity, setActivity] = useState<Activity | null>(null);
@@ -35,31 +34,20 @@ export default function ActivityPage() {
   const [loadingTurns, setLoadingTurns] = useState(false);
   const [userHasFreeReservation, setUserHasFreeReservation] = useState(true);
 
-  useEffect(() => {
-    loadActivity();
-  }, [activitySlug]);
-
-  useEffect(() => {
-    if (isAuthenticated && user && activity) {
-      loadAvailableTurns();
-      checkUserFreeReservation();
-    }
-  }, [isAuthenticated, user, activity]);
-
-  const loadActivity = async () => {
+  const loadActivity = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       const activities = await activityService.getAllActivities();
       console.log("📋 Actividades del backend:", activities);
-      
+
       const searchName = ACTIVITY_SLUG_MAP[activitySlug]?.toLowerCase() || activitySlug.toLowerCase();
       const foundActivity = activities.find(
-        (act: Activity) => 
-          act.name.toLowerCase() === searchName || 
+        (act: Activity) =>
+          act.name.toLowerCase() === searchName ||
           act.name.toLowerCase().replace(/\s+/g, '-') === activitySlug
       );
-      
+
       if (foundActivity) {
         console.log("✅ Actividad encontrada:", foundActivity);
         setActivity(foundActivity);
@@ -70,16 +58,16 @@ export default function ActivityPage() {
       }
     } catch (error) {
       console.error('❌ Error loading activity:', error);
-      alert('Error al cargar la actividad');
+      await Swal.fire({ title: "Error", text: "Error al cargar la actividad", icon: "error", confirmButtonText: "Entendido" });
       router.push("/home");
     } finally {
       setLoading(false);
     }
-  };
+  }, [activitySlug, router]);
 
-  const loadAvailableTurns = async () => {
+  const loadAvailableTurns = useCallback(async () => {
     if (!activity) return;
-    
+
     setLoadingTurns(true);
     try {
       console.log("🔄 Cargando turnos para actividad:", activity.id);
@@ -88,73 +76,57 @@ export default function ActivityPage() {
       setTurns(availableTurns);
     } catch (error) {
       console.error('❌ Error loading turns:', error);
-      alert('Error al cargar los horarios disponibles');
+      await Swal.fire({ title: "Error", text: "Error al cargar los horarios disponibles", icon: "error", confirmButtonText: "Entendido" });
     } finally {
       setLoadingTurns(false);
     }
-  };
+  }, [activity]);
 
-  const checkUserFreeReservation = async () => {
+  const checkUserFreeReservation = useCallback(async () => {
     if (!user?.id) return;
-    
+
     try {
       const hasFree = await reservationService.checkFreeReservation();
       setUserHasFreeReservation(hasFree);
     } catch (error) {
       console.error('❌ Error checking free reservation:', error);
     }
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    loadActivity();
+  }, [loadActivity]);
+
+  useEffect(() => {
+    if (isAuthenticated && user && activity) {
+      loadAvailableTurns();
+      checkUserFreeReservation();
+    }
+  }, [isAuthenticated, user, activity, loadAvailableTurns, checkUserFreeReservation]);
 
   const handleReserve = async (turnId: string) => {
     if (!user?.id || !activity) {
-      alert('Debes iniciar sesión para reservar');
-      return;
+      throw new Error('Debes iniciar sesión para reservar');
     }
 
-    try {
+    const reservationData: ReservationRequest = { turnId };
+    const result = await reservationService.createReservation(reservationData);
 
-    
-      const reservationData: ReservationRequest = {
-        turnId,
-
-      };
-      console.log("Activity:", turnId, activity)
-        const token = localStorage.getItem('providence_token');
-        console.log("TOKEN:", token)
-      const result = await reservationService.createReservation(reservationData);
-      
-      console.log("✅ Reserva creada exitosamente:", result);
-      alert('¡Reserva creada exitosamente! Puedes verla en tu dashboard.');
-      
-
-      await loadAvailableTurns();
-      await checkUserFreeReservation();
-      
-    } catch (error: any) {
-      console.error('❌ Error completo:', error);
-      console.error('Response:', error.response?.data);
-      
-
-      const errorMessage = error.response?.data?.message 
-        || error.response?.data?.error
-        || error.message 
-        || 'Error al crear la reserva';
-      
-      alert(`Error: ${errorMessage}`);
-    }
+    await loadAvailableTurns();
+    await checkUserFreeReservation();
   };
 
   if (loading) {
     return (
       <>
-        <Navbar />
+  
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mb-4"></div>
             <div className="text-lg text-gray-700">Cargando actividad...</div>
           </div>
         </div>
-        <Footer />
+
       </>
     );
   }
@@ -163,9 +135,10 @@ export default function ActivityPage() {
     return null;
   }
 
+  
   return (
     <>
-      <Navbar />
+
       
       <main className="min-h-screen bg-white">
  
@@ -271,7 +244,7 @@ export default function ActivityPage() {
         </section>
       </main>
 
-      <Footer />
+
     </>
   );
 }

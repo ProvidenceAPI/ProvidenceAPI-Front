@@ -1,9 +1,10 @@
 "use client";
 
-import { useAuth } from "src/contexts/AuthContext";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useAppContext } from "src/contexts/AppContext";
 import Swal from "sweetalert2";
 
 type LoginFormState = {
@@ -17,15 +18,14 @@ const formInicialState: LoginFormState = {
 };
 
 export default function LoginForm() {
-  const { login, clearError, loading: authLoading } = useAuth();
+  const { login, loginLoading, authLoading } = useAppContext(); // ✅ Usamos loginLoading del contexto
   const router = useRouter();
 
-  const [loginForm, setLoginForm] =
-    useState<LoginFormState>(formInicialState);
+  const [loginForm, setLoginForm] = useState<LoginFormState>(formInicialState);
   const [errors, setErrors] = useState({ email: "", password: "" });
-  const [isLoading, setIsLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [apiError, setApiError] = useState<string>("");
 
   const changeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -35,8 +35,14 @@ export default function LoginForm() {
       [name]: value,
     }));
 
+    // Limpiar error del campo específico
     if (errors[name as keyof typeof errors]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+
+    // Limpiar error general de API
+    if (apiError) {
+      setApiError("");
     }
   };
 
@@ -44,7 +50,7 @@ export default function LoginForm() {
     const newErrors = { email: "", password: "" };
     let isValid = true;
 
-    if (!loginForm.email) {
+    if (!loginForm.email.trim()) {
       newErrors.email = "Falta el correo electrónico";
       isValid = false;
     } else if (!/\S+@\S+\.\S+/.test(loginForm.email)) {
@@ -52,7 +58,7 @@ export default function LoginForm() {
       isValid = false;
     }
 
-    if (!loginForm.password) {
+    if (!loginForm.password.trim()) {
       newErrors.password = "Falta la contraseña";
       isValid = false;
     }
@@ -61,158 +67,336 @@ export default function LoginForm() {
     return isValid;
   };
 
-  
+  // 🔐 Google OAuth (redirect al backend)
   const handleGoogleAuth = () => {
-    clearError();
     setGoogleLoading(true);
+    setApiError("");
 
-    const googleAuthUrl = `${
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
-    }/api/auth/google/login`;
+    const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+    const googleAuthUrl = `${base}/api/auth/google/login`;
 
     localStorage.setItem("redirectAfterLogin", window.location.pathname);
     window.location.href = googleAuthUrl;
   };
 
-  const submitHandler = async (
-    e: React.FormEvent<HTMLFormElement>
-  ) => {
+  const submitHandler = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    clearError();
+
+    // Limpiar errores previos
+    setApiError("");
 
     if (!validateForm()) return;
 
-    setIsLoading(true);
+    // ❌ NO necesitamos setIsLoading porque el contexto maneja loginLoading
 
     try {
-      const result = await login(
-        loginForm.email,
-        loginForm.password
-      );
+      await login(loginForm.email, loginForm.password);
 
+      // Si llegamos aquí, el login fue exitoso
       setLoginForm(formInicialState);
 
-      if (result.success) {
-        await Swal.fire({
-          title: "¡Bienvenido!",
-          text: result.message,
-          icon: "success",
-          confirmButtonText: "Continuar",
-        });
+      await Swal.fire({
+        title: "¡Bienvenido!",
+        text: "Inicio de sesión exitoso",
+        icon: "success",
+        confirmButtonText: "Continuar",
+      });
 
-        router.push("/dashboard");
-      } else {
-        await Swal.fire({
-          title: "Error",
-          text: result.message,
-          icon: "error",
-          confirmButtonText: "Entendido",
-        });
-      }
-    } catch (error) {
+      // Redirigir al dashboard
+      router.push("/dashboard");
+    } catch (error: any) {
       console.error("Login error:", error);
+
+      // Manejar diferentes tipos de error
+      let errorMessage = "Error al iniciar sesión";
+
+      if (error.message.includes("Credenciales incorrectas")) {
+        errorMessage = "Email o contraseña incorrectos";
+      } else if (
+        error.message.includes("NetworkError") ||
+        error.message.includes("Failed to fetch")
+      ) {
+        errorMessage = "Error de conexión. Verifica tu internet";
+      } else if (error.message.includes("No se recibió token")) {
+        errorMessage = "Error del servidor. Contacta al administrador";
+      } else {
+        errorMessage = error.message || "Error al iniciar sesión";
+      }
+
+      setApiError(errorMessage);
+
       await Swal.fire({
         title: "Error",
-        text: "Error inesperado al iniciar sesión",
+        text: errorMessage,
         icon: "error",
         confirmButtonText: "Reintentar",
       });
-    } finally {
-      setIsLoading(false);
     }
+    // ❌ NO necesitamos finally porque el contexto maneja loginLoading
   };
 
-  const isLoadingAny = isLoading || authLoading || googleLoading;
+  // ✅ Usamos loginLoading del contexto + googleLoading local
+  const isLoadingAny = loginLoading || googleLoading || authLoading;
 
   return (
     <div className="min-h-screen flex">
-     
+      {/* Left side - Black section */}
       <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-center px-12 py-20">
-        <Link href="/">
-          <img src="/logo.png" alt="Logo" className="h-8 mb-10" />
-        </Link>
-
-        <h2 className="text-5xl font-bold mb-6">
+        <div className="text-2xl font-bold tracking-[0.2em]">
+          <Link href="/" className="flex flex-col hover:no-underline">
+            <img
+              src="/LOGOMEJORADO.jpeg"
+              alt="Providence Fitness Logo"
+              className="h-auto w-auto"
+            />
+          </Link>
+        </div>
+        <h2 className="text-5xl font-bold leading-tight mb-6">
           BIENVENIDO
           <br />
           DE VUELTA
         </h2>
 
-        <p className="text-gray-400 text-lg">
+        <p className="text-gray-400 text-base lg:text-lg">
           Continúa tu transformación. Inicia sesión.
         </p>
+
+        {/* Información adicional responsiva */}
+        <div className="mt-8 lg:mt-12 p-4 lg:p-6 bg-gray-900 rounded-lg">
+          <h3 className="text-lg lg:text-xl font-semibold mb-2">
+            Providence Fitness
+          </h3>
+          <ul className="text-sm lg:text-base text-gray-300 space-y-1">
+            <li>✅ Reserva tus actividades favoritas</li>
+            <li>✅ Gestiona tus pagos mensuales</li>
+            <li>✅ Sigue tu progreso fitness</li>
+            <li>✅ Acceso a todas las sedes</li>
+          </ul>
+        </div>
       </div>
 
-    
-      <div className="w-full md:w-1/2 bg-white flex justify-center items-center px-8">
+      {/* Right Panel - Form */}
+      <div className="w-full md:w-1/2 bg-white flex justify-center items-center px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         <div className="max-w-md w-full">
-          <h2 className="text-3xl font-bold mb-2">
+          {/* Logo para mobile */}
+          <div className="md:hidden mb-6 text-center">
+            <Link href="/">
+              <Image
+                src="/logo.png"
+                alt="Logo"
+                width={120}
+                height={40}
+                className="h-8 w-auto mx-auto"
+              />
+            </Link>
+            <h1 className="text-2xl font-bold mt-2">PROVIDENCE FITNESS</h1>
+          </div>
+
+          <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-center md:text-left">
             INICIAR SESIÓN
           </h2>
-          <p className="text-gray-600 mb-8">
+          <p className="text-gray-600 mb-6 sm:mb-8 text-center md:text-left">
             Ingresa tus credenciales
           </p>
 
+          {/* Mostrar error de API si existe */}
+          {apiError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg animate-fadeIn">
+              <div className="flex items-center">
+                <span className="text-red-500 mr-2">⚠️</span>
+                <p className="text-red-600 text-sm">{apiError}</p>
+              </div>
+            </div>
+          )}
+
           <form
             onSubmit={submitHandler}
-            className="space-y-6"
+            className="space-y-5 sm:space-y-6"
             noValidate
           >
-         
-            <input
-              type="email"
-              name="email"
-              value={loginForm.email}
-              onChange={changeHandler}
-              placeholder="Email"
-              disabled={isLoadingAny}
-              className="w-full p-3 border rounded-lg"
-            />
-            {errors.email && (
-              <p className="text-red-600 text-sm">
-                {errors.email}
-              </p>
-            )}
+            {/* Email */}
+            <div>
+              <input
+                type="email"
+                name="email"
+                value={loginForm.email}
+                onChange={changeHandler}
+                placeholder="Email"
+                disabled={isLoadingAny}
+                className={`w-full p-3 border rounded-lg text-sm sm:text-base ${
+                  errors.email ? "border-red-500 bg-red-50" : "border-gray-300"
+                } ${isLoadingAny ? "bg-gray-100 cursor-not-allowed" : "bg-white"}`}
+              />
+              {errors.email && (
+                <p className="text-red-600 text-xs sm:text-sm mt-1 pl-1 animate-fadeIn">
+                  {errors.email}
+                </p>
+              )}
+            </div>
 
-           
-            <input
-              type={showPassword ? "text" : "password"}
-              name="password"
-              value={loginForm.password}
-              onChange={changeHandler}
-              placeholder="Contraseña"
-              disabled={isLoadingAny}
-              className="w-full p-3 border rounded-lg"
-            />
-            {errors.password && (
-              <p className="text-red-600 text-sm">
-                {errors.password}
-              </p>
-            )}
+            {/* Password */}
+            <div>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={loginForm.password}
+                  onChange={changeHandler}
+                  placeholder="Contraseña"
+                  disabled={isLoadingAny}
+                  className={`w-full p-3 border rounded-lg pr-10 text-sm sm:text-base ${
+                    errors.password
+                      ? "border-red-500 bg-red-50"
+                      : "border-gray-300"
+                  } ${isLoadingAny ? "bg-gray-100 cursor-not-allowed" : "bg-white"}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={isLoadingAny}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 disabled:text-gray-300 disabled:cursor-not-allowed text-lg"
+                  aria-label={
+                    showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+                  }
+                >
+                  {showPassword ? "🙈" : "👁️"}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-red-600 text-xs sm:text-sm mt-1 pl-1 animate-fadeIn">
+                  {errors.password}
+                </p>
+              )}
+            </div>
 
+            {/* Recordar contraseña */}
+            <div className="flex items-center justify-between">
+              <label className="flex items-center text-sm sm:text-base">
+                <input type="checkbox" className="h-4 w-4 text-red-600 mr-2" />
+                <span className="text-gray-700">Recordarme</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => router.push("/forgot-password")}
+                className="text-sm text-red-600 hover:text-red-700 disabled:text-gray-400"
+                disabled={isLoadingAny}
+              >
+                ¿Olvidaste tu contraseña?
+              </button>
+            </div>
+
+            {/* Botón de inicio de sesión */}
             <button
               type="submit"
               disabled={isLoadingAny}
-              className="w-full bg-red-600 text-white py-3 rounded-lg font-bold disabled:bg-gray-400"
+              className={`w-full bg-red-600 text-white py-3 rounded-lg font-bold hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center text-sm sm:text-base ${
+                isLoadingAny ? "opacity-80" : ""
+              }`}
             >
-              {isLoadingAny ? "Procesando..." : "Iniciar sesión"}
+              {loginLoading ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Iniciando sesión...
+                </>
+              ) : googleLoading ? (
+                "Redirigiendo a Google..."
+              ) : authLoading ? (
+                "Cargando..."
+              ) : (
+                "Iniciar sesión"
+              )}
             </button>
+
+            {/* Separador */}
+            <div className="relative my-4 sm:my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-3 bg-white text-gray-500">
+                  O continúa con
+                </span>
+              </div>
+            </div>
 
             <button
               type="button"
               onClick={handleGoogleAuth}
-              disabled={isLoadingAny}
-              className="w-full border py-3 rounded-lg flex justify-center items-center gap-2"
+              className="flex items-center justify-center w-full py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={googleLoading}
             >
-              Continuar con Google
+              {googleLoading ? (
+                <span className="flex items-center justify-center">
+                  <svg
+                    className="animate-spin h-5 w-5 mr-2"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  Conectando con Google...
+                </span>
+              ) : (
+                <>
+                  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                    <path
+                      fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    />
+                  </svg>
+                  <span className="text-sm font-medium">
+                    Continuar con Google
+                  </span>
+                </>
+              )}
             </button>
 
             <p className="text-center text-gray-700">
               ¿No tienes cuenta?{" "}
-              <Link
-                href="/register"
-                className="text-red-600 font-bold"
-              >
+              <Link href="/register" className="text-red-600 font-bold">
                 Regístrate
               </Link>
             </p>

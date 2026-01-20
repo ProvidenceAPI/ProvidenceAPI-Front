@@ -3,9 +3,9 @@ export default interface RegisterDto {
   lastname: string;
   email: string;
   password: string;
-  confirmPassword: string;  
-  birthdate: string;       
-  phone: string; 
+  confirmPassword: string;
+  birthdate: string;
+  phone: string;
   dni: number;
-  genre: string;        
+  genre: string;
 }

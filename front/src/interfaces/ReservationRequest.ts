@@ -1,4 +1,3 @@
 export interface ReservationRequest {
-  turnId: string; 
-
+  turnId: string;
 }

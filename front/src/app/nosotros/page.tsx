@@ -1,12 +1,9 @@
 "use client"
 
 import { useState } from "react"
-
-import TransformacionCTA from "src/components/TransformacionCTA"
-
+import Image from "next/image"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { Navbar } from "src/components/Navbar"
-import { Footer } from "src/components/Footer"
+
 
 const media = [
   { type: "image", src: "/media/nosotros1.jpg" },
@@ -30,11 +27,11 @@ export default function NosotrosPage() {
 
   return (
     <>
-      <Navbar />
+ 
       
       <div className="bg-white text-black min-h-screen">
         
-   
+        {/* QUIÉNES SOMOS */}
         <section className="py-24 md:py-32 bg-gradient-to-b from-white to-gray-50">
           <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 px-6 items-center">
             <div className="space-y-8">
@@ -63,10 +60,13 @@ export default function NosotrosPage() {
             <div className="relative">
               <div className="absolute -inset-4 bg-gradient-to-r from-red-600/20 to-transparent rounded-3xl blur-xl"></div>
               <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-red-600/30">
-                <img
+                <Image
                   src="/media/nosotros2.jpg"
-                  className="w-full h-[400px] md:h-[500px] object-cover hover:scale-105 transition-transform duration-700"
                   alt="Equipo Providence Fitness"
+                  width={800}
+                  height={500}
+                  className="w-full h-[400px] md:h-[500px] object-cover hover:scale-105 transition-transform duration-700"
+                  sizes="(max-width: 768px) 100vw, 800px"
                 />
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
                   <div className="flex items-center gap-3">
@@ -79,7 +79,7 @@ export default function NosotrosPage() {
           </div>
         </section>
 
-       
+        {/* CARRUSEL MULTIMEDIA */}
         <section className="py-24 md:py-32 bg-gray-50">
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-16">
@@ -94,10 +94,13 @@ export default function NosotrosPage() {
             <div className="relative max-w-6xl mx-auto">
               <div className="relative bg-white rounded-3xl border border-red-600/30 shadow-xl h-[500px] md:h-[600px] flex items-center justify-center overflow-hidden">
                 {media[current].type === "image" ? (
-                  <img
+                  <Image
                     src={media[current].src}
-                    className="max-h-full max-w-full object-contain"
                     alt="Galería Providence"
+                    width={900}
+                    height={600}
+                    className="max-h-full max-w-full object-contain"
+                    sizes="(max-width: 768px) 100vw, 900px"
                   />
                 ) : (
                   <video
@@ -111,6 +114,7 @@ export default function NosotrosPage() {
                 )}
               </div>
 
+              {/* Controles del carrusel */}
               <div className="flex justify-center mt-8 gap-4">
                 {media.map((_, index) => (
                   <button
@@ -126,6 +130,7 @@ export default function NosotrosPage() {
                 ))}
               </div>
 
+              {/* Flechas de navegación */}
               <button
                 onClick={() => setCurrent((current - 1 + media.length) % media.length)}
                 className="absolute left-4 md:-left-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/90 border border-red-600 flex items-center justify-center hover:bg-red-600 hover:text-white transition-all duration-300 group shadow-lg"
@@ -145,7 +150,7 @@ export default function NosotrosPage() {
           </div>
         </section>
 
-  
+        {/* MISIÓN Y VALORES */}
         <section className="py-24 md:py-32 bg-gradient-to-b from-white to-red-50">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-16">
@@ -179,7 +184,7 @@ export default function NosotrosPage() {
               </div>
             </div>
 
-           
+            {/* VALORES */}
             <div className="max-w-4xl mx-auto">
               <h3 className="text-3xl font-bold text-center mb-12 text-gray-900">NUESTROS VALORES</h3>
               
@@ -211,8 +216,6 @@ export default function NosotrosPage() {
         </section>
       </div>
 
-      <TransformacionCTA />
-      <Footer />
     </>
   )
 }
