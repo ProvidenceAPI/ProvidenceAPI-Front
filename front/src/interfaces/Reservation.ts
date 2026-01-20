@@ -1,21 +1,21 @@
-import { Activity } from "./Activity";
-import { Turn } from "./Turn";
-
 export interface Reservation {
-  id: string; 
-  userId: string;
-  turnId: string;
+  id: string;
+  activityDate: string;
+  startTime: string;
+  endTime?: string;
+  status: string;
   activityId: string;
-  activityName: string; 
-  date: string; 
-  hour: string; 
-  status: 'active' | 'pending' | 'confirmed' | 'cancelled' | 'completed';
-  isFree?: boolean; 
-  isFreeReservation?: boolean; 
-  isPaid?: boolean; 
-  createdAt: string;
-  updatedAt: string;
-  
-  turn?: Turn;
-  activity?: Activity;
+  turnId: string;
+
+  activity?: {
+    id: string;
+    name: string;
+    capacity: number;
+  };
+
+  turn?: {
+    id: string;
+    availableSpots: number;
+    isFreeTrial: boolean;
+  };
 }

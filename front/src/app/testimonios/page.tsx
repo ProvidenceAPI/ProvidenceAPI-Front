@@ -1,13 +1,11 @@
 import React from 'react';
-import { Navbar } from 'src/components/Navbar';
-import { Footer } from 'src/components/Footer';
-import TransformacionCTA from 'src/components/TransformacionCTA';
+
 
 interface Testimonial {
   id: number;
   quote: string;
   author: string;
-  role: string;
+  rol: string;
   rating: number;
   highlighted?: boolean;
 }
@@ -17,21 +15,21 @@ const testimonials: Testimonial[] = [
     id: 1,
     quote: "Providence Fitness transformed my life! Lost 30 pounds and gained incredible strength.",
     author: "Sarah Johnson",
-    role: "Providence Fitness Member",
+    rol: "Providence Fitness Member",
     rating: 5,
   },
   {
     id: 2,
     quote: "The trainers are amazing and the community is so supportive!",
     author: "Mike Chen",
-    role: "Providence Fitness Member",
+    rol: "Providence Fitness Member",
     rating: 5,
   },
   {
     id: 3,
     quote: "Best investment I've made! I'm stronger and more confident than ever before.",
     author: "Jessica Rodriguez",
-    role: "Providence Fitness Member",
+    rol: "Providence Fitness Member",
     rating: 5,
     highlighted: true,
   },
@@ -39,21 +37,21 @@ const testimonials: Testimonial[] = [
     id: 4,
     quote: "From couch potato to marathon runner in 8 months. Providence made it possible!",
     author: "David Thompson",
-    role: "Providence Fitness Member",
+    rol: "Providence Fitness Member",
     rating: 5,
   },
   {
     id: 5,
     quote: "The personal training sessions are incredible. I've never felt this strong!",
     author: "Amanda Park",
-    role: "Providence Fitness Member",
+    rol: "Providence Fitness Member",
     rating: 5,
   },
   {
     id: 6,
     quote: "Providence Fitness helped me get back in shape after my injury. Professional and caring staff.",
     author: "Carlos Martinez",
-    role: "Providence Fitness Member",
+    rol: "Providence Fitness Member",
     rating: 5,
   },
 ];
@@ -61,7 +59,7 @@ const testimonials: Testimonial[] = [
 export default function TestimoniosPage() {
   return (
     <>
-      <Navbar />
+
       <main className="min-h-screen bg-white">
         
         <section className="py-16 px-6 md:px-12 text-center">
@@ -102,15 +100,14 @@ export default function TestimoniosPage() {
               
                 <div>
                   <p className="font-bold text-black text-lg">{testimonial.author}</p>
-                  <p className="text-blue-600 text-sm">{testimonial.role}</p>
+                  <p className="text-blue-600 text-sm">{testimonial.rol}</p>
                 </div>
               </div>
             ))}
           </div>
         </section>
       </main>
-      <TransformacionCTA/>
-      <Footer />
+
     </>
   );
 }

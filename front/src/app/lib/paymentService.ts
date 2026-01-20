@@ -70,8 +70,8 @@ export const paymentService = {
   getPaymentHistory: async (): Promise<Payment[]> => {
     try {
       console.log('🔵 Obteniendo historial de pagos...');
-      
-      const response = await apiClient.get('/api/payments');
+
+      const response = await apiClient.get('/api/payments/me');
       const rawData: any = response.data;
       
 
@@ -101,7 +101,7 @@ export const paymentService = {
 
   getPaymentStatus: async (paymentId: string): Promise<any> => {
     try {
-      const { data } = await apiClient.get(`/api/payments/${paymentId}/status`);
+      const { data } = await apiClient.get(`/api/payments/${paymentId}`);
       return data;
     } catch (error: any) {
       console.error('❌ Error obteniendo estado del pago:', error);

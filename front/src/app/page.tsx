@@ -1,13 +1,10 @@
 import React from "react";
-import TransformacionCTA from "src/components/TransformacionCTA";
-import { Navbar } from "src/components/Navbar";
-import { Footer } from "src/components/Footer";
 import Link from "next/link";
 
 const LandingPage: React.FC = () => {
   return (
     <>
-      <Navbar />
+ 
       <main>
      
         <section className="relative h-[80vh] md:h-[90vh] overflow-hidden">
@@ -40,8 +37,7 @@ const LandingPage: React.FC = () => {
           </div>
         </section>
       </main>
-      <TransformacionCTA />
-      <Footer />
+
     </>
   );
 };

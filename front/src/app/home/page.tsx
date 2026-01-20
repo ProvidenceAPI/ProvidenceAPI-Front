@@ -2,16 +2,16 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import TransformacionCTA from "src/components/TransformacionCTA";
-import { useAuth } from "src/contexts/AuthContext";
-import { Footer } from "src/components/Footer";
-import { Navbar } from "src/components/Navbar";
+
+import { useAppContext } from "src/contexts/AppContext";
+
+
 import Image from "next/image";
 import { activityService } from "src/app/lib";
 import { Activity } from "src/interfaces/Activity";
 
 const HomePage: React.FC = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAppContext();
   const router = useRouter();
   
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -51,22 +51,22 @@ const HomePage: React.FC = () => {
       .replace(/\s+/g, '-'); 
   };
 
-  const formatPrice = (price: string): string => {
-    const numPrice = parseFloat(price);
+  const formatPrice = (price: string | number): string => {
+    const numPrice = typeof price === 'number' ? price : parseFloat(price);
     return `$${numPrice.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
   };
 
   if (authLoading || loading) {
     return (
       <>
-        <Navbar />
+
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mb-4"></div>
             <div className="text-xl text-gray-600">Cargando actividades...</div>
           </div>
         </div>
-        <Footer />
+
       </>
     );
   }
@@ -74,7 +74,7 @@ const HomePage: React.FC = () => {
   if (error) {
     return (
       <>
-        <Navbar />
+
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <div className="text-center max-w-md">
             <div className="text-red-600 text-6xl mb-4">⚠️</div>
@@ -88,14 +88,14 @@ const HomePage: React.FC = () => {
             </button>
           </div>
         </div>
-        <Footer />
+
       </>
     );
   }
 
   return (
     <>
-      <Navbar />
+
       
       <main className="min-h-screen bg-white">
         <section className="py-16">
@@ -200,10 +200,10 @@ const HomePage: React.FC = () => {
           </div>
         </section>
 
-        <TransformacionCTA />
+
       </main>
 
-      <Footer />
+
     </>
   );
 };

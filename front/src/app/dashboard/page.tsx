@@ -1,16 +1,17 @@
 "use client";
 
-import { useAuth } from "src/contexts/AuthContext";
+
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { Navbar } from "src/components/Navbar";
-import TransformacionCTA from "src/components/TransformacionCTA";
-import { Footer } from "src/components/Footer"; 
-import UserProfileSection from "src/components/UserProfileSection";
+
+
+import UserProfileSection from "src/components/UserProfileSection"; 
+
 import DashboardStats from "src/components/DashboardStats"
+import { useAppContext } from "src/contexts/AppContext";
 
 export default function DashboardPage() {
-  const { user, isAuthenticated, loading, updateUser } = useAuth();
+  const { user, isAuthenticated, loading, updateUser } = useAppContext();
   const router = useRouter();
 
   useEffect(() => {
@@ -32,28 +33,23 @@ export default function DashboardPage() {
   }
 
   if (!isAuthenticated) {
-    return null;
+    return null; // Ya se redirige en el useEffect
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <Navbar />
-
+ 
       <div className="container mx-auto px-4 py-8">
-      
+        {/* User Profile Section */}
         <UserProfileSection user={user} updateUser={updateUser} />
         
-   
+        {/* Dashboard Stats Section */}
         <div className="mt-8">
           <DashboardStats />
         </div>
       </div>
 
-     
-      <TransformacionCTA />
-
    
-      <Footer />
     </div>
   );
 }

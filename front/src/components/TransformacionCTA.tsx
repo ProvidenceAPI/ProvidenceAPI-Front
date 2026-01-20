@@ -3,11 +3,11 @@
 
 import React from "react";
 import Link from "next/link";
-import { useAuth } from "src/contexts/AuthContext";
+import { useAppContext } from "src/contexts/AppContext";
 
 
 const TransformacionCTA: React.FC = () => {
-  const { user } = useAuth();
+  const { user } = useAppContext();
 
   return (
     <section

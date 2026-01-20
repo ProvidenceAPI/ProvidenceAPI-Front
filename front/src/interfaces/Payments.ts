@@ -1,17 +1,19 @@
-
 export interface Payment {
   id: string;
-  userId: string;
-  reservationId: string;
   amount: number;
-  currency: string;
-  status: 'approved' | 'pending' | 'rejected' | 'cancelled';
-  paymentMethod: string;
+  status: "approved" | "pending" | "rejected" | "cancelled";
   mercadoPagoId?: string;
-  externalReference?: string;
-  description: string;
+  mercadoPagoPreferenceId?: string;
   createdAt: string;
-  updatedAt: string;
+
+  reservation?: {
+    id: string;
+  };
+
+  user?: {
+    id: string;
+    email: string;
+  };
 }
 
 export interface PaymentPreference {

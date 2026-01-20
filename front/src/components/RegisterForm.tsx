@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
@@ -63,23 +64,6 @@ export default function RegisterForm() {
   const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 
-  useEffect(() => {
-   
-    if (validationTimeoutRef.current) {
-      clearTimeout(validationTimeoutRef.current);
-    }
-
-    validationTimeoutRef.current = setTimeout(() => {
-      validateRealTime();
-    }, 100); 
-    
-    return () => {
-      if (validationTimeoutRef.current) {
-        clearTimeout(validationTimeoutRef.current);
-      }
-    };
-  }, [registerForm]);
-
   const validateRealTime = useCallback(() => {
     const newValidations = { ...initialValidations };
 
@@ -128,6 +112,20 @@ export default function RegisterForm() {
     
     setValidations(newValidations);
   }, [registerForm]);
+
+  useEffect(() => {
+    if (validationTimeoutRef.current) {
+      clearTimeout(validationTimeoutRef.current);
+    }
+    validationTimeoutRef.current = setTimeout(() => {
+      validateRealTime();
+    }, 100);
+    return () => {
+      if (validationTimeoutRef.current) {
+        clearTimeout(validationTimeoutRef.current);
+      }
+    };
+  }, [registerForm, validateRealTime]);
 
   const changeHandler = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const property = e.target.name;
@@ -327,15 +325,13 @@ export default function RegisterForm() {
   };
 
   const postRegister = async (registerDto: RegisterDto) => {
-    return await axios.post(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/auth/signup`,
-      registerDto
-    );
+    const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    return await axios.post(`${base}/api/auth/signup`, registerDto);
   };
 
   const handleGoogleAuth = () => {
     setGoogleLoading(true);
-    const googleAuthUrl = `${process .env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/google/login`;
+    const googleAuthUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/google/login`;
     localStorage.setItem('redirectAfterLogin', window.location.pathname);
     window.location.href = googleAuthUrl;
   };
@@ -427,7 +423,7 @@ export default function RegisterForm() {
       <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-center px-12 py-20">
         <div className="text-2xl font-bold tracking-[0.2em]">
           <Link href="/" className="flex flex-col hover:no-underline">
-            <img src="/logo_1.png" alt="Providence Fitness Logo" className="h-8 w-auto" />
+            <Image src="/logo_1.png" alt="Providence Fitness Logo" width={120} height={32} className="h-8 w-auto" />
           </Link>
         </div>
         <h2 className="text-5xl font-bold leading-tight mb-6">

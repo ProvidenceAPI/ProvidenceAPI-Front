@@ -8,7 +8,7 @@ interface User {
   email: string;
   phone: string;
   registrationDate: string;
-  status: 'active' | 'inactive' | 'suspended';
+  status: "active" | "inactive" | "suspended";
 }
 
 interface UserListProps {
@@ -20,28 +20,29 @@ export default function UserList({ users }: UserListProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsers = users.filter(
+    (user) =>
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
- 
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedUsers = filteredUsers.slice(
+    startIndex,
+    startIndex + itemsPerPage,
+  );
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-ES');
+    return new Date(dateString).toLocaleDateString("es-ES");
   };
 
   return (
     <div className="bg-white rounded-lg shadow">
-    
       <div className="p-6 border-b">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold text-gray-900">
@@ -59,7 +60,6 @@ export default function UserList({ users }: UserListProps) {
         </div>
       </div>
 
-    
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -104,27 +104,30 @@ export default function UserList({ users }: UserListProps) {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
                     className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      user.status === 'active'
+                      user.status === "active"
                         ? "bg-green-100 text-green-800"
-                        : user.status === 'suspended'
-                        ? "bg-yellow-100 text-yellow-800"
-                        : "bg-red-100 text-red-800"
+                        : user.status === "suspended"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-red-100 text-red-800"
                     }`}
                   >
-                    {user.status === 'active' ? 'Activo' : 
-                     user.status === 'suspended' ? 'Suspendido' : 'Inactivo'}
+                    {user.status === "active"
+                      ? "Activo"
+                      : user.status === "suspended"
+                        ? "Suspendido"
+                        : "Inactivo"}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button
                     className="text-blue-600 hover:text-blue-900 mr-3"
-                    onClick={() => console.log('Ver detalle usuario:', user.id)}
+                    onClick={() => console.log("Ver detalle usuario:", user.id)}
                   >
                     Ver
                   </button>
                   <button
                     className="text-gray-600 hover:text-gray-900"
-                    onClick={() => console.log('Editar usuario:', user.id)}
+                    onClick={() => console.log("Editar usuario:", user.id)}
                   >
                     Editar
                   </button>
@@ -135,12 +138,13 @@ export default function UserList({ users }: UserListProps) {
         </table>
       </div>
 
-     
       {totalPages > 1 && (
         <div className="px-6 py-4 border-t">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-700">
-              Mostrando {startIndex + 1} a {Math.min(startIndex + itemsPerPage, filteredUsers.length)} de {filteredUsers.length} usuarios
+              Mostrando {startIndex + 1} a{" "}
+              {Math.min(startIndex + itemsPerPage, filteredUsers.length)} de{" "}
+              {filteredUsers.length} usuarios
             </div>
             <div className="flex space-x-2">
               <button
@@ -148,22 +152,22 @@ export default function UserList({ users }: UserListProps) {
                 disabled={currentPage === 1}
                 className={`px-3 py-1 rounded ${
                   currentPage === 1
-                    ? 'text-gray-400 cursor-not-allowed'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    ? "text-gray-400 cursor-not-allowed"
+                    : "text-gray-700 hover:bg-gray-100"
                 }`}
               >
                 ← Anterior
               </button>
-              
+
               {Array.from({ length: totalPages }, (_, i) => i + 1)
-                .filter(page => {
-                 
-                  return Math.abs(page - currentPage) <= 2 || 
-                         page === 1 || 
-                         page === totalPages;
+                .filter((page) => {
+                  return (
+                    Math.abs(page - currentPage) <= 2 ||
+                    page === 1 ||
+                    page === totalPages
+                  );
                 })
                 .map((page, index, array) => {
-                
                   const prevPage = array[index - 1];
                   if (prevPage && page - prevPage > 1) {
                     return (
@@ -172,29 +176,29 @@ export default function UserList({ users }: UserListProps) {
                       </span>
                     );
                   }
-                  
+
                   return (
                     <button
                       key={page}
                       onClick={() => handlePageChange(page)}
                       className={`px-3 py-1 rounded ${
                         currentPage === page
-                          ? 'bg-red-600 text-white'
-                          : 'text-gray-700 hover:bg-gray-100'
+                          ? "bg-red-600 text-white"
+                          : "text-gray-700 hover:bg-gray-100"
                       }`}
                     >
                       {page}
                     </button>
                   );
                 })}
-              
+
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
                 className={`px-3 py-1 rounded ${
                   currentPage === totalPages
-                    ? 'text-gray-400 cursor-not-allowed'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    ? "text-gray-400 cursor-not-allowed"
+                    : "text-gray-700 hover:bg-gray-100"
                 }`}
               >
                 Siguiente →
@@ -204,11 +208,12 @@ export default function UserList({ users }: UserListProps) {
         </div>
       )}
 
-     
       {filteredUsers.length === 0 && (
         <div className="text-center py-12">
           <p className="text-gray-500">
-            {searchTerm ? "No se encontraron usuarios" : "No hay usuarios registrados"}
+            {searchTerm
+              ? "No se encontraron usuarios"
+              : "No hay usuarios registrados"}
           </p>
         </div>
       )}

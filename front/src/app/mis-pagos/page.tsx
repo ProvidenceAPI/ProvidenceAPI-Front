@@ -1,11 +1,8 @@
 "use client";
 
-import { useAuth } from "src/contexts/AuthContext";
+import { useAppContext } from "src/contexts/AppContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Navbar } from "src/components/Navbar";
-import TransformacionCTA from "src/components/TransformacionCTA";
-import { Footer } from "src/components/Footer";
 
 import Swal from "sweetalert2";
 
@@ -14,10 +11,10 @@ import { Payment } from "src/interfaces/Payments";
 import { Activity } from "src/interfaces/Activity";
 
 export default function MisPagosPage() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading } = useAppContext();
   const router = useRouter();
 
-  const [pagos] = useState<Payment[]>([]);
+  const [pagos, setPagos] = useState<Payment[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<string>("");
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,13 +23,19 @@ export default function MisPagosPage() {
   const [successMessage, setSuccessMessage] = useState<string>("");
   const [warningMessage, setWarningMessage] = useState<string>("");
 
+  useEffect(() => {
+    const loadPayments = async () => {
+      const data = await paymentService.getPaymentHistory();
+      setPagos(data);
+    };
+    loadPayments();
+  }, []);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       router.push("/login");
     }
   }, [isAuthenticated, loading, router]);
-
 
   useEffect(() => {
     if (error) {
@@ -68,21 +71,21 @@ export default function MisPagosPage() {
     }
   }, [warningMessage]);
 
-
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const status = params.get("status");
 
       if (status === "approved") {
-        setSuccessMessage("¡Pago aprobado exitosamente! Recargando historial...");
+        setSuccessMessage(
+          "¡Pago aprobado exitosamente! Recargando historial...",
+        );
         setTimeout(() => {
           window.history.replaceState({}, "", "/mis-pagos");
         }, 2000);
       }
     }
   }, []);
-
 
   useEffect(() => {
     const fetchReservations = async () => {
@@ -100,7 +103,6 @@ export default function MisPagosPage() {
     fetchReservations();
   }, []);
 
- 
   const iniciarPagoMercadoPago = async () => {
     if (!selectedActivity) {
       setError("Por favor selecciona una actividad");
@@ -109,7 +111,7 @@ export default function MisPagosPage() {
 
     if (!isValidUUID(selectedActivity)) {
       setError(
-        "La reserva seleccionada no tiene un ID válido. Por favor contacta al administrador."
+        "La reserva seleccionada no tiene un ID válido. Por favor contacta al administrador.",
       );
       return;
     }
@@ -119,9 +121,8 @@ export default function MisPagosPage() {
       setError("");
       setWarningMessage("");
 
-      const initPoint = await paymentService.createPaymentPreference(
-        selectedActivity
-      );
+      const initPoint =
+        await paymentService.createPaymentPreference(selectedActivity);
 
       if (initPoint) {
         Swal.fire({
@@ -139,13 +140,12 @@ export default function MisPagosPage() {
     } catch (error: any) {
       setError(
         error.message ||
-          "Error al procesar el pago. Por favor intenta nuevamente."
+          "Error al procesar el pago. Por favor intenta nuevamente.",
       );
     } finally {
       setIsProcessing(false);
     }
   };
-
 
   const getEstadoColor = (estado: string) => {
     switch (estado) {
@@ -180,7 +180,6 @@ export default function MisPagosPage() {
     });
   };
 
-
   if (loading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -193,24 +192,16 @@ export default function MisPagosPage() {
   }
 
   const actividadSeleccionada = activities.find(
-    (a) => a.id === selectedActivity
+    (a) => a.id === selectedActivity,
   );
 
- 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      
       <div className="container mx-auto px-4 py-8">
-   
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Mis Pagos</h1>
-          <p className="text-gray-600 mt-2">
-            Historial y gestión de pagos
-          </p>
+          <p className="text-gray-600 mt-2">Historial y gestión de pagos</p>
         </div>
-
-
         {successMessage && (
           <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 animate-pulse">
             <div className="flex items-start">
@@ -222,7 +213,6 @@ export default function MisPagosPage() {
             </div>
           </div>
         )}
-
         {warningMessage && (
           <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <div className="flex items-start">
@@ -234,8 +224,6 @@ export default function MisPagosPage() {
             </div>
           </div>
         )}
-
-
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-start">
@@ -247,17 +235,14 @@ export default function MisPagosPage() {
             </div>
           </div>
         )}
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
- 
+          {/* PANEL IZQUIERDO */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-6">
                 Realizar Pago
               </h2>
-              
               <div className="space-y-4">
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     1. Seleccionar Actividad
@@ -266,186 +251,110 @@ export default function MisPagosPage() {
                     value={selectedActivity}
                     onChange={(e) => setSelectedActivity(e.target.value)}
                     disabled={isProcessing || activities.length === 0}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                   >
                     <option value="">
-                      {activities.length === 0 
-                        ? "No hay actividades disponibles" 
+                      {activities.length === 0
+                        ? "No hay actividades disponibles"
                         : "Seleccionar actividad"}
                     </option>
-                    {activities.map((activities) => (
-                      <option key={activities.id} value={activities.id}>
-                        {activities.name}
+                    {activities.map((activity) => (
+                      <option key={activity.id} value={activity.id}>
+                        {activity.name}
                       </option>
                     ))}
                   </select>
                 </div>
-
-
-                {selectedActivity && (
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                {selectedActivity && actividadSeleccionada && (
+                  <div className="bg-gray-50 p-4 rounded-lg border">
                     <h3 className="font-medium text-gray-900 mb-2">
                       {actividadSeleccionada.name}
                     </h3>
                     <p className="text-sm text-gray-600 mb-3">
                       {actividadSeleccionada.description}
                     </p>
-                    <div className="border-t border-gray-200 pt-3 mt-3 space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Horario:</span>
-                        <span className="text-sm font-medium text-gray-700">
-                          <ul>
-                             {actividadSeleccionada.schedule.map((horario, index) => (
-                              <li key={index}>{horario}</li>
-                              ))}
-                          </ul>
-
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Duración:</span>
-                        <span className="text-sm text-gray-700">
-                          {actividadSeleccionada.duration} minutos
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center pt-2 border-t">
-                        <span className="text-sm text-gray-600">Precio:</span>
-                        <span className="text-lg font-bold text-gray-900">
-                          ${parseFloat(actividadSeleccionada.price).toFixed(2)}
-                        </span>
-                      </div>
+                    <ul className="text-sm text-gray-700 space-y-1">
+                      {actividadSeleccionada.schedule.map((horario, index) => (
+                        <li key={index}>🕒 {horario}</li>
+                      ))}
+                    </ul>
+                    <div className="mt-3 flex justify-between">
+                      <span>Duración:</span>
+                      <span>{actividadSeleccionada.duration} min</span>
+                    </div>
+                    <div className="mt-2 flex justify-between font-bold">
+                      <span>Precio:</span>
+                      <span>
+                        ${Number(actividadSeleccionada.price).toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 )}
-
-
                 <button
                   onClick={iniciarPagoMercadoPago}
-                  disabled={!selectedActivity || isProcessing || activities.length === 0}
-                  className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center transition-colors shadow-md hover:shadow-lg"
+                  disabled={!selectedActivity || isProcessing}
+                  className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium"
                 >
-                  {isProcessing ? (
-                    <>
-                      <svg className="animate-spin h-5 w-5 mr-2 text-white" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
-                      </svg>
-                      Procesando...
-                    </>
-                  ) : (
-                    <>
-                      💳 Pagar con MercadoPago
-                    </>
-                  )}
+                  {isProcessing ? "Procesando..." : "💳 Pagar con MercadoPago"}
                 </button>
-
-                <p className="text-xs text-gray-500 text-center mt-2">
-                  Serás redirigido a MercadoPago para completar el pago de forma segura
-                </p>
               </div>
             </div>
           </div>
-
-
+          {/* PANEL DERECHO */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200">
+              <div className="px-6 py-4 border-b">
                 <h2 className="text-xl font-bold text-gray-900">
                   Historial de Pagos
                 </h2>
               </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+
+              <table className="min-w-full divide-y divide-gray-200">
+                <tbody>
+                  {pagos.length === 0 ? (
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Fecha
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Descripción
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Método
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Monto
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Estado
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Acciones
-                      </th>
+                      <td colSpan={6} className="px-6 py-12 text-center">
+                        No hay registros de pagos
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {pagos.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="px-6 py-12 text-center">
-                          <div className="text-gray-400 text-5xl mb-3">📋</div>
-                          <p className="text-gray-500 font-medium">No hay registros de pagos</p>
-                          <p className="text-gray-400 text-sm mt-1">
-                            Tus pagos aparecerán aquí una vez que realices tu primera transacción
-                          </p>
+                  ) : (
+                    pagos.map((pago) => (
+                      <tr key={pago.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4">
+                          {new Date(pago.createdAt).toLocaleDateString("es-ES")}
+                        </td>
+                        <td className="px-6 py-4">
+                          Suscripción
+                          {pago.mercadoPagoId && (
+                            <div className="text-xs text-gray-500">
+                              MP ID: {pago.mercadoPagoId}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">MercadoPago</td>
+                        <td className="px-6 py-4">
+                          ${Number(pago.amount).toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4">
+                          {getEstadoTexto(pago.status)}
+                        </td>
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() => descargarRecibo(pago.id)}
+                            className="text-blue-600"
+                          >
+                            📄 Recibo
+                          </button>
                         </td>
                       </tr>
-                    ) : (
-                      pagos.map((pago) => (
-                        <tr key={pago.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {new Date(pago.createdAt).toLocaleDateString('es-ES', {
-                              day: '2-digit',
-                              month: '2-digit',
-                              year: 'numeric'
-                            })}
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              {pago.description}
-                            </div>
-                            {pago.mercadoPagoId && (
-                              <div className="text-xs text-gray-500">
-                                ID: {pago.mercadoPagoId}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {pago.paymentMethod || 'MercadoPago'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">
-                              ${typeof pago.amount === 'number' ? pago.amount.toFixed(2) : parseFloat(pago.amount).toFixed(2)} {pago.currency}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getEstadoColor(pago.status)}`}>
-                              {getEstadoTexto(pago.status)}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex space-x-3">
-                              <button
-                                onClick={() => descargarRecibo(pago.id)}
-                                className="text-blue-600 hover:text-blue-900 transition-colors"
-                                title="Descargar recibo"
-                              >
-                                📄 Recibo
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
       </div>
-
-      <TransformacionCTA />
-      <Footer />
     </div>
   );
 }
