@@ -1,43 +1,68 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
-import { useAppContext } from 'src/contexts/AppContext';
-import { activityService, type Activity, type CreateActivityDTO, type UpdateActivityDTO } from 'src/app/lib';
-import Swal from 'sweetalert2';
+import React, { useState, useEffect } from "react";
+import Image from "next/image";
+import { useAppContext } from "src/contexts/AppContext";
+import {
+  activityService,
+  type Activity,
+  type CreateActivityDTO,
+  type UpdateActivityDTO,
+} from "src/app/lib";
+import Swal from "sweetalert2";
 
 interface ScheduleSlot {
   day: string;
   time: string;
 }
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const TIMES = ['06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00'];
+const DAYS = [
+  "Lunes",
+  "Martes",
+  "Miércoles",
+  "Jueves",
+  "Viernes",
+  "Sábado",
+  "Domingo",
+];
+const TIMES = [
+  "06:00",
+  "07:00",
+  "08:00",
+  "09:00",
+  "10:00",
+  "11:00",
+  "12:00",
+  "13:00",
+  "14:00",
+  "15:00",
+  "16:00",
+  "17:00",
+  "18:00",
+  "19:00",
+  "20:00",
+  "21:00",
+];
 
 export default function ActivitiesPage() {
   const { isSuperAdmin, isAdmin } = useAppContext();
-  
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
-  
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
+    name: "",
+    description: "",
     capacity: 20,
     duration: 60,
     price: 5000,
-    instructor: '',
-    category: '',
+    trainer: "",
   });
-  
   const [scheduleSlots, setScheduleSlots] = useState<ScheduleSlot[]>([
-    { day: 'Monday', time: '08:00' },
+    { day: "Monday", time: "08:00" },
   ]);
-  
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imageUrl, setImageUrl] = useState('');
+  const [imageUrl, setImageUrl] = useState("");
 
   useEffect(() => {
     fetchActivities();
@@ -47,8 +72,6 @@ export default function ActivitiesPage() {
     setLoading(true);
     try {
       const data: any = await activityService.getAllActivities();
-      console.log('📊 Respuesta del backend:', data);
-      
       if (Array.isArray(data)) {
         setActivities(data);
       } else if (data?.activities && Array.isArray(data.activities)) {
@@ -56,13 +79,13 @@ export default function ActivitiesPage() {
       } else if (data?.data && Array.isArray(data.data)) {
         setActivities(data.data);
       } else {
-        console.error('❌ Estructura no reconocida:', data);
+        console.error("❌ Estructura no reconocida:", data);
         setActivities([]);
       }
     } catch (error: any) {
-      console.error('❌ Error:', error);
+      console.error("❌ Error:", error);
       setActivities([]);
-      Swal.fire('Error', error.message, 'error');
+      Swal.fire("Error", error.message, "error");
     } finally {
       setLoading(false);
     }
@@ -70,72 +93,119 @@ export default function ActivitiesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name || !formData.description) {
-      Swal.fire('Error', 'Nombre y descripción son obligatorios', 'error');
+      Swal.fire("Error", "Nombre y descripción son obligatorios", "error");
       return;
     }
 
     if (scheduleSlots.length === 0) {
-      Swal.fire('Error', 'Debes agregar al menos un horario', 'error');
+      Swal.fire("Error", "Debes agregar al menos un horario", "error");
       return;
     }
 
     try {
-      const schedule = scheduleSlots.reduce<{ day: string; hours: string[] }[]>((acc, slot) => {
-        const existing = acc.find(d => d.day === slot.day);
-        if (existing) {
-          if (!existing.hours.includes(slot.time)) {
-            existing.hours.push(slot.time);
-          }
-        } else {
-          acc.push({ day: slot.day, hours: [slot.time] });
-        }
-        return acc;
-      }, []);
+      const schedule = scheduleSlots.map((slot) => `${slot.day} ${slot.time}`);
+
+      // 🔍 LOGGING para debugging
+      console.log("📋 scheduleSlots:", scheduleSlots);
+      console.log("📤 schedule formateado:", schedule);
 
       if (editingActivity) {
+        // Construir el objeto manualmente para evitar campos extra
         const updateData: UpdateActivityDTO = {
-          ...formData,
-          schedule,
+          name: formData.name,
+          description: formData.description,
+          capacity: formData.capacity,
+          duration: formData.duration,
+          price: formData.price,
+          schedule: schedule,
         };
+
+        // Solo agregar trainer si tiene valor
+        if (formData.trainer) {
+          updateData.trainer = formData.trainer;
+        }
+
+        console.log(
+          "📤 UpdateData completo:",
+          JSON.stringify(updateData, null, 2),
+        );
 
         await activityService.updateActivity(editingActivity.id, updateData);
 
         if (imageFile) {
-          await activityService.uploadActivityImage(editingActivity.id, imageFile);
+          await activityService.uploadActivityImage(
+            editingActivity.id,
+            imageFile,
+          );
         } else if (imageUrl && imageUrl !== editingActivity.imageUrl) {
-          await activityService.updateActivityImageUrl(editingActivity.id, imageUrl);
+          await activityService.updateActivityImageUrl(
+            editingActivity.id,
+            imageUrl,
+          );
         }
 
-        Swal.fire('✅ Éxito', 'Actividad actualizada correctamente', 'success');
+        Swal.fire("✅ Éxito", "Actividad actualizada correctamente", "success");
       } else {
+        // Construir el objeto manualmente para evitar campos extra
         const createData: CreateActivityDTO = {
-          ...formData,
-          schedule,
+          name: formData.name,
+          description: formData.description,
+          capacity: formData.capacity,
+          duration: formData.duration,
+          price: formData.price,
+          schedule: schedule,
+          trainer: formData.trainer,
         };
 
-        const createdActivity = await activityService.createActivity(createData);
-
-        if (imageFile) {
-          await activityService.uploadActivityImage(createdActivity.id, imageFile);
-        } else if (imageUrl) {
-          await activityService.updateActivityImageUrl(createdActivity.id, imageUrl);
+        // Solo agregar trainer si tiene valor
+        if (formData.trainer) {
+          createData.trainer = formData.trainer;
         }
 
-        Swal.fire('✅ Éxito', 'Actividad creada correctamente', 'success');
+        console.log(
+          "📤 CreateData completo:",
+          JSON.stringify(createData, null, 2),
+        );
+
+        const createdActivity =
+          await activityService.createActivity(createData);
+
+        if (imageFile) {
+          await activityService.uploadActivityImage(
+            createdActivity.id,
+            imageFile,
+          );
+        } else if (imageUrl) {
+          await activityService.updateActivityImageUrl(
+            createdActivity.id,
+            imageUrl,
+          );
+        }
+
+        Swal.fire("✅ Éxito", "Actividad creada correctamente", "success");
       }
 
       await fetchActivities();
       closeModal();
     } catch (error: any) {
-      Swal.fire('❌ Error', error.message, 'error');
+      console.error("❌ Error completo:", error);
+      console.error("❌ Error response:", error.response);
+      console.error("❌ Error data:", error.response?.data);
+
+      // Mostrar mensaje de error más detallado
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Error al procesar la solicitud";
+      Swal.fire("❌ Error", errorMessage, "error");
     }
   };
 
   const handleDelete = async (activity: Activity) => {
     const result = await Swal.fire({
-      title: '¿Eliminar actividad?',
+      title: "¿Eliminar actividad?",
       html: `
         <p>¿Estás seguro de eliminar <strong>${activity.name}</strong>?</p>
         <p class="text-sm text-gray-600 mt-2">
@@ -143,22 +213,22 @@ export default function ActivitiesPage() {
           y se notificará a los usuarios afectados.
         </p>
       `,
-      icon: 'warning',
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar',
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
     });
 
     if (!result.isConfirmed) return;
 
     try {
       await activityService.deleteActivity(activity.id);
-      Swal.fire('✅ Eliminada', 'La actividad ha sido eliminada', 'success');
+      Swal.fire("✅ Eliminada", "La actividad ha sido eliminada", "success");
       await fetchActivities();
     } catch (error: any) {
-      Swal.fire('❌ Error', error.message, 'error');
+      Swal.fire("❌ Error", error.message, "error");
     }
   };
 
@@ -166,70 +236,70 @@ export default function ActivitiesPage() {
     try {
       await activityService.toggleActivityStatus(activity.id);
       Swal.fire({
-        icon: 'success',
-        title: 'Estado actualizado',
+        icon: "success",
+        title: "Estado actualizado",
         timer: 1500,
         showConfirmButton: false,
       });
       await fetchActivities();
     } catch (error: any) {
-      Swal.fire('❌ Error', error.message, 'error');
+      Swal.fire("❌ Error", error.message, "error");
     }
   };
 
   // 🔥 FIX: Función para convertir schedule de manera segura
   const convertScheduleToSlots = (schedule: any): ScheduleSlot[] => {
     const slots: ScheduleSlot[] = [];
-    
-    // Validar que schedule existe y es un array
+
     if (!schedule || !Array.isArray(schedule)) {
-      console.warn('⚠️ Schedule inválido:', schedule);
-      return [{ day: 'Monday', time: '08:00' }];
+      console.warn("⚠️ Schedule inválido:", schedule);
+      return [{ day: "Lunes", time: "10:00" }];
     }
 
     try {
-      schedule.forEach(day => {
-        // Validar que day existe y tiene la estructura correcta
-        if (!day || !day.day || !Array.isArray(day.hours)) {
-          console.warn('⚠️ Day inválido:', day);
-          return;
-        }
-
-        day.hours.forEach(hour => {
-          if (hour && typeof hour === 'string') {
-            slots.push({ day: day.day, time: hour });
+      schedule.forEach((item) => {
+        if (typeof item === "string") {
+          const parts = item.split(" ");
+          if (parts.length >= 2) {
+            slots.push({ day: parts[0], time: parts[1] });
           }
-        });
+        } else if (item?.day && Array.isArray(item.hours)) {
+          item.hours.forEach((hour: string) => {
+            if (hour && typeof hour === "string") {
+              slots.push({ day: item.day, time: hour });
+            }
+          });
+        }
       });
     } catch (error) {
-      console.error('❌ Error convirtiendo schedule:', error);
-      return [{ day: 'Monday', time: '08:00' }];
+      console.error("❌ Error convirtiendo schedule:", error);
+      return [{ day: "Lunes", time: "10:00" }];
     }
-
-    // Si no hay slots válidos, retornar uno por defecto
-    return slots.length > 0 ? slots : [{ day: 'Monday', time: '08:00' }];
+    return slots.length > 0 ? slots : [{ day: "Lunes", time: "10:00" }];
   };
 
   const openEditModal = (activity: Activity) => {
-    console.log('🔍 Editando actividad:', activity);
-    
+    console.log("🔍 Editando actividad:", activity);
+
     setEditingActivity(activity);
     setFormData({
       name: activity.name,
       description: activity.description,
       capacity: activity.capacity,
       duration: activity.duration,
-      price: typeof activity.price === 'number' ? activity.price : Number(activity.price) || 0,
-      instructor: activity.instructor || '',
-      category: activity.category || '',
+      price:
+        typeof activity.price === "number"
+          ? activity.price
+          : Number(activity.price) || 0,
+      trainer: activity.trainer || "",
     });
-    
+
     // 🔥 Usar la función segura para convertir schedule
     const slots = convertScheduleToSlots(activity.schedule);
-    console.log('📅 Slots convertidos:', slots);
+    console.log("📅 Slots convertidos:", slots);
     setScheduleSlots(slots);
-    
-    setImageUrl(activity.imageUrl || '');
+
+    setImageUrl(activity.imageUrl || "");
     setImageFile(null);
     setShowModal(true);
   };
@@ -237,16 +307,15 @@ export default function ActivitiesPage() {
   const openCreateModal = () => {
     setEditingActivity(null);
     setFormData({
-      name: '',
-      description: '',
+      name: "",
+      description: "",
       capacity: 20,
       duration: 60,
       price: 5000,
-      instructor: '',
-      category: '',
+      trainer: "",
     });
-    setScheduleSlots([{ day: 'Monday', time: '08:00' }]);
-    setImageUrl('');
+    setScheduleSlots([{ day: "Lunes", time: "10:00" }]);
+    setImageUrl("");
     setImageFile(null);
     setShowModal(true);
   };
@@ -255,16 +324,18 @@ export default function ActivitiesPage() {
     setShowModal(false);
     setEditingActivity(null);
   };
-
   const addScheduleSlot = () => {
-    setScheduleSlots([...scheduleSlots, { day: 'Monday', time: '08:00' }]);
+    setScheduleSlots([...scheduleSlots, { day: "Lunes", time: "08:00" }]);
   };
-
   const removeScheduleSlot = (index: number) => {
     setScheduleSlots(scheduleSlots.filter((_, i) => i !== index));
   };
 
-  const updateScheduleSlot = (index: number, field: 'day' | 'time', value: string) => {
+  const updateScheduleSlot = (
+    index: number,
+    field: "day" | "time",
+    value: string,
+  ) => {
     const updated = [...scheduleSlots];
     updated[index][field] = value;
     setScheduleSlots(updated);
@@ -275,21 +346,26 @@ export default function ActivitiesPage() {
     if (!schedule || !Array.isArray(schedule) || schedule.length === 0) {
       return <span className="text-gray-400 text-xs">Sin horarios</span>;
     }
-
     return (
       <div className="space-y-1">
-        {schedule.slice(0, 2).map((day, idx) => {
-          if (!day || !day.day || !Array.isArray(day.hours)) return null;
-          
-          return (
-            <div key={idx} className="text-xs text-gray-600">
-              <span className="font-medium">{day.day}:</span> {day.hours.join(', ')}
-            </div>
-          );
+        {schedule.map((daySchedule: any, idx: number) => {
+          if (typeof daySchedule === "string") {
+            return (
+              <div key={idx} className="text-xs text-gray-600">
+                {daySchedule}
+              </div>
+            );
+          }
+          if (daySchedule?.day && Array.isArray(daySchedule.hours)) {
+            return (
+              <div key={idx} className="text-xs text-gray-600">
+                <span className="font-medium">{daySchedule.day}:</span>{" "}
+                {daySchedule.hours.join(", ")}
+              </div>
+            );
+          }
+          return null;
         })}
-        {schedule.length > 2 && (
-          <div className="text-xs text-gray-400">+{schedule.length - 2} más</div>
-        )}
       </div>
     );
   };
@@ -300,10 +376,14 @@ export default function ActivitiesPage() {
       <div className="bg-white rounded-xl shadow p-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">🏋️ Gestión de Actividades</h1>
-            <p className="text-gray-600 mt-1">Total: {activities.length} actividades</p>
+            <h1 className="text-3xl font-bold text-gray-800">
+              🏋️ Gestión de Actividades
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Total: {activities.length} actividades
+            </p>
           </div>
-          
+
           {(isAdmin || isSuperAdmin) && (
             <button
               onClick={openCreateModal}
@@ -324,11 +404,16 @@ export default function ActivitiesPage() {
           </div>
         ) : !activities || activities.length === 0 ? (
           <div className="col-span-full text-center py-12 bg-white rounded-xl">
-            <p className="text-gray-400 text-lg">📭 No hay actividades creadas</p>
+            <p className="text-gray-400 text-lg">
+              📭 No hay actividades creadas
+            </p>
           </div>
         ) : (
-          activities.map(activity => (
-            <div key={activity.id} className="bg-white rounded-xl shadow overflow-hidden hover:shadow-lg transition">
+          activities.map((activity) => (
+            <div
+              key={activity.id}
+              className="bg-white rounded-xl shadow overflow-hidden hover:shadow-lg transition"
+            >
               {activity.imageUrl && (
                 <Image
                   src={activity.imageUrl}
@@ -339,21 +424,27 @@ export default function ActivitiesPage() {
                   sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 />
               )}
-              
+
               <div className="p-6">
                 <div className="flex justify-between items-start mb-3">
-                  <h3 className="text-xl font-bold text-gray-900">{activity.name}</h3>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    activity.status === 'active' 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {activity.status === 'active' ? '✅ Activa' : '⏸️ Inactiva'}
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {activity.name}
+                  </h3>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      activity.status === "Active"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-gray-100 text-gray-800"
+                    }`}
+                  >
+                    {activity.status === "Active" ? "✅ Activa" : "⏸️ Inactiva"}
                   </span>
                 </div>
-                
-                <p className="text-gray-600 text-sm mb-4 line-clamp-2">{activity.description}</p>
-                
+
+                <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                  {activity.description}
+                </p>
+
                 <div className="space-y-2 text-sm mb-3">
                   <div className="flex justify-between">
                     <span className="text-gray-600">💰 Precio:</span>
@@ -371,10 +462,12 @@ export default function ActivitiesPage() {
 
                 {/* Horarios */}
                 <div className="mb-4 pb-4 border-t pt-3">
-                  <div className="text-sm font-medium text-gray-700 mb-2">📅 Horarios:</div>
+                  <div className="text-sm font-medium text-gray-700 mb-2">
+                    📅 Horarios:
+                  </div>
                   {renderSchedule(activity.schedule)}
                 </div>
-                
+
                 {(isAdmin || isSuperAdmin) && (
                   <div className="pt-4 border-t flex gap-2">
                     <button
@@ -411,7 +504,7 @@ export default function ActivitiesPage() {
           <div className="bg-white rounded-xl w-full max-w-3xl my-8">
             <div className="p-6 border-b">
               <h2 className="text-2xl font-bold">
-                {editingActivity ? '✏️ Editar Actividad' : '➕ Nueva Actividad'}
+                {editingActivity ? "✏️ Editar Actividad" : "➕ Nueva Actividad"}
               </h2>
             </div>
 
@@ -423,7 +516,9 @@ export default function ActivitiesPage() {
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   required
                 />
@@ -435,7 +530,9 @@ export default function ActivitiesPage() {
                 </label>
                 <textarea
                   value={formData.description}
-                  onChange={e => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                   rows={3}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   required
@@ -450,7 +547,12 @@ export default function ActivitiesPage() {
                   <input
                     type="number"
                     value={formData.capacity}
-                    onChange={e => setFormData({ ...formData, capacity: parseInt(e.target.value) })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        capacity: parseInt(e.target.value),
+                      })
+                    }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
                     required
                   />
@@ -463,7 +565,12 @@ export default function ActivitiesPage() {
                   <input
                     type="number"
                     value={formData.duration}
-                    onChange={e => setFormData({ ...formData, duration: parseInt(e.target.value) })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        duration: parseInt(e.target.value),
+                      })
+                    }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
                     required
                   />
@@ -476,7 +583,12 @@ export default function ActivitiesPage() {
                   <input
                     type="number"
                     value={formData.price}
-                    onChange={e => setFormData({ ...formData, price: parseInt(e.target.value) })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        price: parseInt(e.target.value),
+                      })
+                    }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
                     required
                   />
@@ -490,20 +602,10 @@ export default function ActivitiesPage() {
                   </label>
                   <input
                     type="text"
-                    value={formData.instructor}
-                    onChange={e => setFormData({ ...formData, instructor: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Categoría
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.category}
-                    onChange={e => setFormData({ ...formData, category: e.target.value })}
+                    value={formData.trainer}
+                    onChange={(e) =>
+                      setFormData({ ...formData, trainer: e.target.value })
+                    }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
                   />
                 </div>
@@ -528,21 +630,29 @@ export default function ActivitiesPage() {
                     <div key={index} className="flex gap-2">
                       <select
                         value={slot.day}
-                        onChange={e => updateScheduleSlot(index, 'day', e.target.value)}
+                        onChange={(e) =>
+                          updateScheduleSlot(index, "day", e.target.value)
+                        }
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
                       >
-                        {DAYS.map(day => (
-                          <option key={day} value={day}>{day}</option>
+                        {DAYS.map((day) => (
+                          <option key={day} value={day}>
+                            {day}
+                          </option>
                         ))}
                       </select>
 
                       <select
                         value={slot.time}
-                        onChange={e => updateScheduleSlot(index, 'time', e.target.value)}
+                        onChange={(e) =>
+                          updateScheduleSlot(index, "time", e.target.value)
+                        }
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
                       >
-                        {TIMES.map(time => (
-                          <option key={time} value={time}>{time}</option>
+                        {TIMES.map((time) => (
+                          <option key={time} value={time}>
+                            {time}
+                          </option>
                         ))}
                       </select>
 
@@ -568,22 +678,22 @@ export default function ActivitiesPage() {
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={e => {
+                    onChange={(e) => {
                       if (e.target.files?.[0]) {
                         setImageFile(e.target.files[0]);
-                        setImageUrl('');
+                        setImageUrl("");
                       }
                     }}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                   />
-                  
+
                   <div className="text-center text-sm text-gray-500">O</div>
-                  
+
                   <input
                     type="url"
                     placeholder="URL de imagen"
                     value={imageUrl}
-                    onChange={e => {
+                    onChange={(e) => {
                       setImageUrl(e.target.value);
                       setImageFile(null);
                     }}
@@ -597,7 +707,9 @@ export default function ActivitiesPage() {
                   type="submit"
                   className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-lg font-medium hover:from-red-700 hover:to-orange-700 transition"
                 >
-                  {editingActivity ? '💾 Guardar Cambios' : '➕ Crear Actividad'}
+                  {editingActivity
+                    ? "💾 Guardar Cambios"
+                    : "➕ Crear Actividad"}
                 </button>
                 <button
                   type="button"
