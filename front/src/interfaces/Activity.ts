@@ -8,12 +8,11 @@ export interface Activity {
   capacity: number;
   hasFreeTrial?: boolean;
   price: string | number;
-  schedule?: string[] | { day: string; hours: string[] }[];
+  schedule?: string[];
   image?: string;
   imageUrl?: string;
   status: string;
   createdAt?: string;
   updatedAt?: string;
-  instructor?: string;
-  category?: string;
+  trainer?: string;
 }

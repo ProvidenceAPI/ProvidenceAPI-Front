@@ -16,7 +16,6 @@ interface AdminFormData {
   phone: string;
   dni: string;
   genre: "Female" | "Male" | "Nonbinary" | "Other";
-  role: "admin" | "superadmin";
 }
 
 export default function AdminCreationFormPage() {
@@ -31,7 +30,6 @@ export default function AdminCreationFormPage() {
     phone: "",
     dni: "",
     genre: "Male",
-    role: "admin",
   });
 
   const [loading, setLoading] = useState(false);
@@ -52,7 +50,7 @@ export default function AdminCreationFormPage() {
   }, []);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
 
@@ -173,36 +171,21 @@ export default function AdminCreationFormPage() {
 
       const userId = userResponse.user.id;
 
-      // PASO 2: Convertir usuario a admin/superadmin
-      console.log(`PASO 2: Convirtiendo a ${formData.role}...`);
-
       await new Promise((resolve) => setTimeout(resolve, 1000)); // Pequeña pausa
-
-      const adminResponse = await convertToAdmin(userId, formData.role);
-      console.log("Usuario convertido a admin:", adminResponse);
 
       // PASO 3: Mostrar éxito
       await Swal.fire({
-        title: "✅ ¡Administrador creado!",
+        title: "✅ ¡Usuario creado!",
         html: `
           <div class="text-left">
-            <p>Se ha creado exitosamente el ${
-              formData.role === "superadmin"
-                ? "⭐ Super Administrador"
-                : "Administrador"
-            }:</p>
             <div class="mt-4 p-3 bg-gray-100 rounded-lg">
               <p><strong>Nombre:</strong> ${formData.name} ${
-          formData.lastname
-        }</p>
-              <p><strong>Email:</strong> ${formData.email}</p>
-              <p><strong>Rol:</strong> ${
-                formData.role === "superadmin" ? "⭐ Super Admin" : "Admin"
+                formData.lastname
               }</p>
-              <p><strong>Contraseña:</strong> ${formData.password}</p>
+              <p><strong>Email:</strong> ${formData.email}</p>
             </div>
             <p class="mt-4 text-sm text-gray-600">
-              El nuevo administrador puede iniciar sesión inmediatamente.
+              El nuevo usuario puede iniciar sesión inmediatamente.
             </p>
           </div>
         `,
@@ -222,7 +205,6 @@ export default function AdminCreationFormPage() {
         phone: "",
         dni: "",
         genre: "Male",
-        role: "admin",
       });
 
       // Opcional: Redirigir a lista de usuarios
@@ -290,23 +272,17 @@ export default function AdminCreationFormPage() {
             <span className="text-3xl">👑</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-            Crear Nuevo Administrador
+            Crear Nuevo Usuario
           </h1>
-          <p className="text-lg text-gray-600">
-            Formulario para agregar nuevos administradores al sistema
-          </p>
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-100 text-yellow-800 rounded-full text-sm mt-4">
             <span>⚠️</span>
-            <span>Solo SuperAdmins pueden crear administradores</span>
+            <span>Solo SuperAdmins pueden crear usuarios</span>
           </div>
         </div>
 
         {/* Formulario */}
         <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
-          <form
-            onSubmit={handleSubmit}
-            className="space-y-6"
-          >
+          <form onSubmit={handleSubmit} className="space-y-6">
             {/* Nombre y Apellido */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -505,22 +481,6 @@ export default function AdminCreationFormPage() {
                   <option value="Other">Otro</option>
                 </select>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Rol *
-                </label>
-                <select
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
-                  disabled={loading}
-                >
-                  <option value="admin">Administrador</option>
-                  <option value="superadmin">Super Administrador ⭐</option>
-                </select>
-              </div>
             </div>
 
             {/* Info de privacidad */}
@@ -549,7 +509,7 @@ export default function AdminCreationFormPage() {
                     Creando administrador...
                   </>
                 ) : (
-                  "Crear Administrador"
+                  "Crear Usuario"
                 )}
               </button>
 
