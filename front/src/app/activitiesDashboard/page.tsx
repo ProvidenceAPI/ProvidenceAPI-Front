@@ -44,6 +44,26 @@ const TIMES = [
   "21:00",
 ];
 
+const DAY_MAP: Record<string, string> = {
+  Monday: "Lunes",
+  Tuesday: "Martes",
+  Wednesday: "Miércoles",
+  Thursday: "Jueves",
+  Friday: "Viernes",
+  Saturday: "Sábado",
+  Sunday: "Domingo",
+};
+
+const DAY_MAP_REVERSE: Record<string, string> = {
+  Lunes: "Monday",
+  Martes: "Tuesday",
+  Miércoles: "Wednesday",
+  Jueves: "Thursday",
+  Viernes: "Friday",
+  Sábado: "Saturday",
+  Domingo: "Sunday",
+};
+
 export default function ActivitiesPage() {
   const { isSuperAdmin, isAdmin } = useAppContext();
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -57,6 +77,7 @@ export default function ActivitiesPage() {
     duration: 60,
     price: 5000,
     trainer: "",
+    hasFreeTrial: false,
   });
   const [scheduleSlots, setScheduleSlots] = useState<ScheduleSlot[]>([
     { day: "Monday", time: "08:00" },
@@ -93,26 +114,20 @@ export default function ActivitiesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!formData.name || !formData.description) {
       Swal.fire("Error", "Nombre y descripción son obligatorios", "error");
       return;
     }
-
     if (scheduleSlots.length === 0) {
       Swal.fire("Error", "Debes agregar al menos un horario", "error");
       return;
     }
-
     try {
-      const schedule = scheduleSlots.map((slot) => `${slot.day} ${slot.time}`);
-
-      // 🔍 LOGGING para debugging
-      console.log("📋 scheduleSlots:", scheduleSlots);
-      console.log("📤 schedule formateado:", schedule);
-
+      const schedule = scheduleSlots.map((slot) => {
+        const dayInEnglish = DAY_MAP_REVERSE[slot.day] || slot.day;
+        return `${dayInEnglish} ${slot.time}`;
+      });
       if (editingActivity) {
-        // Construir el objeto manualmente para evitar campos extra
         const updateData: UpdateActivityDTO = {
           name: formData.name,
           description: formData.description,
@@ -120,20 +135,13 @@ export default function ActivitiesPage() {
           duration: formData.duration,
           price: formData.price,
           schedule: schedule,
+          hasFreeTrial: formData.hasFreeTrial,
         };
 
-        // Solo agregar trainer si tiene valor
         if (formData.trainer) {
           updateData.trainer = formData.trainer;
         }
-
-        console.log(
-          "📤 UpdateData completo:",
-          JSON.stringify(updateData, null, 2),
-        );
-
         await activityService.updateActivity(editingActivity.id, updateData);
-
         if (imageFile) {
           await activityService.uploadActivityImage(
             editingActivity.id,
@@ -145,10 +153,8 @@ export default function ActivitiesPage() {
             imageUrl,
           );
         }
-
         Swal.fire("✅ Éxito", "Actividad actualizada correctamente", "success");
       } else {
-        // Construir el objeto manualmente para evitar campos extra
         const createData: CreateActivityDTO = {
           name: formData.name,
           description: formData.description,
@@ -157,21 +163,13 @@ export default function ActivitiesPage() {
           price: formData.price,
           schedule: schedule,
           trainer: formData.trainer,
+          hasFreeTrial: formData.hasFreeTrial,
         };
-
-        // Solo agregar trainer si tiene valor
         if (formData.trainer) {
           createData.trainer = formData.trainer;
         }
-
-        console.log(
-          "📤 CreateData completo:",
-          JSON.stringify(createData, null, 2),
-        );
-
         const createdActivity =
           await activityService.createActivity(createData);
-
         if (imageFile) {
           await activityService.uploadActivityImage(
             createdActivity.id,
@@ -183,18 +181,12 @@ export default function ActivitiesPage() {
             imageUrl,
           );
         }
-
         Swal.fire("✅ Éxito", "Actividad creada correctamente", "success");
       }
 
       await fetchActivities();
       closeModal();
     } catch (error: any) {
-      console.error("❌ Error completo:", error);
-      console.error("❌ Error response:", error.response);
-      console.error("❌ Error data:", error.response?.data);
-
-      // Mostrar mensaje de error más detallado
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
@@ -202,7 +194,6 @@ export default function ActivitiesPage() {
       Swal.fire("❌ Error", errorMessage, "error");
     }
   };
-
   const handleDelete = async (activity: Activity) => {
     const result = await Swal.fire({
       title: "¿Eliminar actividad?",
@@ -220,9 +211,7 @@ export default function ActivitiesPage() {
       confirmButtonText: "Sí, eliminar",
       cancelButtonText: "Cancelar",
     });
-
     if (!result.isConfirmed) return;
-
     try {
       await activityService.deleteActivity(activity.id);
       Swal.fire("✅ Eliminada", "La actividad ha sido eliminada", "success");
@@ -231,7 +220,6 @@ export default function ActivitiesPage() {
       Swal.fire("❌ Error", error.message, "error");
     }
   };
-
   const handleToggleStatus = async (activity: Activity) => {
     try {
       await activityService.toggleActivityStatus(activity.id);
@@ -247,8 +235,8 @@ export default function ActivitiesPage() {
     }
   };
 
-  // 🔥 FIX: Función para convertir schedule de manera segura
   const convertScheduleToSlots = (schedule: any): ScheduleSlot[] => {
+    console.log("🔄 Convirtiendo schedule:", schedule);
     const slots: ScheduleSlot[] = [];
 
     if (!schedule || !Array.isArray(schedule)) {
@@ -257,16 +245,27 @@ export default function ActivitiesPage() {
     }
 
     try {
-      schedule.forEach((item) => {
+      schedule.forEach((item, idx) => {
+        console.log(`  Item ${idx}:`, item);
+
         if (typeof item === "string") {
-          const parts = item.split(" ");
+          // Formato: "Monday 07:00" o "Lunes 09:00"
+          const parts = item.trim().split(" ");
           if (parts.length >= 2) {
-            slots.push({ day: parts[0], time: parts[1] });
+            const dayInEnglish = parts[0];
+            const dayInSpanish = DAY_MAP[dayInEnglish] || dayInEnglish;
+            const time = parts[1];
+
+            slots.push({ day: dayInSpanish, time: time });
+            console.log(`    ✅ String slot: ${dayInSpanish} ${time}`);
           }
         } else if (item?.day && Array.isArray(item.hours)) {
+          // Formato: {day: "Monday", hours: ["09:00", "18:00"]}
+          const dayInSpanish = DAY_MAP[item.day] || item.day;
           item.hours.forEach((hour: string) => {
             if (hour && typeof hour === "string") {
-              slots.push({ day: item.day, time: hour });
+              slots.push({ day: dayInSpanish, time: hour });
+              console.log(`    ✅ Object slot: ${dayInSpanish} ${hour}`);
             }
           });
         }
@@ -275,11 +274,13 @@ export default function ActivitiesPage() {
       console.error("❌ Error convirtiendo schedule:", error);
       return [{ day: "Lunes", time: "10:00" }];
     }
+
+    console.log("📊 Total slots convertidos:", slots.length, slots);
     return slots.length > 0 ? slots : [{ day: "Lunes", time: "10:00" }];
   };
-
   const openEditModal = (activity: Activity) => {
-    console.log("🔍 Editando actividad:", activity);
+    console.log("🔎 Editando actividad:", activity);
+    console.log("🔎 Schedule original:", activity.schedule);
 
     setEditingActivity(activity);
     setFormData({
@@ -292,14 +293,13 @@ export default function ActivitiesPage() {
           ? activity.price
           : Number(activity.price) || 0,
       trainer: activity.trainer || "",
+      hasFreeTrial: activity.hasFreeTrial || false,
     });
-
-    // 🔥 Usar la función segura para convertir schedule
     const slots = convertScheduleToSlots(activity.schedule);
     console.log("📅 Slots convertidos:", slots);
     setScheduleSlots(slots);
 
-    setImageUrl(activity.imageUrl || "");
+    setImageUrl(activity.image || activity.imageUrl || "");
     setImageFile(null);
     setShowModal(true);
   };
@@ -313,6 +313,7 @@ export default function ActivitiesPage() {
       duration: 60,
       price: 5000,
       trainer: "",
+      hasFreeTrial: false,
     });
     setScheduleSlots([{ day: "Lunes", time: "10:00" }]);
     setImageUrl("");
@@ -341,33 +342,32 @@ export default function ActivitiesPage() {
     setScheduleSlots(updated);
   };
 
-  // 🔥 FIX: Función segura para renderizar horarios
   const renderSchedule = (schedule: any) => {
     if (!schedule || !Array.isArray(schedule) || schedule.length === 0) {
-      return <span className="text-gray-400 text-xs">Sin horarios</span>;
+      return (
+        <span className="text-gray-400 text-xs col-span-full">
+          Sin horarios
+        </span>
+      );
     }
-    return (
-      <div className="space-y-1">
-        {schedule.map((daySchedule: any, idx: number) => {
-          if (typeof daySchedule === "string") {
-            return (
-              <div key={idx} className="text-xs text-gray-600">
-                {daySchedule}
-              </div>
-            );
-          }
-          if (daySchedule?.day && Array.isArray(daySchedule.hours)) {
-            return (
-              <div key={idx} className="text-xs text-gray-600">
-                <span className="font-medium">{daySchedule.day}:</span>{" "}
-                {daySchedule.hours.join(", ")}
-              </div>
-            );
-          }
-          return null;
-        })}
-      </div>
-    );
+    return schedule.map((daySchedule: any, idx: number) => {
+      if (typeof daySchedule === "string") {
+        return (
+          <div key={idx} className="text-xs text-gray-600">
+            {daySchedule}
+          </div>
+        );
+      }
+      if (daySchedule?.day && Array.isArray(daySchedule.hours)) {
+        return (
+          <div key={idx} className="text-xs text-gray-600">
+            <span className="font-medium">{daySchedule.day}:</span>{" "}
+            {daySchedule.hours.join(", ")}
+          </div>
+        );
+      }
+      return null;
+    });
   };
 
   return (
@@ -396,7 +396,7 @@ export default function ActivitiesPage() {
       </div>
 
       {/* Lista de actividades */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-8 max-w-8xl mx-auto">
         {loading ? (
           <div className="col-span-full text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
@@ -414,15 +414,30 @@ export default function ActivitiesPage() {
               key={activity.id}
               className="bg-white rounded-xl shadow overflow-hidden hover:shadow-lg transition"
             >
-              {activity.imageUrl && (
-                <Image
-                  src={activity.imageUrl}
-                  alt={activity.name}
-                  width={400}
-                  height={192}
-                  className="w-full h-48 object-cover"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                />
+              {(activity.image || activity.imageUrl) &&
+              !(activity.image || activity.imageUrl).includes("ejemplo") ? (
+                <div className="relative w-full h-32 bg-gray-100 overflow-hidden">
+                  <Image
+                    src={activity.image || activity.imageUrl || ""}
+                    alt={activity.name}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    unoptimized
+                    onError={(e) => {
+                      console.error(
+                        "Error cargando imagen:",
+                        activity.image || activity.imageUrl,
+                      );
+                      const target = e.currentTarget as HTMLImageElement;
+                      target.style.display = "none";
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="w-full h-40 bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center">
+                  <span className="text-white text-6xl">🏋️</span>
+                </div>
               )}
 
               <div className="p-6">
@@ -460,12 +475,15 @@ export default function ActivitiesPage() {
                   </div>
                 </div>
 
-                {/* Horarios */}
                 <div className="mb-4 pb-4 border-t pt-3">
                   <div className="text-sm font-medium text-gray-700 mb-2">
                     📅 Horarios:
                   </div>
-                  {renderSchedule(activity.schedule)}
+                  <div className="max-h-24 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-1">
+                      {renderSchedule(activity.schedule)}
+                    </div>
+                  </div>
                 </div>
 
                 {(isAdmin || isSuperAdmin) && (
@@ -498,228 +516,261 @@ export default function ActivitiesPage() {
         )}
       </div>
 
-      {/* MODAL */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-xl w-full max-w-3xl my-8">
-            <div className="p-6 border-b">
-              <h2 className="text-2xl font-bold">
-                {editingActivity ? "✏️ Editar Actividad" : "➕ Nueva Actividad"}
-              </h2>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6 space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nombre *
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                  required
-                />
+        <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto">
+          <div className="min-h-screen flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl w-full max-w-3xl my-8">
+              <div className="p-6 border-b">
+                <h2 className="text-2xl font-bold">
+                  {editingActivity
+                    ? "✏️ Editar Actividad"
+                    : "➕ Nueva Actividad"}
+                </h2>
+                {editingActivity && (
+                  <p className="text-gray-600 mt-1">
+                    Modificando:{" "}
+                    <span className="font-semibold">
+                      {editingActivity.name}
+                    </span>
+                  </p>
+                )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Descripción *
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
+              <form onSubmit={handleSubmit} className="p-6 space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Cupo *
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.capacity}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        capacity: parseInt(e.target.value),
-                      })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Duración (min) *
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.duration}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        duration: parseInt(e.target.value),
-                      })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Precio *
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        price: parseInt(e.target.value),
-                      })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Instructor
+                    Nombre *
                   </label>
                   <input
                     type="text"
-                    value={formData.trainer}
+                    value={formData.name}
                     onChange={(e) =>
-                      setFormData({ ...formData, trainer: e.target.value })
+                      setFormData({ ...formData, name: e.target.value })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                    required
                   />
                 </div>
-              </div>
 
-              <div>
-                <div className="flex justify-between items-center mb-3">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Horarios *
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Descripción *
                   </label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Cupo *
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.capacity}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          capacity: parseInt(e.target.value),
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Duración (min) *
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.duration}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          duration: parseInt(e.target.value),
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Precio *
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.price}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          price: parseInt(e.target.value),
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Instructor
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.trainer}
+                      onChange={(e) =>
+                        setFormData({ ...formData, trainer: e.target.value })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Clase Gratis
+                  </label>
+                  <label className="flex items-center cursor-pointer mt-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.hasFreeTrial}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          hasFreeTrial: e.target.checked,
+                        })
+                      }
+                      className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">
+                      Ofrecer primera clase gratis
+                    </span>
+                  </label>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-3">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Horarios *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={addScheduleSlot}
+                      className="px-3 py-1 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 text-sm font-medium"
+                    >
+                      ➕ Agregar
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {scheduleSlots.map((slot, index) => (
+                      <div key={index} className="flex gap-2">
+                        <select
+                          value={slot.day}
+                          onChange={(e) =>
+                            updateScheduleSlot(index, "day", e.target.value)
+                          }
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                        >
+                          {DAYS.map((day) => (
+                            <option key={day} value={day}>
+                              {day}
+                            </option>
+                          ))}
+                        </select>
+
+                        <select
+                          value={slot.time}
+                          onChange={(e) =>
+                            updateScheduleSlot(index, "time", e.target.value)
+                          }
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                        >
+                          {TIMES.map((time) => (
+                            <option key={time} value={time}>
+                              {time}
+                            </option>
+                          ))}
+                        </select>
+
+                        {scheduleSlots.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeScheduleSlot(index)}
+                            className="px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100"
+                          >
+                            🗑️
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Imagen
+                  </label>
+                  <div className="space-y-3">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) {
+                          setImageFile(e.target.files[0]);
+                          setImageUrl("");
+                        }
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    />
+
+                    <div className="text-center text-sm text-gray-500">O</div>
+
+                    <input
+                      type="url"
+                      placeholder="URL de imagen"
+                      value={imageUrl}
+                      onChange={(e) => {
+                        setImageUrl(e.target.value);
+                        setImageFile(null);
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="submit"
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-lg font-medium hover:from-red-700 hover:to-orange-700 transition"
+                  >
+                    {editingActivity
+                      ? "💾 Guardar Cambios"
+                      : "➕ Crear Actividad"}
+                  </button>
                   <button
                     type="button"
-                    onClick={addScheduleSlot}
-                    className="px-3 py-1 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 text-sm font-medium"
+                    onClick={closeModal}
+                    className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition"
                   >
-                    ➕ Agregar
+                    ✕ Cancelar
                   </button>
                 </div>
-
-                <div className="space-y-2">
-                  {scheduleSlots.map((slot, index) => (
-                    <div key={index} className="flex gap-2">
-                      <select
-                        value={slot.day}
-                        onChange={(e) =>
-                          updateScheduleSlot(index, "day", e.target.value)
-                        }
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                      >
-                        {DAYS.map((day) => (
-                          <option key={day} value={day}>
-                            {day}
-                          </option>
-                        ))}
-                      </select>
-
-                      <select
-                        value={slot.time}
-                        onChange={(e) =>
-                          updateScheduleSlot(index, "time", e.target.value)
-                        }
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                      >
-                        {TIMES.map((time) => (
-                          <option key={time} value={time}>
-                            {time}
-                          </option>
-                        ))}
-                      </select>
-
-                      {scheduleSlots.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeScheduleSlot(index)}
-                          className="px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100"
-                        >
-                          🗑️
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Imagen
-                </label>
-                <div className="space-y-3">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      if (e.target.files?.[0]) {
-                        setImageFile(e.target.files[0]);
-                        setImageUrl("");
-                      }
-                    }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                  />
-
-                  <div className="text-center text-sm text-gray-500">O</div>
-
-                  <input
-                    type="url"
-                    placeholder="URL de imagen"
-                    value={imageUrl}
-                    onChange={(e) => {
-                      setImageUrl(e.target.value);
-                      setImageFile(null);
-                    }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="submit"
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-lg font-medium hover:from-red-700 hover:to-orange-700 transition"
-                >
-                  {editingActivity
-                    ? "💾 Guardar Cambios"
-                    : "➕ Crear Actividad"}
-                </button>
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition"
-                >
-                  ✕ Cancelar
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
         </div>
       )}
