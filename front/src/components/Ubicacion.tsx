@@ -1,102 +1,142 @@
-import { MapPin, Phone, Mail, Clock, Navigation } from "lucide-react";
+
+
+
+
+
+
+
+
+
+
+import { MapPin, Phone, Mail, Clock, Navigation, Star } from "lucide-react";
 
 export default function Ubicacion() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-16 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-16">
-          <h1 className="text-5xl  text-gray-900 mb-6 tracking-tight">
-            UBICACIÓN
-          </h1>
-          <p className="text-2xl text-gray-700 max-w-3xl mx-auto">
-            Encuéntranos fácilmente
-          </p>
-        </div>
-
-        <div className="grid lg:grid-cols-2 gap-16 items-start">
-          <div className="space-y-12">
-            <div className="space-y-4">
-              <div className="flex items-center space-x-4 mb-2">
-                <div className="bg-gray-100 p-3 rounded-full">
-                  <MapPin className="h-7 w-7 text-gray-700" />
+    <main>
+      <section className="py-16 px-6 md:px-12 text-center">
+        <h1 className="text-4xl md:text-5xl font-bold text-black mb-4">
+          UBICACION
+        </h1>
+        <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+          Visítanos en nuestro gimnasio principal en Cipoletti 
+        </p>
+      </section>
+      
+      {/* Contenedor principal */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid lg:grid-cols-2 gap-8 items-start">
+          {/* Columna izquierda - Tarjetas compactas */}
+          <div className="space-y-5">
+            {/* Dirección */}
+            <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200 hover:border-red-300 transition-colors">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 mt-1">
+                  <div className="bg-red-50 p-2 rounded-lg">
+                    <MapPin className="h-5 w-5 text-red-600" />
+                  </div>
                 </div>
-                <h2 className="text-3xl font-bold text-gray-900">Dirección</h2>
+                <div className="flex-grow">
+                  <h3 className="font-semibold text-gray-900 mb-2">Dirección</h3>
+                  <p className="text-gray-800 mb-3 leading-relaxed">
+                    Provincia de Buenos Aires 760,<br />
+                    Cipoletti, Argentina
+                  </p>
+                  <a
+                    href="https://maps.google.com/?q=Provincia+de+Buenos+Aires+760,Cipoletti,Río+Negro,Argentina"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center text-red-600 hover:text-red-700 text-sm font-medium"
+                  >
+                    <Navigation className="h-4 w-4 mr-2" />
+                    Ver en Google Maps
+                  </a>
+                </div>
               </div>
-              <p className="text-xl text-gray-800 leading-relaxed pl-16">
-                Provincia de Buenos Aires 760,
-                <br />
-                Cipoletti, Argentina
-              </p>
-              <a
-                href="https://maps.google.com/?q=Provincia+de+Buenos+Aires+760,Cipoletti,Río+Negro,Argentina"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center ml-16 text-gray-700 hover:text-gray-900 font-medium text-lg transition-colors"
-              >
-                <Navigation className="h-5 w-5 mr-2" />
-                Ver en Google Maps
-              </a>
             </div>
 
-            <div className="border-t border-gray-300 pt-8"></div>
-
-            <div className="space-y-4">
-              <div className="flex items-center space-x-4 mb-2">
-                <div className="bg-gray-100 p-3 rounded-full">
-                  <Phone className="h-7 w-7 text-gray-700" />
+            {/* Teléfono */}
+            <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200 hover:border-red-300 transition-colors">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 mt-1">
+                  <div className="bg-red-50 p-2 rounded-lg">
+                    <Phone className="h-5 w-5 text-red-600" />
+                  </div>
                 </div>
-                <h2 className="text-3xl font-bold text-gray-900">Teléfono</h2>
+                <div className="flex-grow">
+                  <h3 className="font-semibold text-gray-900 mb-2">Teléfono</h3>
+                  <div className="flex items-center gap-3 mb-3">
+                    <a
+                      href="tel:+5551234567"
+                      className="text-gray-800 hover:text-red-600 text-lg font-medium transition-colors"
+                    >
+                      (555) 123-4567
+                    </a>
+                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 rounded-full">
+                      <Star className="h-3 w-3 text-green-600" />
+                      <span className="text-xs font-medium text-green-700">Disponible</span>
+                    </span>
+                  </div>
+                  <p className="text-gray-500 text-sm">Atendemos de Lunes a Sábado</p>
+                </div>
               </div>
-              <a
-                href="tel:+5551234567"
-                className="text-xl text-gray-800 hover:text-gray-900 transition-colors block pl-16"
-              >
-                (555) 123-4567
-              </a>
             </div>
 
-            <div className="border-t border-gray-300 pt-8"></div>
-
-            <div className="space-y-4">
-              <div className="flex items-center space-x-4 mb-2">
-                <div className="bg-gray-100 p-3 rounded-full">
-                  <Mail className="h-7 w-7 text-gray-700" />
+            {/* Email */}
+            <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200 hover:border-red-300 transition-colors">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 mt-1">
+                  <div className="bg-red-50 p-2 rounded-lg">
+                    <Mail className="h-5 w-5 text-red-600" />
+                  </div>
                 </div>
-                <h2 className="text-3xl font-bold text-gray-900">Email</h2>
+                <div className="flex-grow">
+                  <h3 className="font-semibold text-gray-900 mb-2">Email</h3>
+                  <a
+                    href="mailto:info@providencefitness.com"
+                    className="text-gray-800 hover:text-red-600 text-lg font-medium transition-colors block mb-3"
+                  >
+                    info@providencefitness.com
+                  </a>
+                  <p className="text-gray-500 text-sm">Respondemos en menos de 24 horas</p>
+                </div>
               </div>
-              <a
-                href="mailto:info@providencefitness.com"
-                className="text-xl text-gray-800 hover:text-gray-900 transition-colors block pl-16"
-              >
-                info@providencefitness.com
-              </a>
             </div>
 
-            <div className="border-t border-gray-300 pt-8"></div>
-
-            <div className="space-y-4">
-              <div className="flex items-center space-x-4 mb-2">
-                <div className="bg-gray-100 p-3 rounded-full">
-                  <Clock className="h-7 w-7 text-gray-700" />
+            {/* Horarios */}
+            <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200 hover:border-red-300 transition-colors">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 mt-1">
+                  <div className="bg-red-50 p-2 rounded-lg">
+                    <Clock className="h-5 w-5 text-red-600" />
+                  </div>
                 </div>
-                <h2 className="text-3xl font-bold text-gray-900">Horarios</h2>
-              </div>
-              <div className="space-y-3 pl-16">
-                <p className="text-xl text-gray-800">
-                  <span className="font-semibold">Lunes a Viernes:</span> 07:00
-                  - 22:00
-                </p>
-                <p className="text-xl text-gray-800">
-                  <span className="font-semibold">Sábados:</span> 09:00 - 14:00
-                </p>
-                <p className="text-gray-600 text-lg mt-4">* Domingo cerrado</p>
+                <div className="flex-grow">
+                  <h3 className="font-semibold text-gray-900 mb-2">Horarios</h3>
+                  <div className="space-y-2 mb-4">
+                    <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded">
+                      <span className="text-gray-700 font-medium">Lunes a Viernes</span>
+                      <span className="font-semibold text-red-600">07:00 - 22:00</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded">
+                      <span className="text-gray-700 font-medium">Sábados</span>
+                      <span className="font-semibold text-red-600">09:00 - 14:00</span>
+                    </div>
+                  </div>
+                  <div className="bg-gray-100 rounded px-3 py-2">
+                    <p className="text-gray-600 text-sm text-center">
+                      <span className="font-medium">* Domingo cerrado</span>
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="space-y-8">
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="h-96 w-full">
+          {/* Columna derecha - Mapa limpio */}
+          <div className="h-auto">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden h-full">
+              {/* Mapa simple sin header */}
+              <div className="h-[500px] md:h-[600px]">
                 <iframe
                   src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3104.142651098254!2d-67.99811192367717!3d-38.93385437170407!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x960a33c3e8e4a26d%3A0xb8a3d83681c00a74!2sProvincia%20de%20Buenos%20Aires%20760%2C%20Cipoletti%2C%20R%C3%ADo%20Negro!5e0!3m2!1ses-419!2sar!4v1704675200000!5m2!1ses-419!2sar"
                   width="100%"
@@ -106,13 +146,51 @@ export default function Ubicacion() {
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
                   title="Ubicación Providence Fitness"
-                  className="rounded-xl"
                 />
               </div>
+            </div>
+
+            {/* Información adicional pequeña */}
+            <div className="mt-6 grid grid-cols-2 gap-4">
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="bg-white p-1.5 rounded">
+                    <span className="text-gray-700 text-sm">🚗</span>
+                  </div>
+                  <h4 className="font-medium text-gray-900 text-sm">Estacionamiento</h4>
+                </div>
+                <p className="text-gray-600 text-xs">Gratuito para miembros</p>
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="bg-white p-1.5 rounded">
+                    <span className="text-gray-700 text-sm">🚌</span>
+                  </div>
+                  <h4 className="font-medium text-gray-900 text-sm">Transporte</h4>
+                </div>
+                <p className="text-gray-600 text-xs">Acceso por bus</p>
+              </div>
+            </div>
+
+            {/* Botón pequeño */}
+            <div className="mt-6">
+              <a
+                href="https://maps.google.com/?q=Provincia+de+Buenos+Aires+760,Cipoletti,Río+Negro,Argentina"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full bg-gray-900 hover:bg-black text-white font-medium py-3 px-4 rounded-lg text-center transition-colors text-sm"
+              >
+                Obtener direcciones
+              </a>
+              <br></br>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
+
+
+

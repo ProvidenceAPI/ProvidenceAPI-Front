@@ -89,25 +89,25 @@ export const Navbar: React.FC = () => {
             href="/admin-dashboard"
             className={`px-4 py-2 rounded uppercase text-sm font-bold tracking-wider ${pathname === "/admin-dashboard" ? "bg-purple-700" : "bg-purple-600 hover:bg-purple-700"}`}
           >
-            Admin-Dashboard
+            Panel Super Admin
           </Link>
           <Link
             href="/users"
             className={`hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium ${pathname === "/users" ? "text-[#DC2626]" : ""}`}
           >
-            Users
+            Usuarios
           </Link>
           <Link
             href="/turns"
             className={`hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium ${pathname === "/turns" ? "text-[#DC2626]" : ""}`}
           >
-            Turns
+            Turnos
           </Link>
           <Link
             href="/adminCreationForm"
             className={`hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium ${pathname === "/adminCreationForm" ? "text-[#DC2626]" : ""}`}
           >
-            Crear Admin
+            Crear Usuario
           </Link>
           <Link
             href="/mis-reservas"
@@ -141,17 +141,12 @@ export const Navbar: React.FC = () => {
     if (isAdmin) {
       return (
         <>
-          <Link
-            href="/dashboard"
-            className={`px-4 py-2 rounded uppercase text-sm font-bold tracking-wider ${pathname === "/dashboard" ? "bg-purple-700" : "bg-purple-600 hover:bg-purple-700"}`}
-          >
-            Dashboard
-          </Link>
+         
           <Link
             href="/users"
             className={`hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium ${pathname === "/users" ? "text-[#DC2626]" : ""}`}
           >
-            Users
+            Usuarios
           </Link>
           <Link
             href="/activitiesDashboard"
@@ -163,14 +158,9 @@ export const Navbar: React.FC = () => {
             href="/turns"
             className={`hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium ${pathname === "/turns" ? "text-[#DC2626]" : ""}`}
           >
-            Turns
+            Turnos
           </Link>
-          <Link
-            href="/mis-reservas"
-            className={`hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium ${pathname === "/mis-reservas" ? "text-[#DC2626]" : ""}`}
-          >
-            Mis Reservas
-          </Link>
+       
           <Link
             href="/dashboard"
             className={`hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium ${pathname === "/dashboard" ? "text-[#DC2626]" : ""}`}

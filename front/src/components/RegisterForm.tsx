@@ -439,9 +439,9 @@ export default function RegisterForm() {
 
   return (
     <div className="min-h-screen flex">
-      <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-center px-12 py-20">
-        <div className="text-2xl font-bold tracking-[0.2em]">
-          <Link href="/" className="flex flex-col hover:no-underline">
+      <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-center item-center px-12 py-20">
+        <div className="text-2xl font-bold tracking-[0.2em] mb-8">
+          <Link href="/" className="inline flex flex-col items-center hover:no-underline">
           <Image
               src="/logo.png"
               alt="Logo"
@@ -494,8 +494,8 @@ export default function RegisterForm() {
         </div>
       </div>
 
-      <div className="w-full md:w-1/2 bg-white flex flex-col justify-center px-8 md:px-12 py-20 overflow-y-auto">
-        <div className="max-w-md mx-auto w-full">
+      <div className="w-full md:w-1/2 bg-white flex flex-col justify-center items-center px-8 md:px-12 py-20 overflow-y-auto">
+        <div className="max-w-md mx-auto w-full text-center">
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-black mb-2">CREAR CUENTA</h2>
             <p className="text-gray-600">

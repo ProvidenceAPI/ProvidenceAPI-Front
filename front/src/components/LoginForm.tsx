@@ -194,14 +194,15 @@ export default function LoginForm() {
               />
             </Link>
             <h1 className="text-2xl font-bold mt-2">PROVIDENCE FITNESS</h1>
-          </div>
-
-          <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-center md:text-left">
+          </div >
+          
+          <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-center ">
             INICIAR SESIÓN
           </h2>
-          <p className="text-gray-600 mb-6 sm:mb-8 text-center md:text-left">
+          <p className="text-gray-600 mb-6 sm:mb-8 text-center ">
             Ingresa tus credenciales
           </p>
+          
 
           {/* Mostrar error de API si existe */}
           {apiError && (
