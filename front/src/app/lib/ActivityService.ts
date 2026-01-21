@@ -7,9 +7,8 @@ export interface CreateActivityDTO {
   capacity: number;
   duration: number;
   price: number;
-  schedule: { day: string; hours: string[] }[];
-  instructor?: string;
-  category?: string;
+  schedule: string[];
+  trainer: string;
 }
 
 export interface UpdateActivityDTO {
@@ -18,9 +17,8 @@ export interface UpdateActivityDTO {
   capacity?: number;
   duration?: number;
   price?: number;
-  schedule?: { day: string; hours: string[] }[];
-  instructor?: string;
-  category?: string;
+  schedule?: string[];
+  trainer?: string;
 }
 
 export const activityService = {
