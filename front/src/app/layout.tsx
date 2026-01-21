@@ -1,14 +1,9 @@
-// app/layout.tsx - LAYOUT CON TODOS LOS PROVIDERS
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
-// Providers
 import AppProvider from "src/contexts/AppContext";
 import { CalendarProvider } from "src/contexts/CalendarContext";
-
-// Components
-
 
 import TransformacionCTA from "src/components/TransformacionCTA";
 import { Footer } from "src/components/Footer";
@@ -27,7 +22,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
+    <html lang="es"suppressHydrationWarning>
       <body className={`${inter.className} bg-gray-50`}>
         {/* APP PROVIDER (Auth + Admin + Cart) */}
         <AppProvider>

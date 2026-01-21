@@ -442,10 +442,12 @@ export default function RegisterForm() {
       <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-center px-12 py-20">
         <div className="text-2xl font-bold tracking-[0.2em]">
           <Link href="/" className="flex flex-col hover:no-underline">
-            <img
-              src="/LOGOMEJORADO.jpeg"
-              alt="Providence Fitness Logo"
-              className="h-auto w-auto"
+          <Image
+              src="/logo.png"
+              alt="Logo"
+              width={400}
+              height={100}
+              className="w-90h-auto"
             />
           </Link>
         </div>
