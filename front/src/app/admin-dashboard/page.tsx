@@ -21,7 +21,7 @@ export default function AdminDashboard() {
 ║ 🔍 DEBUG ADMIN DASHBOARD
 ╠═══════════════════════════════════════════════════════
 ║ 🔐 isAuthenticated: ${isAuthenticated}
-║ 👤 user: ${user ? JSON.stringify(user, null, 2) : "null"}
+║ 👤 user: ${user ? JSON.stringify(user, null, 2) : 'null'}
 ║ 🎭 user.role: ${user?.rol}
 ║ 👔 isAdmin: ${isAdmin}
 ║ 👑 isSuperAdmin: ${isSuperAdmin}

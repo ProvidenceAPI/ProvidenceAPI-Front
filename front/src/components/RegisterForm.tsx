@@ -64,6 +64,24 @@ export default function RegisterForm() {
   const emailCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+
+  useEffect(() => {
+    // Limpiar timeout anterior
+    if (validationTimeoutRef.current) {
+      clearTimeout(validationTimeoutRef.current);
+    }
+
+    validationTimeoutRef.current = setTimeout(() => {
+      validateRealTime();
+    }, 100); // 100ms de delay
+    
+    return () => {
+      if (validationTimeoutRef.current) {
+        clearTimeout(validationTimeoutRef.current);
+      }
+    };
+  }, [registerForm]);
+
   const validateRealTime = useCallback(() => {
     const newValidations = { ...initialValidations };
 
@@ -195,7 +213,6 @@ export default function RegisterForm() {
       setEmailExists(false);
       return;
     }
-
     setEmailChecking(true);
     try {
       // Aquí deberías hacer la llamada real a tu backend
@@ -341,8 +358,10 @@ export default function RegisterForm() {
   };
 
   const postRegister = async (registerDto: RegisterDto) => {
-    const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-    return await axios.post(`${base}/api/auth/signup`, registerDto);
+    return await axios.post(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/auth/signup`,
+      registerDto
+    );
   };
 
   const handleGoogleAuth = () => {
@@ -390,7 +409,6 @@ export default function RegisterForm() {
         icon: "success",
         confirmButtonText: "Ir al Login",
       });
-
       router.push("/login");
     } catch (error: any) {
       let errorMessage = "Error al crear el usuario";
@@ -404,7 +422,6 @@ export default function RegisterForm() {
           setEmailExists(true);
         }
       }
-
       await Swal.fire({
         title: "Error",
         text: errorMessage,
@@ -439,9 +456,9 @@ export default function RegisterForm() {
 
   return (
     <div className="min-h-screen flex">
-      <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-center px-12 py-20">
-        <div className="text-2xl font-bold tracking-[0.2em]">
-          <Link href="/" className="flex flex-col hover:no-underline">
+      <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-center item-center px-12 py-20">
+        <div className="text-2xl font-bold tracking-[0.2em] mb-8">
+          <Link href="/" className="inline flex flex-col items-center hover:no-underline">
           <Image
               src="/logo.png"
               alt="Logo"
@@ -494,8 +511,8 @@ export default function RegisterForm() {
         </div>
       </div>
 
-      <div className="w-full md:w-1/2 bg-white flex flex-col justify-center px-8 md:px-12 py-20 overflow-y-auto">
-        <div className="max-w-md mx-auto w-full">
+      <div className="w-full md:w-1/2 bg-white flex flex-col justify-center items-center px-8 md:px-12 py-20 overflow-y-auto">
+        <div className="max-w-md mx-auto w-full text-center">
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-black mb-2">CREAR CUENTA</h2>
             <p className="text-gray-600">
