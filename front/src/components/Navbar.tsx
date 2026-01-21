@@ -87,33 +87,9 @@ export const Navbar: React.FC = () => {
         <>
           <Link
             href="/admin-dashboard"
-            className={`px-4 py-2 rounded uppercase text-sm font-bold tracking-wider ${pathname === "/admin-dashboard" ? "bg-purple-700" : "bg-purple-600 hover:bg-purple-700"}`}
+            className={`px-4 py-2 rounded uppercase text-sm font-bold tracking-wider ${pathname === "/admin-dashboard" ? "bg-red-700" : "bg-red-600 hover:bg-red-700"}`}
           >
-            Panel Super Admin
-          </Link>
-          <Link
-            href="/users"
-            className={`hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium ${pathname === "/users" ? "text-[#DC2626]" : ""}`}
-          >
-            Usuarios
-          </Link>
-          <Link
-            href="/turns"
-            className={`hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium ${pathname === "/turns" ? "text-[#DC2626]" : ""}`}
-          >
-            Turnos
-          </Link>
-          <Link
-            href="/adminCreationForm"
-            className={`hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium ${pathname === "/adminCreationForm" ? "text-[#DC2626]" : ""}`}
-          >
-            Crear Usuario
-          </Link>
-          <Link
-            href="/mis-reservas"
-            className={`hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium ${pathname === "/mis-reservas" ? "text-[#DC2626]" : ""}`}
-          >
-            Mis Reservas
+            Panel Administrativo
           </Link>
           <Link
             href="/dashboard"
@@ -141,26 +117,12 @@ export const Navbar: React.FC = () => {
     if (isAdmin) {
       return (
         <>
-         
-          <Link
-            href="/users"
-            className={`hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium ${pathname === "/users" ? "text-[#DC2626]" : ""}`}
+           <Link
+            href="/admin-dashboard"
+            className={`px-4 py-2 rounded uppercase text-sm font-bold tracking-wider ${pathname === "/admin-dashboard" ? "bg-red-700" : "bg-red-600 hover:bg-red-700"}`}
           >
-            Usuarios
+            Panel Administrativo
           </Link>
-          <Link
-            href="/activitiesDashboard"
-            className={`hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium ${pathname === "/activitiesDashboard" ? "text-[#DC2626]" : ""}`}
-          >
-            Actividades
-          </Link>
-          <Link
-            href="/turns"
-            className={`hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium ${pathname === "/turns" ? "text-[#DC2626]" : ""}`}
-          >
-            Turnos
-          </Link>
-       
           <Link
             href="/dashboard"
             className={`hover:text-[#DC2626] transition-colors duration-200 uppercase tracking-wider text-sm font-medium ${pathname === "/dashboard" ? "text-[#DC2626]" : ""}`}
@@ -444,13 +406,8 @@ export const Navbar: React.FC = () => {
         {/* Logo - SIEMPRE lleva a la página principal según rol */}
         <div className="text-2xl font-bold tracking-[0.2em]">
           <Link
-            href={
-              isAuthenticated
-                ? isAdmin || isSuperAdmin
-                  ? "/admin-dashboard"
-                  : "/dashboard"
-                : "/"
-            }
+            href= "/"
+            
             className="flex flex-col hover:no-underline"
           >
             <Image

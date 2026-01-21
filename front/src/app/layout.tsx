@@ -6,7 +6,7 @@ import "./globals.css";
 import AppProvider from "src/contexts/AppContext";
 import { CalendarProvider } from "src/contexts/CalendarContext";
 
-import TransformacionCTA from "src/components/TransformacionCTA";
+
 import { Footer } from "src/components/Footer";
 import { Navbar } from "src/components/Navbar";
 
@@ -39,7 +39,7 @@ export default function RootLayout({
               </main>
               
               {/* CTA Y FOOTER - SIEMPRE VISIBLES */}
-              <TransformacionCTA />
+             
               <Footer />
             </div>
           </CalendarProvider>
