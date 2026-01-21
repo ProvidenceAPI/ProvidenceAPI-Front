@@ -82,17 +82,15 @@ export default function LoginForm() {
   const submitHandler = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Limpiar errores previos
     setApiError("");
 
     if (!validateForm()) return;
 
-    // ❌ NO necesitamos setIsLoading porque el contexto maneja loginLoading
 
     try {
       await login(loginForm.email, loginForm.password);
 
-      // Si llegamos aquí, el login fue exitoso
+
       setLoginForm(formInicialState);
 
       await Swal.fire({
@@ -102,7 +100,7 @@ export default function LoginForm() {
         confirmButtonText: "Continuar",
       });
 
-      // Redirigir al dashboard
+ 
       router.push("/dashboard");
     } catch (error: any) {
       console.error("Login error:", error);
@@ -139,41 +137,47 @@ export default function LoginForm() {
   const isLoadingAny = loginLoading || googleLoading || authLoading;
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left side - Black section */}
-      <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-center px-12 py-20">
-        <div className="text-2xl font-bold tracking-[0.2em]">
-          <Link href="/" className="flex flex-col hover:no-underline">
-            <img
-              src="/LOGOMEJORADO.jpeg"
-              alt="Providence Fitness Logo"
-              className="h-auto w-auto"
+<div className="min-h-screen flex">
+  {/* Left side - Black section */}
+  <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-center items-center px-12 py-20">
+    <div className="w-full max-w-lg mx-auto text-center">
+      <div className="text-2xl font-bold tracking-[0.2em] mb-8">
+        <Link href="/" className="inline-flex flex-col items-center hover:no-underline">
+         <Image
+              src="/logo.png"
+              alt="Logo"
+              width={400}
+              height={100}
+              className="w-90h-auto"
             />
-          </Link>
-        </div>
-        <h2 className="text-5xl font-bold leading-tight mb-6">
-          BIENVENIDO
-          <br />
-          DE VUELTA
-        </h2>
-
-        <p className="text-gray-400 text-base lg:text-lg">
-          Continúa tu transformación. Inicia sesión.
-        </p>
-
-        {/* Información adicional responsiva */}
-        <div className="mt-8 lg:mt-12 p-4 lg:p-6 bg-gray-900 rounded-lg">
-          <h3 className="text-lg lg:text-xl font-semibold mb-2">
-            Providence Fitness
-          </h3>
-          <ul className="text-sm lg:text-base text-gray-300 space-y-1">
-            <li>✅ Reserva tus actividades favoritas</li>
-            <li>✅ Gestiona tus pagos mensuales</li>
-            <li>✅ Sigue tu progreso fitness</li>
-            <li>✅ Acceso a todas las sedes</li>
-          </ul>
-        </div>
+        </Link>
       </div>
+      
+      <h2 className="text-5xl font-bold leading-tight mb-6">
+        BIENVENIDO
+        <br />
+        DE VUELTA
+      </h2>
+      
+      <p className="text-gray-400 text-base lg:text-lg mb-8">
+        Continúa tu transformación. Inicia sesión.
+      </p>
+      
+      {/* Información adicional */}
+      <div className="mt-8 lg:mt-12 p-4 lg:p-6 bg-gray-900 rounded-lg">
+        <h3 className="text-lg lg:text-xl font-semibold mb-2">
+          Providence Fitness
+        </h3>
+        <ul className="text-sm lg:text-base text-gray-300 space-y-1 text-left">
+          <li>✅ Reserva tus actividades favoritas</li>
+          <li>✅ Gestiona tus pagos mensuales</li>
+          <li>✅ Sigue tu progreso fitness</li>
+          <li>✅ Acceso a todas las sedes</li>
+        </ul>
+      </div>
+    </div>
+    </div>
+  
 
       {/* Right Panel - Form */}
       <div className="w-full md:w-1/2 bg-white flex justify-center items-center px-4 sm:px-6 lg:px-8 py-8 md:py-12">
