@@ -9,6 +9,7 @@ export interface CreateActivityDTO {
   price: number;
   schedule: string[];
   trainer: string;
+  hasFreeTrial: boolean;
 }
 
 export interface UpdateActivityDTO {
@@ -19,6 +20,7 @@ export interface UpdateActivityDTO {
   price?: number;
   schedule?: string[];
   trainer?: string;
+  hasFreeTrial?: boolean;
 }
 
 export const activityService = {
