@@ -23,7 +23,7 @@ export default function ClientLayout({
 ║ 🔍 CLIENT LAYOUT
 ║ 📍 ${pathname}
 ║ 👤 ${user?.email || 'No autenticado'}
-║ 🎭 ${user?.role || 'N/A'}
+║ 🎭 ${user?.rol || 'N/A'}
 ║ ✅ Auth: ${isAuthenticated} | Admin: ${isAdmin} | Super: ${isSuperAdmin}
 ║ 🚫 HasRedirected: ${hasRedirected.current}
 ╚═══════════════════════════════════════════════════════

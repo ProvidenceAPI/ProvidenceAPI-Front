@@ -18,7 +18,7 @@ const formInicialState: LoginFormState = {
 };
 
 export default function LoginForm() {
-  const { login, loginLoading, authLoading } = useAppContext(); // ✅ Usamos loginLoading del contexto
+  const { login, loginLoading, authLoading } = useAppContext();
   const router = useRouter();
 
   const [loginForm, setLoginForm] = useState<LoginFormState>(formInicialState);
@@ -67,7 +67,7 @@ export default function LoginForm() {
     return isValid;
   };
 
-  // 🔐 Google OAuth (redirect al backend)
+  // Google OAuth (redirect al backend)
   const handleGoogleAuth = () => {
     setGoogleLoading(true);
     setApiError("");
@@ -86,10 +86,8 @@ export default function LoginForm() {
 
     if (!validateForm()) return;
 
-
     try {
       await login(loginForm.email, loginForm.password);
-
 
       setLoginForm(formInicialState);
 
@@ -100,7 +98,6 @@ export default function LoginForm() {
         confirmButtonText: "Continuar",
       });
 
- 
       router.push("/dashboard");
     } catch (error: any) {
       console.error("Login error:", error);
@@ -130,54 +127,35 @@ export default function LoginForm() {
         confirmButtonText: "Reintentar",
       });
     }
-    // ❌ NO necesitamos finally porque el contexto maneja loginLoading
   };
 
-  // ✅ Usamos loginLoading del contexto + googleLoading local
   const isLoadingAny = loginLoading || googleLoading || authLoading;
 
   return (
-<div className="min-h-screen flex">
-  {/* Left side - Black section */}
-  <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-center items-center px-12 py-20">
-    <div className="w-full max-w-lg mx-auto text-center">
-      <div className="text-2xl font-bold tracking-[0.2em] mb-8">
-        <Link href="/" className="inline-flex flex-col items-center hover:no-underline">
-         <Image
+    <div className="min-h-screen flex">
+      {/* Left side - Black section */}
+      <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-center px-12 py-20">
+        <div className="text-2xl font-bold tracking-[0.2em]">
+          <Link href="/" className="flex flex-col hover:no-underline">
+            <Image 
               src="/logo.png"
-              alt="Logo"
+              alt="Providence Fitness Logo"
               width={400}
-              height={100}
-              className="w-90h-auto"
+                height={100}
+              className="h-8 w-auto"
             />
-        </Link>
+          </Link>
+        </div>
+        <h2 className="text-5xl font-bold leading-tight mb-6">
+          BIENVENIDO
+          <br />
+          DE VUELTA
+        </h2>
+
+        <p className="text-gray-400 text-lg leading-relaxed">
+          Continúa tu transformación. Inicia sesión y accede a tu entrenamiento.
+        </p>
       </div>
-      
-      <h2 className="text-5xl font-bold leading-tight mb-6">
-        BIENVENIDO
-        <br />
-        DE VUELTA
-      </h2>
-      
-      <p className="text-gray-400 text-base lg:text-lg mb-8">
-        Continúa tu transformación. Inicia sesión.
-      </p>
-      
-      {/* Información adicional */}
-      <div className="mt-8 lg:mt-12 p-4 lg:p-6 bg-gray-900 rounded-lg">
-        <h3 className="text-lg lg:text-xl font-semibold mb-2">
-          Providence Fitness
-        </h3>
-        <ul className="text-sm lg:text-base text-gray-300 space-y-1 text-left">
-          <li>✅ Reserva tus actividades favoritas</li>
-          <li>✅ Gestiona tus pagos mensuales</li>
-          <li>✅ Sigue tu progreso fitness</li>
-          <li>✅ Acceso a todas las sedes</li>
-        </ul>
-      </div>
-    </div>
-    </div>
-  
 
       {/* Right Panel - Form */}
       <div className="w-full md:w-1/2 bg-white flex justify-center items-center px-4 sm:px-6 lg:px-8 py-8 md:py-12">
@@ -194,16 +172,15 @@ export default function LoginForm() {
               />
             </Link>
             <h1 className="text-2xl font-bold mt-2">PROVIDENCE FITNESS</h1>
-          </div >
+          </div>
           
-          <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-center ">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-center">
             INICIAR SESIÓN
           </h2>
-          <p className="text-gray-600 mb-6 sm:mb-8 text-center ">
+          <p className="text-gray-600 mb-6 sm:mb-8 text-center">
             Ingresa tus credenciales
           </p>
           
-
           {/* Mostrar error de API si existe */}
           {apiError && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg animate-fadeIn">
@@ -343,11 +320,12 @@ export default function LoginForm() {
               </div>
             </div>
 
+            {/* Botón Google */}
             <button
               type="button"
               onClick={handleGoogleAuth}
+              disabled={isLoadingAny}
               className="flex items-center justify-center w-full py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={googleLoading}
             >
               {googleLoading ? (
                 <span className="flex items-center justify-center">

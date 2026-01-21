@@ -292,9 +292,9 @@ export default function DashboardStats() {
                   <tr key={reservation.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
-                        {reservation.activityName || 'Actividad'}
+                        {reservation.activity.name || 'Actividad'}
                       </div>
-                      {(reservation.isFree || reservation.isFree) && (
+                      {(reservation || reservation) && (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-1">
                           🎉 Clase Gratis
                         </span>
@@ -316,7 +316,7 @@ export default function DashboardStats() {
                         <span className="text-green-600 text-sm font-medium">
                           ✓ Pagado
                         </span>
-                      ) : reservation.isFree ? (
+                      ) : reservation? (
                         <span className="text-blue-600 text-sm font-medium">
                           Gratis
                         </span>

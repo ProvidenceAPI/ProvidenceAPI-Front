@@ -29,27 +29,27 @@ export default function DashboardPage() {
   }
 
   if (!isAuthenticated) {
-    return null;
+    return null; // Ya se redirige en el useEffect
   }
 
-  // NO mostrar DashboardStats si es admin o superAdmin
+  // CONDICIONAL: Solo usuarios NO admin/superAdmin ven DashboardStats
   const isAdminOrSuperAdmin = user?.rol === 'admin' || user?.rol === 'superAdmin';
   const showDashboardStats = !isAdminOrSuperAdmin;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="container mx-auto px-4 py-8">
-        {/* User Profile Section */}
+        {/* User Profile Section - MOSTRAR PARA TODOS los usuarios */}
         <UserProfileSection user={user} updateUser={updateUser} />
         
-        {/* Dashboard Stats Section */}
+        {/* Dashboard Stats Section - SOLO para usuarios NO admin/superAdmin */}
         {showDashboardStats && (
           <div className="mt-8">
             <DashboardStats />
           </div>
         )}
 
-        {/* Panel para admins */}
+        {/* Opcional: Panel específico para admins */}
         {(user?.rol === 'admin' || user?.rol === 'superAdmin') && (
           <div className="mt-8 p-6 bg-white rounded-lg shadow-md">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">

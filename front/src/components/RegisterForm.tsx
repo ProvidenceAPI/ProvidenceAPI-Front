@@ -64,6 +64,24 @@ export default function RegisterForm() {
   const emailCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+
+  useEffect(() => {
+    // Limpiar timeout anterior
+    if (validationTimeoutRef.current) {
+      clearTimeout(validationTimeoutRef.current);
+    }
+
+    validationTimeoutRef.current = setTimeout(() => {
+      validateRealTime();
+    }, 100); // 100ms de delay
+    
+    return () => {
+      if (validationTimeoutRef.current) {
+        clearTimeout(validationTimeoutRef.current);
+      }
+    };
+  }, [registerForm]);
+
   const validateRealTime = useCallback(() => {
     const newValidations = { ...initialValidations };
 
@@ -195,7 +213,6 @@ export default function RegisterForm() {
       setEmailExists(false);
       return;
     }
-
     setEmailChecking(true);
     try {
       // Aquí deberías hacer la llamada real a tu backend
@@ -341,8 +358,10 @@ export default function RegisterForm() {
   };
 
   const postRegister = async (registerDto: RegisterDto) => {
-    const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-    return await axios.post(`${base}/api/auth/signup`, registerDto);
+    return await axios.post(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/auth/signup`,
+      registerDto
+    );
   };
 
   const handleGoogleAuth = () => {
@@ -390,7 +409,6 @@ export default function RegisterForm() {
         icon: "success",
         confirmButtonText: "Ir al Login",
       });
-
       router.push("/login");
     } catch (error: any) {
       let errorMessage = "Error al crear el usuario";
@@ -404,7 +422,6 @@ export default function RegisterForm() {
           setEmailExists(true);
         }
       }
-
       await Swal.fire({
         title: "Error",
         text: errorMessage,
