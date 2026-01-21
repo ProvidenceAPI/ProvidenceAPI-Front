@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import TransformacionCTA from "src/components/TransformacionCTA";
 
 const LandingPage: React.FC = () => {
   return (
@@ -37,7 +38,7 @@ const LandingPage: React.FC = () => {
           </div>
         </section>
       </main>
-
+<TransformacionCTA/>
     </>
   );
 };
