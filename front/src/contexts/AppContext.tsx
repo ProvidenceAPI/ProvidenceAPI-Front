@@ -9,21 +9,7 @@ import React, {
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { apiClient, API_URL } from "src/app/lib/apiClient";
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  rol?: string;
-  lastname?: string;
-  birthdate?: string;
-  phone?: string;
-  dni?: string;
-  profileImage?: string | null;
-  genre?: string;
-  status?: string;
-  provider?: string;
-}
+import { IUser } from "src/interfaces/IUser";
 
 interface IProduct {
   id: number;
@@ -39,35 +25,28 @@ interface AuthResponse {
 }
 
 interface AppContextType {
-  // === DEL VIEJO CONTEXTO ===
-  user: User | null;
+  user: IUser | null;
   loading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<AuthResponse>;
   register: (userData: any, confirmPassword?: string) => Promise<AuthResponse>;
   logout: () => void;
-  updateUser: (updatedData: Partial<User>) => void;
-  updateProfile: (userData: Partial<User>) => Promise<AuthResponse>;
+  updateUser: (updatedData: Partial<IUser>) => void;
+  updateProfile: (userData: Partial<IUser>) => Promise<AuthResponse>;
   uploadProfileImage: (file: File) => Promise<AuthResponse>;
   isAuthenticated: boolean;
   clearError: () => void;
   googleLogin: () => void;
   checkAuth: () => boolean;
-
-  // === DEL NUEVO CONTEXTO ===
   token: string | null;
   isAdmin: boolean;
   isSuperAdmin: boolean;
   authLoading: boolean;
   loginLoading: boolean;
-
-  // Admin
   canCreateAdmins: boolean;
   adminLoading: boolean;
   adminError: string | null;
   createAdminUser: (userData: any) => Promise<any>;
-
-  // Cart
   cart: IProduct[];
   cartCount: number;
   cartTotal: number;
@@ -75,7 +54,6 @@ interface AppContextType {
   removeFromCart: (productId: number) => void;
   clearCart: () => void;
 }
-
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const useAppContext = () => {
@@ -93,14 +71,9 @@ export default function AppProvider({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-
-  // === STATE ===
-  // Del viejo
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<IUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Del nuevo
   const [token, setToken] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [loginLoading, setLoginLoading] = useState(false);
@@ -108,8 +81,7 @@ export default function AppProvider({
   const [adminLoading, setAdminLoading] = useState(false);
   const [adminError, setAdminError] = useState<string | null>(null);
 
-  // === COMPUTED VALUES ===
-  const getUserRole = (userData: User | null): string => {
+  const getUserRole = (userData: IUser | null): string => {
     if (!userData) return "";
     return (userData.rol || "").toLowerCase();
   };
@@ -121,8 +93,6 @@ export default function AppProvider({
   const canCreateAdmins =
     isSuperAdmin ||
     (isAdmin && user?.email === "superadmin.providence1@gmail.com");
-
-  // Cart totals
   const cartCount = cart.reduce(
     (total, item) => total + (item.quantity || 1),
     0,
@@ -132,7 +102,6 @@ export default function AppProvider({
     0,
   );
 
-  // LOGOUT (definido antes del effect que lo usa)
   const logout = useCallback(() => {
     localStorage.removeItem("providence_token");
     localStorage.removeItem("providence_user");
@@ -144,12 +113,8 @@ export default function AppProvider({
     router.push("/login");
   }, [router]);
 
-  // === EFFECTS ===
   useEffect(() => {
     const loadUser = async () => {
-      // En /auth/callback el flujo de Google es el dueño del token: no hacer
-      // /api/auth/me con un token viejo para evitar 401 y que el interceptor
-      // borre el token nuevo que el callback acaba de guardar.
       if (typeof window !== "undefined" && pathname === "/auth/callback") {
         const storedCart = localStorage.getItem("providence_cart");
         if (storedCart) setCart(JSON.parse(storedCart));
@@ -160,14 +125,11 @@ export default function AppProvider({
 
       const savedToken = localStorage.getItem("providence_token");
       const savedUser = localStorage.getItem("providence_user");
-
       if (savedToken && savedUser) {
         try {
           const userData = JSON.parse(savedUser);
           setUser(userData);
           setToken(savedToken);
-
-          // Verificar token válido
           const { data: freshUserData } = await apiClient.get("/api/auth/me");
           setUser(freshUserData);
           localStorage.setItem(
@@ -180,22 +142,16 @@ export default function AppProvider({
         }
       }
 
-      // Cargar carrito
       const storedCart = localStorage.getItem("providence_cart");
       if (storedCart) {
         setCart(JSON.parse(storedCart));
       }
-
       setAuthLoading(false);
       setLoading(false);
     };
-
     loadUser();
   }, [logout, pathname]);
 
-  // === FUNCIONES DEL VIEJO CONTEXTO (EXACTAMENTE IGUALES) ===
-
-  // LOGIN NORMAL
   const login = async (
     email: string,
     password: string,
@@ -209,41 +165,42 @@ export default function AppProvider({
         email,
         password,
       });
-
       if (!data.access_token) {
         throw new Error("No se recibió token");
       }
-
       const newToken = data.access_token;
+
       localStorage.setItem("providence_token", newToken);
       setToken(newToken);
 
-      // Obtener datos del usuario
-      const { data: userData } = await apiClient.get("/api/auth/me");
-
-      setUser(userData);
-      localStorage.setItem("providence_user", JSON.stringify(userData));
-
-      return {
-        success: true,
-        message: "Login exitoso",
-        data: userData,
-      };
+      try {
+        const { data: userData } = await apiClient.get("/api/auth/me");
+        setUser(userData);
+        localStorage.setItem("providence_user", JSON.stringify(userData));
+        return {
+          success: true,
+          message: "Login exitoso",
+          data: userData,
+        };
+      } catch (meError: any) {
+        localStorage.removeItem("providence_token");
+        localStorage.removeItem("providence_user");
+        setToken(null);
+        throw new Error(
+          "Error verificando usuario. Por favor intenta de nuevo.",
+        );
+      }
     } catch (err: any) {
+      console.error("❌ Error general en login:", err);
       const message = err.message || "Error en login";
       setError(message);
-
-      return {
-        success: false,
-        message,
-      };
+      throw err;
     } finally {
       setLoginLoading(false);
       setLoading(false);
     }
   };
 
-  // REGISTER
   const register = async (
     userData: any,
     confirmPassword?: string,
@@ -254,15 +211,12 @@ export default function AppProvider({
       setError(null);
 
       const finalConfirmPassword = confirmPassword || userData.confirmPassword;
-
       if (!finalConfirmPassword) {
         throw new Error("Debes confirmar tu contraseña");
       }
-
       if (userData.password !== finalConfirmPassword) {
         throw new Error("Las contraseñas no coinciden");
       }
-
       const registrationData = {
         name: userData.name,
         lastname: userData.lastname,
@@ -279,7 +233,6 @@ export default function AppProvider({
         "/api/auth/signup",
         registrationData,
       );
-
       return {
         success: true,
         message: data.message || "Registro exitoso. Por favor inicia sesión.",
@@ -288,7 +241,6 @@ export default function AppProvider({
     } catch (err: any) {
       const message = err.message || "Error en registro";
       setError(message);
-
       return {
         success: false,
         message,
@@ -299,9 +251,8 @@ export default function AppProvider({
     }
   };
 
-  // ACTUALIZAR PERFIL
   const updateProfile = async (
-    userData: Partial<User>,
+    userData: Partial<IUser>,
   ): Promise<AuthResponse> => {
     try {
       setAdminLoading(true);
@@ -309,19 +260,16 @@ export default function AppProvider({
       setError(null);
 
       const token = localStorage.getItem("providence_token");
-
       if (!token) {
         throw new Error("No hay sesión activa");
       }
 
       const { data } = await apiClient.put("/api/users/profile", userData);
-
       if (user) {
         const updatedUser = { ...user, ...data };
         setUser(updatedUser);
         localStorage.setItem("providence_user", JSON.stringify(updatedUser));
       }
-
       return {
         success: true,
         message: "Perfil actualizado exitosamente",
@@ -330,7 +278,6 @@ export default function AppProvider({
     } catch (err: any) {
       const message = err.message || "Error al actualizar perfil";
       setError(message);
-
       return {
         success: false,
         message,
@@ -341,7 +288,6 @@ export default function AppProvider({
     }
   };
 
-  // SUBIR IMAGEN DE PERFIL
   const uploadProfileImage = async (file: File): Promise<AuthResponse> => {
     try {
       setAdminLoading(true);
@@ -349,32 +295,20 @@ export default function AppProvider({
       setError(null);
 
       const token = localStorage.getItem("providence_token");
-
       if (!token) {
         throw new Error("No hay sesión activa");
       }
-
-      console.log("🖼️ Subiendo imagen...");
-
-      // 1. Preview inmediato
       const previewUrl = URL.createObjectURL(file);
       if (user) {
         const tempUser = { ...user, profileImage: previewUrl };
         setUser(tempUser);
         localStorage.setItem("providence_user", JSON.stringify(tempUser));
       }
-
-      // 2. Crear FormData
       const formData = new FormData();
-      formData.append("file", file);
-
-      // 3. Enviar al backend
       const { data } = await apiClient.put(
         "/api/users/profile/image",
         formData,
       );
-
-      console.log("📥 Respuesta backend:", data);
 
       const cloudinaryUrl =
         data.profileImage ||
@@ -391,7 +325,6 @@ export default function AppProvider({
         };
         setUser(updatedUser);
         localStorage.setItem("providence_user", JSON.stringify(updatedUser));
-
         if (cloudinaryUrl) {
           try {
             await updateProfile({ profileImage: cloudinaryUrl });
@@ -400,7 +333,6 @@ export default function AppProvider({
           }
         }
       }
-
       return {
         success: true,
         message: cloudinaryUrl
@@ -412,7 +344,6 @@ export default function AppProvider({
       const message = err.message || "Error al subir imagen";
       setError(message);
       console.error("❌ Error subiendo imagen:", err);
-
       return {
         success: false,
         message: "La imagen se muestra localmente. Error: " + message,
@@ -423,30 +354,21 @@ export default function AppProvider({
     }
   };
 
-  // GOOGLE LOGIN: redirige a GET /api/auth/google/login; el back redirige a /auth/callback?token=
   const googleLogin = () => {
     window.location.href = `${API_URL}/api/auth/google/login`;
   };
-
-  // Actualizar usuario localmente
-  const updateUser = (updatedData: Partial<User>) => {
+  const updateUser = (updatedData: Partial<IUser>) => {
     if (!user) return;
-
     const updatedUser = { ...user, ...updatedData };
     setUser(updatedUser);
     localStorage.setItem("providence_user", JSON.stringify(updatedUser));
   };
-
-  // Verificar autenticación
   const checkAuth = (): boolean => {
     return !!localStorage.getItem("providence_token");
   };
-
   const clearError = () => {
     setError(null);
   };
-
-  // === FUNCIONES DEL NUEVO CONTEXTO ===
 
   const createAdminUser = async (userData: any) => {
     if (!canCreateAdmins) {
@@ -455,7 +377,6 @@ export default function AppProvider({
 
     setAdminLoading(true);
     setAdminError(null);
-
     try {
       const { data } = await apiClient.post("/api/users", userData);
       return data;
@@ -468,7 +389,6 @@ export default function AppProvider({
     }
   };
 
-  // === CART METHODS ===
   const addToCart = (product: IProduct) => {
     const newCart = [...cart, product];
     setCart(newCart);
@@ -486,9 +406,7 @@ export default function AppProvider({
     localStorage.removeItem("providence_cart");
   };
 
-  // === CONTEXT VALUE ===
   const value: AppContextType = {
-    // Del viejo (compatibilidad total)
     user,
     loading,
     error,
@@ -502,21 +420,15 @@ export default function AppProvider({
     clearError,
     googleLogin,
     checkAuth,
-
-    // Del nuevo
     token,
     isAdmin,
     isSuperAdmin,
     authLoading,
     loginLoading,
-
-    // Admin
     canCreateAdmins,
     adminLoading,
     adminError,
     createAdminUser,
-
-    // Cart
     cart,
     cartCount,
     cartTotal,
@@ -525,7 +437,6 @@ export default function AppProvider({
     clearCart,
   };
 
-  // Debug
   useEffect(() => {
     if (!authLoading) {
       console.log("🔍 AppContext cargado:", {
@@ -537,6 +448,5 @@ export default function AppProvider({
       });
     }
   }, [user, authLoading, isAuthenticated, isAdmin, loading, cartCount]);
-
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
