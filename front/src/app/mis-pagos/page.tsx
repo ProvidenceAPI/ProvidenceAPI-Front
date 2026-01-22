@@ -22,6 +22,8 @@ export default function MisPagosPage() {
   const [error, setError] = useState<string>("");
   const [successMessage, setSuccessMessage] = useState<string>("");
   const [warningMessage, setWarningMessage] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [showPaymentCard, setShowPaymentCard] = useState(false);
 
   useEffect(() => {
     const loadPayments = async () => {
@@ -190,18 +192,40 @@ export default function MisPagosPage() {
       </div>
     );
   }
-
   const actividadSeleccionada = activities.find(
     (a) => a.id === selectedActivity,
   );
+  const pagosFiltrados = pagos.filter((pago) => {
+    if (statusFilter === "all") return true;
+    if (statusFilter === "rejected") {
+      return pago.status === "rejected" || pago.status === "cancelled";
+    }
+    return pago.status === statusFilter;
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Mis Pagos</h1>
-          <p className="text-gray-600 mt-2">Historial y gestión de pagos</p>
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        {/* HEADER Y BOTÓN ALINEADOS */}
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">💳 Mis Pagos</h1>
+            <p className="text-gray-600 mt-2">Historial y gestión de pagos</p>
+          </div>
+
+          <button
+            onClick={() => setShowPaymentCard(!showPaymentCard)}
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-md flex items-center gap-2"
+          >
+            {showPaymentCard ? (
+              <>❌ Cancelar Pago</>
+            ) : (
+              <>💳 Realizar Nuevo Pago</>
+            )}
+          </button>
         </div>
+
+        {/* MENSAJES */}
         {successMessage && (
           <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 animate-pulse">
             <div className="flex items-start">
@@ -213,6 +237,7 @@ export default function MisPagosPage() {
             </div>
           </div>
         )}
+
         {warningMessage && (
           <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <div className="flex items-start">
@@ -224,6 +249,7 @@ export default function MisPagosPage() {
             </div>
           </div>
         )}
+
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-start">
@@ -235,123 +261,235 @@ export default function MisPagosPage() {
             </div>
           </div>
         )}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* PANEL IZQUIERDO */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">
-                Realizar Pago
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    1. Seleccionar Actividad
-                  </label>
-                  <select
-                    value={selectedActivity}
-                    onChange={(e) => setSelectedActivity(e.target.value)}
-                    disabled={isProcessing || activities.length === 0}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  >
-                    <option value="">
-                      {activities.length === 0
-                        ? "No hay actividades disponibles"
-                        : "Seleccionar actividad"}
+
+        {/* CARD DE PAGO DESPLEGABLE */}
+        {showPaymentCard && (
+          <div className="mb-8 bg-white rounded-lg shadow-lg p-6 border-2 border-blue-500 animate-fadeIn">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">
+              💳 Realizar Pago
+            </h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Seleccionar Actividad
+                </label>
+                <select
+                  value={selectedActivity}
+                  onChange={(e) => setSelectedActivity(e.target.value)}
+                  disabled={isProcessing || activities.length === 0}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">
+                    {activities.length === 0
+                      ? "No hay actividades disponibles"
+                      : "Seleccionar actividad"}
+                  </option>
+                  {activities.map((activity) => (
+                    <option key={activity.id} value={activity.id}>
+                      {activity.name} - $
+                      {Number(activity.price).toLocaleString("es-AR")}
                     </option>
-                    {activities.map((activity) => (
-                      <option key={activity.id} value={activity.id}>
-                        {activity.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {selectedActivity && actividadSeleccionada && (
-                  <div className="bg-gray-50 p-4 rounded-lg border">
-                    <h3 className="font-medium text-gray-900 mb-2">
-                      {actividadSeleccionada.name}
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-3">
-                      {actividadSeleccionada.description}
-                    </p>
-                    <ul className="text-sm text-gray-700 space-y-1">
-                      {actividadSeleccionada.schedule.map((horario, index) => (
-                        <li key={index}>🕒 {horario}</li>
-                      ))}
-                    </ul>
-                    <div className="mt-3 flex justify-between">
-                      <span>Duración:</span>
-                      <span>{actividadSeleccionada.duration} min</span>
-                    </div>
-                    <div className="mt-2 flex justify-between font-bold">
-                      <span>Precio:</span>
-                      <span>
-                        ${Number(actividadSeleccionada.price).toFixed(2)}
+                  ))}
+                </select>
+              </div>
+
+              {selectedActivity && actividadSeleccionada && (
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
+                  <h3 className="font-bold text-gray-900 mb-2 text-lg">
+                    {actividadSeleccionada.name}
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-3">
+                    {actividadSeleccionada.description}
+                  </p>
+                  <div className="mt-3 pt-3 border-t border-blue-200">
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-bold text-gray-900">
+                        Total a pagar:
+                      </span>
+                      <span className="text-3xl font-bold text-blue-600">
+                        $
+                        {Number(actividadSeleccionada.price).toLocaleString(
+                          "es-AR",
+                        )}
                       </span>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-2">
                 <button
                   onClick={iniciarPagoMercadoPago}
                   disabled={!selectedActivity || isProcessing}
-                  className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-3 rounded-lg font-bold transition-colors"
                 >
                   {isProcessing ? "Procesando..." : "💳 Pagar con MercadoPago"}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowPaymentCard(false);
+                    setSelectedActivity("");
+                  }}
+                  className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors"
+                >
+                  Cancelar
                 </button>
               </div>
             </div>
           </div>
-          {/* PANEL DERECHO */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <div className="px-6 py-4 border-b">
-                <h2 className="text-xl font-bold text-gray-900">
-                  Historial de Pagos
-                </h2>
-              </div>
+        )}
 
-              <table className="min-w-full divide-y divide-gray-200">
-                <tbody>
-                  {pagos.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-6 py-12 text-center">
-                        No hay registros de pagos
+        {/* HISTORIAL DE PAGOS */}
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="px-6 py-4 border-b bg-gray-50">
+            <div className="flex justify-between items-center flex-wrap gap-4">
+              <h2 className="text-xl font-bold text-gray-900">
+                📋 Historial de Pagos
+              </h2>
+
+              {/* FILTROS */}
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => setStatusFilter("all")}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    statusFilter === "all"
+                      ? "bg-gray-900 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  Todos
+                </button>
+                <button
+                  onClick={() => setStatusFilter("approved")}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    statusFilter === "approved"
+                      ? "bg-green-600 text-white"
+                      : "bg-green-50 text-green-700 hover:bg-green-100"
+                  }`}
+                >
+                  ✅ Aprobados
+                </button>
+                <button
+                  onClick={() => setStatusFilter("pending")}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    statusFilter === "pending"
+                      ? "bg-yellow-600 text-white"
+                      : "bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
+                  }`}
+                >
+                  ⏳ Pendientes
+                </button>
+                <button
+                  onClick={() => setStatusFilter("rejected")}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    statusFilter === "rejected"
+                      ? "bg-red-600 text-white"
+                      : "bg-red-50 text-red-700 hover:bg-red-100"
+                  }`}
+                >
+                  ❌ Rechazados
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Fecha
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actividad
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Método
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Monto
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Estado
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {pagosFiltrados.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="px-6 py-12 text-center text-gray-500"
+                    >
+                      <div className="text-4xl mb-2">📭</div>
+                      {statusFilter === "all"
+                        ? "No hay registros de pagos"
+                        : `No hay pagos ${getEstadoTexto(statusFilter).toLowerCase()}`}
+                    </td>
+                  </tr>
+                ) : (
+                  pagosFiltrados.map((pago) => (
+                    <tr
+                      key={pago.id}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {new Date(pago.createdAt).toLocaleDateString("es-AR", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                        })}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <div className="font-medium text-gray-900">
+                          {pago.activity?.name || "Actividad eliminada"}
+                        </div>
+                        {pago.mercadoPagoId && (
+                          <div className="text-xs text-gray-500">
+                            ID: {pago.mercadoPagoId.slice(0, 10)}...
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        💳 MercadoPago
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        ${Number(pago.amount).toLocaleString("es-AR")}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                            pago.status === "approved"
+                              ? "bg-green-100 text-green-800"
+                              : pago.status === "pending"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {pago.status === "approved" && "✅ "}
+                          {pago.status === "pending" && "⏳ "}
+                          {(pago.status === "rejected" ||
+                            pago.status === "cancelled") &&
+                            "❌ "}
+                          {getEstadoTexto(pago.status)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <button
+                          onClick={() => descargarRecibo(pago.id)}
+                          className="text-blue-600 hover:text-blue-800 font-medium hover:underline"
+                        >
+                          📄 Recibo
+                        </button>
                       </td>
                     </tr>
-                  ) : (
-                    pagos.map((pago) => (
-                      <tr key={pago.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4">
-                          {new Date(pago.createdAt).toLocaleDateString("es-ES")}
-                        </td>
-                        <td className="px-6 py-4">
-                          Suscripción
-                          {pago.mercadoPagoId && (
-                            <div className="text-xs text-gray-500">
-                              MP ID: {pago.mercadoPagoId}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4">MercadoPago</td>
-                        <td className="px-6 py-4">
-                          ${Number(pago.amount).toFixed(2)}
-                        </td>
-                        <td className="px-6 py-4">
-                          {getEstadoTexto(pago.status)}
-                        </td>
-                        <td className="px-6 py-4">
-                          <button
-                            onClick={() => descargarRecibo(pago.id)}
-                            className="text-blue-600"
-                          >
-                            📄 Recibo
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

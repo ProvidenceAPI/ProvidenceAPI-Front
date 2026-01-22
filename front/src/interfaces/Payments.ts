@@ -5,15 +5,18 @@ export interface Payment {
   mercadoPagoId?: string;
   mercadoPagoPreferenceId?: string;
   createdAt: string;
-
   reservation?: {
     id: string;
   };
-
   user?: {
     id: string;
     email: string;
   };
+  activity?: {
+    id: string;
+    name: string;
+    price: number;
+  } | null;
 }
 
 export interface PaymentPreference {
