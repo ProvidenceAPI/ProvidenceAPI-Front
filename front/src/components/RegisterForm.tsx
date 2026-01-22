@@ -200,7 +200,18 @@ export default function RegisterForm() {
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/api/auth/check-email/${email}`,
       );
-      setEmailExists(response.data.exists);
+      if (response.data.exists) {
+        setEmailExists(true);
+        await Swal.fire({
+          title: "Email ya registrado",
+          text: "Este correo electrónico ya está en uso. Por favor, usa otro o inicia sesión.",
+          icon: "warning",
+          confirmButtonText: "Entendido",
+          confirmButtonColor: "#DC2626",
+        });
+      } else {
+        setEmailExists(false);
+      }
     } catch (error) {
       setEmailExists(false);
     } finally {
