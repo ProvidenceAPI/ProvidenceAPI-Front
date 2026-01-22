@@ -20,13 +20,11 @@ const formInicialState: LoginFormState = {
 export default function LoginForm() {
   const { login, loginLoading, authLoading } = useAppContext();
   const router = useRouter();
-
   const [loginForm, setLoginForm] = useState<LoginFormState>(formInicialState);
   const [errors, setErrors] = useState({ email: "", password: "" });
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [apiError, setApiError] = useState<string>("");
-
   const changeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
 
@@ -34,13 +32,9 @@ export default function LoginForm() {
       ...prev,
       [name]: value,
     }));
-
-    // Limpiar error del campo específico
     if (errors[name as keyof typeof errors]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
-
-    // Limpiar error general de API
     if (apiError) {
       setApiError("");
     }
@@ -49,7 +43,6 @@ export default function LoginForm() {
   const validateForm = () => {
     const newErrors = { email: "", password: "" };
     let isValid = true;
-
     if (!loginForm.email.trim()) {
       newErrors.email = "Falta el correo electrónico";
       isValid = false;
@@ -57,69 +50,57 @@ export default function LoginForm() {
       newErrors.email = "El correo electrónico no es válido";
       isValid = false;
     }
-
     if (!loginForm.password.trim()) {
       newErrors.password = "Falta la contraseña";
       isValid = false;
     }
-
     setErrors(newErrors);
     return isValid;
   };
 
-  // Google OAuth (redirect al backend)
   const handleGoogleAuth = () => {
     setGoogleLoading(true);
     setApiError("");
-
     const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
     const googleAuthUrl = `${base}/api/auth/google/login`;
-
     localStorage.setItem("redirectAfterLogin", window.location.pathname);
     window.location.href = googleAuthUrl;
   };
 
   const submitHandler = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
     setApiError("");
-
     if (!validateForm()) return;
-
     try {
-      await login(loginForm.email, loginForm.password);
-
-      setLoginForm(formInicialState);
-
-      await Swal.fire({
-        title: "¡Bienvenido!",
-        text: "Inicio de sesión exitoso",
-        icon: "success",
-        confirmButtonText: "Continuar",
-      });
-
-      router.push("/dashboard");
+      const result = await login(loginForm.email, loginForm.password);
+      if (result.success) {
+        setLoginForm(formInicialState);
+        await Swal.fire({
+          title: "¡Bienvenido!",
+          text: "Inicio de sesión exitoso",
+          icon: "success",
+          confirmButtonText: "Continuar",
+        });
+        router.push("/dashboard");
+      }
     } catch (error: any) {
       console.error("Login error:", error);
-
-      // Manejar diferentes tipos de error
       let errorMessage = "Error al iniciar sesión";
-
-      if (error.message.includes("Credenciales incorrectas")) {
+      if (error.response?.status === 401) {
+        errorMessage = "Email o contraseña incorrectos";
+      } else if (error.message?.includes("Credenciales")) {
         errorMessage = "Email o contraseña incorrectos";
       } else if (
-        error.message.includes("NetworkError") ||
-        error.message.includes("Failed to fetch")
+        error.message?.includes("NetworkError") ||
+        error.message?.includes("Failed to fetch")
       ) {
         errorMessage = "Error de conexión. Verifica tu internet";
-      } else if (error.message.includes("No se recibió token")) {
+      } else if (error.message?.includes("No se recibió token")) {
         errorMessage = "Error del servidor. Contacta al administrador";
-      } else {
-        errorMessage = error.message || "Error al iniciar sesión";
+      } else if (error.message) {
+        errorMessage = error.message;
       }
-
       setApiError(errorMessage);
-
       await Swal.fire({
         title: "Error",
         text: errorMessage,
@@ -128,36 +109,37 @@ export default function LoginForm() {
       });
     }
   };
-
   const isLoadingAny = loginLoading || googleLoading || authLoading;
 
   return (
     <div className="min-h-screen flex">
       <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-center items-center px-12 py-20">
-      <div className="w-full max-w-lg mx-auto text-center">
-      <div className="text-2xl font-bold tracking-[0.2em] mb-8">
-      <Link href="/" className="inline-flex flex-col items-center hover:no-underline">
-            <Image 
-              src="/logo.png"
-              alt="Providence Fitness Logo"
-              width={400}
+        <div className="w-full max-w-lg mx-auto text-center">
+          <div className="text-2xl font-bold tracking-[0.2em] mb-8">
+            <Link
+              href="/"
+              className="inline-flex flex-col items-center hover:no-underline"
+            >
+              <Image
+                src="/logo.png"
+                alt="Providence Fitness Logo"
+                width={400}
                 height={100}
-              className="w-90h-auto"
-            />
-          </Link>
+                className="w-90h-auto"
+              />
+            </Link>
+          </div>
+          <h2 className="text-5xl font-bold leading-tight mb-6">
+            BIENVENIDO
+            <br />
+            DE VUELTA
+          </h2>
+          <p className="text-gray-400 text-lg leading-relaxed">
+            Continúa tu transformación. Inicia sesión y accede a tu
+            entrenamiento.
+          </p>
         </div>
-        <h2 className="text-5xl font-bold leading-tight mb-6">
-          BIENVENIDO
-          <br />
-          DE VUELTA
-        </h2>
-
-        <p className="text-gray-400 text-lg leading-relaxed">
-          Continúa tu transformación. Inicia sesión y accede a tu entrenamiento.
-        </p>
       </div>
-      </div>
-
       {/* Right Panel - Form */}
       <div className="w-full md:w-1/2 bg-white flex justify-center items-center px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         <div className="max-w-md w-full">
@@ -174,14 +156,12 @@ export default function LoginForm() {
             </Link>
             <h1 className="text-2xl font-bold mt-2">PROVIDENCE FITNESS</h1>
           </div>
-          
           <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-center">
             INICIAR SESIÓN
           </h2>
           <p className="text-gray-600 mb-6 sm:mb-8 text-center">
             Ingresa tus credenciales
           </p>
-          
           {/* Mostrar error de API si existe */}
           {apiError && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg animate-fadeIn">
@@ -191,7 +171,6 @@ export default function LoginForm() {
               </div>
             </div>
           )}
-
           <form
             onSubmit={submitHandler}
             className="space-y-5 sm:space-y-6"
@@ -216,7 +195,6 @@ export default function LoginForm() {
                 </p>
               )}
             </div>
-
             {/* Password */}
             <div>
               <div className="relative">
@@ -242,41 +220,41 @@ export default function LoginForm() {
                     showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
                   }
                 >
-                   {showPassword ? (
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L6.59 6.59m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
-                        />
-                      </svg>
-                    ) : (
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                        />
-                      </svg>
-                    )}
+                  {showPassword ? (
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L6.59 6.59m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                      />
+                    </svg>
+                  )}
                 </button>
               </div>
               {errors.password && (
@@ -285,7 +263,6 @@ export default function LoginForm() {
                 </p>
               )}
             </div>
-
             {/* Recordar contraseña */}
             <div className="flex items-center justify-between">
               <label className="flex items-center text-sm sm:text-base">
@@ -301,7 +278,6 @@ export default function LoginForm() {
                 ¿Olvidaste tu contraseña?
               </button>
             </div>
-
             {/* Botón de inicio de sesión */}
             <button
               type="submit"
@@ -342,7 +318,6 @@ export default function LoginForm() {
                 "Iniciar sesión"
               )}
             </button>
-
             {/* Separador */}
             <div className="relative my-4 sm:my-6">
               <div className="absolute inset-0 flex items-center">
@@ -354,7 +329,6 @@ export default function LoginForm() {
                 </span>
               </div>
             </div>
-
             {/* Botón Google */}
             <button
               type="button"
@@ -411,7 +385,6 @@ export default function LoginForm() {
                 </>
               )}
             </button>
-
             <p className="text-center text-gray-700">
               ¿No tienes cuenta?{" "}
               <Link href="/register" className="text-red-600 font-bold">

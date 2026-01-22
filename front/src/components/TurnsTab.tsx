@@ -25,6 +25,98 @@ export default function TurnsTab() {
   const [filterActivity, setFilterActivity] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState<string>("");
 
+  const handleApiError = (
+    error: any,
+    defaultMessage: string = "Ocurrió un error",
+  ) => {
+    console.error("❌ Error:", error);
+
+    let title = "❌ Error";
+    let message = defaultMessage;
+    let icon: "error" | "warning" | "info" = "error";
+
+    const statusCode = error.statusCode || error.response?.status;
+    const errorMessage = error.message || error.response?.data?.message || "";
+
+    // Casos específicos por mensaje
+    if (errorMessage.includes("already exists")) {
+      Swal.fire({
+        icon: "warning",
+        title: "⚠️ Turno Duplicado",
+        text: "Ya existe un turno para esta actividad en esta fecha y horario. Por favor elige otra fecha u horario.",
+        confirmButtonColor: "#ef4444",
+      });
+      return;
+    }
+
+    if (errorMessage.includes("inactive activities")) {
+      Swal.fire({
+        icon: "warning",
+        title: "⚠️ Actividad Inactiva",
+        text: "No se pueden crear turnos para actividades inactivas. Activa la actividad primero.",
+        confirmButtonColor: "#ef4444",
+      });
+      return;
+    }
+
+    if (errorMessage.includes("existing reservations")) {
+      Swal.fire({
+        icon: "warning",
+        title: "⚠️ No se Puede Eliminar",
+        text: "No se puede eliminar un turno con reservas activas. Cancela el turno en su lugar.",
+        confirmButtonColor: "#ef4444",
+      });
+      return;
+    }
+
+    // Casos por código de estado
+    switch (statusCode) {
+      case 400:
+        title = "❌ Datos Inválidos";
+        message = errorMessage || "Los datos ingresados no son válidos";
+        break;
+
+      case 401:
+        title = "🔒 No Autorizado";
+        message = "Tu sesión ha expirado. Por favor inicia sesión nuevamente.";
+        break;
+
+      case 403:
+        title = "🚫 Acceso Denegado";
+        message =
+          errorMessage || "No tienes permisos para realizar esta acción";
+        icon = "warning";
+        break;
+
+      case 404:
+        title = "🔍 No Encontrado";
+        message = errorMessage || "El recurso solicitado no existe";
+        break;
+
+      case 409:
+        title = "⚠️ Conflicto";
+        message = errorMessage || "Ya existe un recurso con estos datos";
+        icon = "warning";
+        break;
+
+      case 500:
+        title = "💥 Error del Servidor";
+        message =
+          "Ocurrió un error en el servidor. Por favor intenta más tarde.";
+        break;
+
+      default:
+        message = errorMessage || defaultMessage;
+    }
+
+    Swal.fire({
+      icon,
+      title,
+      text: message,
+      confirmButtonColor: "#ef4444",
+    });
+  };
+
   useEffect(() => {
     const startDate = new Date(selectedDate);
     startDate.setDate(1);
@@ -47,33 +139,51 @@ export default function TurnsTab() {
   }, [selectedDate, filterActivity, filterStatus, fetchTurns]);
 
   const getTurnsForDay = (day: Date) => {
-    return turns.filter((turn) => isSameDay(new Date(turn.date), day));
+    const dayTurns = turns.filter((turn) =>
+      isSameDay(new Date(turn.date), day),
+    );
+    return dayTurns;
   };
   const handleDayClick = (day: Date) => {
     const dayTurns = getTurnsForDay(day);
+
     if (dayTurns.length === 0) {
       Swal.fire(
-        "📭 Sin turnos",
+        "🔭 Sin turnos",
         "No hay turnos programados para este día",
         "info",
       );
       return;
     }
+
     Swal.fire({
       title: `📅 ${format(day, "EEEE d 'de' MMMM", { locale: es })}`,
       html: `
-        <div class="text-left space-y-3">
-          <p class="text-gray-600 mb-4">Total de turnos: ${dayTurns.length}</p>
-          ${dayTurns
-            .map(
-              (turn) => `
-            <div class="p-4 rounded-lg ${
-              turn.status === "available"
-                ? "bg-green-50 border border-green-200"
-                : turn.status === "full"
-                  ? "bg-yellow-50 border border-yellow-200"
-                  : "bg-red-50 border border-red-200"
-            }">
+      <div class="text-left space-y-3">
+        <p class="text-gray-600 mb-4">Total de turnos: ${dayTurns.length}</p>
+        ${dayTurns
+          .map((turn) => {
+            const status = (turn.status || "").toLowerCase();
+            const isActive = status === "available" || status === "active";
+            const isFull = status === "full";
+            const isCancelled = status === "cancelled" || status === "canceled";
+            const bgColor = isActive
+              ? "bg-green-50 border-green-200"
+              : isFull
+                ? "bg-yellow-50 border-yellow-200"
+                : "bg-red-50 border-red-200";
+            const badgeColor = isActive
+              ? "bg-green-100 text-green-800"
+              : isFull
+                ? "bg-yellow-100 text-yellow-800"
+                : "bg-red-100 text-red-800";
+            const statusText = isActive
+              ? "✅ Disponible"
+              : isFull
+                ? "⚠️ Lleno"
+                : "❌ Cancelado";
+            return `
+            <div class="p-4 rounded-lg border ${bgColor}">
               <div class="flex justify-between items-start mb-2">
                 <div>
                   <div class="font-bold text-gray-900">${
@@ -81,24 +191,10 @@ export default function TurnsTab() {
                     turn.activity?.name ||
                     "Actividad"
                   }</div>
-                  <div class="text-sm text-gray-600">${turn.startTime} - ${
-                    turn.endTime
-                  }</div>
+                  <div class="text-sm text-gray-600">${turn.startTime} - ${turn.endTime}</div>
                 </div>
-                <span class="px-2 py-1 rounded text-xs font-medium ${
-                  turn.status === "available"
-                    ? "bg-green-100 text-green-800"
-                    : turn.status === "full"
-                      ? "bg-yellow-100 text-yellow-800"
-                      : "bg-red-100 text-red-800"
-                }">
-                  ${
-                    turn.status === "available"
-                      ? "✅ Disponible"
-                      : turn.status === "full"
-                        ? "⚠️ Lleno"
-                        : "❌ Cancelado"
-                  }
+                <span class="px-2 py-1 rounded text-xs font-medium ${badgeColor}">
+                  ${statusText}
                 </span>
               </div>
               <div class="flex gap-4 text-sm">
@@ -107,11 +203,7 @@ export default function TurnsTab() {
                 </span>
                 ${
                   (turn as any).reservations
-                    ? `
-                  <span class="text-blue-600">
-                    📋 ${(turn as any).reservations.length} reservas
-                  </span>
-                `
+                    ? `<span class="text-blue-600">📋 ${(turn as any).reservations.length} reservas</span>`
                     : ""
                 }
               </div>
@@ -125,7 +217,7 @@ export default function TurnsTab() {
                 <button
                   onclick="window.cancelTurn('${turn.id}')"
                   class="px-3 py-1 bg-orange-600 text-white text-xs rounded hover:bg-orange-700"
-                  ${turn.status === "cancelled" ? "disabled" : ""}
+                  ${isCancelled ? "disabled style='opacity:0.5;cursor:not-allowed;'" : ""}
                 >
                   ⏸️ Cancelar
                 </button>
@@ -137,21 +229,21 @@ export default function TurnsTab() {
                     class="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
                   >
                     🗑️ Eliminar
-                  </button>
-                `
+                  </button>`
                     : ""
                 }
               </div>
             </div>
-          `,
-            )
-            .join("")}
-        </div>
-      `,
+          `;
+          })
+          .join("")}
+      </div>
+    `,
       width: 700,
       confirmButtonText: "Cerrar",
       confirmButtonColor: "#6b7280",
     });
+
     (window as any).editTurn = (turnId: string) => {
       Swal.close();
       handleEditTurn(turnId);
@@ -165,6 +257,7 @@ export default function TurnsTab() {
       handleDeleteTurn(turnId);
     };
   };
+
   const handleGenerateTurns = async () => {
     if (!selectedActivity) {
       Swal.fire(
@@ -178,30 +271,30 @@ export default function TurnsTab() {
     const { value: dates } = await Swal.fire({
       title: `📅 Generar Turnos - ${activity?.name}`,
       html: `
-        <div class="space-y-4 text-left">
-          <p class="text-sm text-gray-600 mb-4">
-            Los turnos se generarán según el horario configurado de la actividad
-          </p>
-          <div>
-            <label class="block text-sm font-medium mb-2">Fecha inicio</label>
-            <input 
-              type="date" 
-              id="startDate" 
-              class="w-full p-2 border rounded"
-              min="${new Date().toISOString().split("T")[0]}"
-            >
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-2">Fecha fin</label>
-            <input 
-              type="date" 
-              id="endDate" 
-              class="w-full p-2 border rounded"
-              min="${new Date().toISOString().split("T")[0]}"
-            >
-          </div>
+      <div class="space-y-4 text-left">
+        <p class="text-sm text-gray-600 mb-4">
+          Los turnos se generarán según el horario configurado de la actividad
+        </p>
+        <div>
+          <label class="block text-sm font-medium mb-2">Fecha inicio</label>
+          <input 
+            type="date" 
+            id="startDate" 
+            class="w-full p-2 border rounded"
+            min="${new Date().toISOString().split("T")[0]}"
+          >
         </div>
-      `,
+        <div>
+          <label class="block text-sm font-medium mb-2">Fecha fin</label>
+          <input 
+            type="date" 
+            id="endDate" 
+            class="w-full p-2 border rounded"
+            min="${new Date().toISOString().split("T")[0]}"
+          >
+        </div>
+      </div>
+    `,
       confirmButtonText: "⚡ Generar",
       confirmButtonColor: "#ef4444",
       showCancelButton: true,
@@ -224,7 +317,6 @@ export default function TurnsTab() {
         return { start, end };
       },
     });
-
     if (!dates) return;
     try {
       Swal.fire({
@@ -243,18 +335,19 @@ export default function TurnsTab() {
         icon: "success",
         title: "✅ Turnos Generados",
         html: `
-          <p>Se generaron <strong>${generated.length} turnos</strong></p>
-          <p class="text-sm text-gray-600 mt-2">Del ${format(
-            new Date(dates.start),
-            "dd/MM/yyyy",
-          )} al ${format(new Date(dates.end), "dd/MM/yyyy")}</p>
-        `,
+        <p>Se generaron <strong>${generated.length} turnos</strong></p>
+        <p class="text-sm text-gray-600 mt-2">Del ${format(
+          new Date(dates.start),
+          "dd/MM/yyyy",
+        )} al ${format(new Date(dates.end), "dd/MM/yyyy")}</p>
+      `,
         confirmButtonColor: "#10b981",
       });
     } catch (error: any) {
-      Swal.fire("❌ Error", error.message, "error");
+      handleApiError(error, "No se pudieron generar los turnos");
     }
   };
+
   const handleCreateManualTurn = async () => {
     if (!selectedActivity) {
       Swal.fire(
@@ -264,58 +357,156 @@ export default function TurnsTab() {
       );
       return;
     }
+
     const activity = activities.find((a) => a.id === selectedActivity);
+    const availableDays: string[] = [];
+    const availableHours: { [key: string]: string[] } = {};
+
+    const dayMapping: { [key: string]: string } = {
+      Monday: "Lunes",
+      Tuesday: "Martes",
+      Wednesday: "Miércoles",
+      Thursday: "Jueves",
+      Friday: "Viernes",
+      Saturday: "Sábado",
+      Sunday: "Domingo",
+      Lunes: "Lunes",
+      Martes: "Martes",
+      Miércoles: "Miércoles",
+      Jueves: "Jueves",
+      Viernes: "Viernes",
+      Sábado: "Sábado",
+      Domingo: "Domingo",
+    };
+
+    if (activity?.schedule && Array.isArray(activity.schedule)) {
+      activity.schedule.forEach((scheduleItem: string) => {
+        const [day, time] = scheduleItem.split(" ");
+        if (day && time) {
+          const normalizedDay = dayMapping[day] || day;
+          if (!availableDays.includes(normalizedDay)) {
+            availableDays.push(normalizedDay);
+          }
+          if (!availableHours[normalizedDay]) {
+            availableHours[normalizedDay] = [];
+          }
+          availableHours[normalizedDay].push(time);
+        }
+      });
+    }
+
     const { value: formData } = await Swal.fire({
       title: `➕ Crear Turno - ${activity?.name}`,
       html: `
-        <div class="space-y-4 text-left">
-          <div>
-            <label class="block text-sm font-medium mb-2">Fecha</label>
-            <input 
-              type="date" 
-              id="date" 
-              class="w-full p-2 border rounded"
-              min="${new Date().toISOString().split("T")[0]}"
-            >
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-sm font-medium mb-2">Hora inicio</label>
-              <input type="time" id="startTime" class="w-full p-2 border rounded">
-            </div>
-            <div>
-              <label class="block text-sm font-medium mb-2">Hora fin</label>
-              <input type="time" id="endTime" class="w-full p-2 border rounded">
-            </div>
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-2">Capacidad</label>
-            <input 
-              type="number" 
-              id="capacity" 
-              class="w-full p-2 border rounded"
-              value="${activity?.capacity || 20}"
-              min="1"
-            >
-          </div>
+    <div class="space-y-3 text-left">
+      <!-- Horarios disponibles -->
+      <div class="bg-blue-50 border border-blue-200 p-3 rounded">
+        <p class="font-semibold text-blue-900 text-sm mb-2">📅 Horarios configurados:</p>
+        <div class="bg-white rounded p-2 text-xs space-y-1">
+          ${availableDays
+            .map((day) => {
+              const hours = availableHours[day] || [];
+              return `<div class="flex justify-between"><span class="font-medium">${day}</span><span class="text-gray-600">${hours.join(", ")}</span></div>`;
+            })
+            .join("")}
         </div>
-      `,
+        <p class="text-xs text-gray-600 mt-2">⏱️ Duración: ${activity?.duration || 60} minutos</p>
+      </div>
+      
+      <!-- Campos en una sola fila -->
+      <div class="grid grid-cols-3 gap-3">
+        <div>
+          <label class="block text-sm font-medium mb-1">Fecha *</label>
+          <input 
+            type="date" 
+            id="date" 
+            class="w-full p-2 border rounded text-sm"
+            min="${new Date().toISOString().split("T")[0]}"
+          >
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium mb-1">Hora inicio *</label>
+          <select id="startTime" class="w-full p-2 border rounded text-sm">
+            <option value="">Seleccionar...</option>
+            ${Array.from(new Set(Object.values(availableHours).flat()))
+              .sort()
+              .map((time) => `<option value="${time}">${time}</option>`)
+              .join("")}
+          </select>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium mb-1">Capacidad *</label>
+          <input 
+            type="number" 
+            id="capacity" 
+            class="w-full p-2 border rounded text-sm" 
+            value="${activity?.capacity || 20}" 
+            min="1"
+          >
+        </div>
+      </div>
+    </div>
+    `,
       confirmButtonText: "➕ Crear",
       confirmButtonColor: "#ef4444",
       showCancelButton: true,
+      cancelButtonText: "Cancelar",
+      width: "650px",
       preConfirm: () => {
         const date = (document.getElementById("date") as HTMLInputElement)
           .value;
         const startTime = (
-          document.getElementById("startTime") as HTMLInputElement
+          document.getElementById("startTime") as HTMLSelectElement
         ).value;
-        const endTime = (document.getElementById("endTime") as HTMLInputElement)
-          .value;
         const capacity = parseInt(
           (document.getElementById("capacity") as HTMLInputElement).value,
         );
-        if (!date || !startTime || !endTime || !capacity) {
+        if (!date || !startTime || !capacity) {
           Swal.showValidationMessage("Completa todos los campos");
+          return null;
+        }
+
+        const duration = activity?.duration || 60;
+        const [hours, minutes] = startTime.split(":").map(Number);
+        const endDate = new Date(2000, 0, 1, hours, minutes);
+        endDate.setMinutes(endDate.getMinutes() + duration);
+        const endTime = `${String(endDate.getHours()).padStart(2, "0")}:${String(endDate.getMinutes()).padStart(2, "0")}`;
+        const [startHour] = startTime.split(":").map(Number);
+        const endHour = endDate.getHours();
+
+        if (startHour < 6 || endHour > 22) {
+          Swal.showValidationMessage("El gimnasio abre de 6:00 AM a 10:00 PM");
+          return null;
+        }
+
+        const selectedDate = new Date(date + "T00:00:00");
+        const dayNamesEs = [
+          "Domingo",
+          "Lunes",
+          "Martes",
+          "Miércoles",
+          "Jueves",
+          "Viernes",
+          "Sábado",
+        ];
+        const selectedDayEs = dayNamesEs[selectedDate.getDay()];
+        if (
+          availableDays.length > 0 &&
+          !availableDays.includes(selectedDayEs)
+        ) {
+          Swal.showValidationMessage(
+            `❌ Esta actividad no está disponible los ${selectedDayEs}. Solo: ${availableDays.join(", ")}`,
+          );
+          return null;
+        }
+
+        const dayHours = availableHours[selectedDayEs] || [];
+        if (dayHours.length > 0 && !dayHours.includes(startTime)) {
+          Swal.showValidationMessage(
+            `❌ El horario ${startTime} no está disponible para ${selectedDayEs}. Horarios: ${dayHours.join(", ")}`,
+          );
           return null;
         }
         return { date, startTime, endTime, capacity };
@@ -331,36 +522,38 @@ export default function TurnsTab() {
       Swal.fire({
         icon: "success",
         title: "✅ Turno Creado",
+        text: "El turno ha sido creado exitosamente",
         timer: 2000,
         showConfirmButton: false,
       });
     } catch (error: any) {
-      Swal.fire("❌ Error", error.message, "error");
+      handleApiError(error, "No se pudo crear el turno");
     }
   };
+
   const handleEditTurn = async (turnId: string) => {
     const turn = turns.find((t) => t.id === turnId);
     if (!turn) return;
     const { value: formData } = await Swal.fire({
       title: "✏️ Editar Turno",
       html: `
-        <div class="space-y-4 text-left">
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-sm font-medium mb-2">Hora inicio</label>
-              <input type="time" id="startTime" class="w-full p-2 border rounded" value="${turn.startTime}">
-            </div>
-            <div>
-              <label class="block text-sm font-medium mb-2">Hora fin</label>
-              <input type="time" id="endTime" class="w-full p-2 border rounded" value="${turn.endTime}">
-            </div>
+      <div class="space-y-4 text-left">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium mb-2">Hora inicio</label>
+            <input type="time" id="startTime" class="w-full p-2 border rounded" value="${turn.startTime}">
           </div>
           <div>
-            <label class="block text-sm font-medium mb-2">Capacidad</label>
-            <input type="number" id="capacity" class="w-full p-2 border rounded" value="${(turn as any).capacity ?? turn.availableSpots ?? 20}" min="1">
+            <label class="block text-sm font-medium mb-2">Hora fin</label>
+            <input type="time" id="endTime" class="w-full p-2 border rounded" value="${turn.endTime}">
           </div>
         </div>
-      `,
+        <div>
+          <label class="block text-sm font-medium mb-2">Capacidad</label>
+          <input type="number" id="capacity" class="w-full p-2 border rounded" value="${(turn as any).capacity ?? turn.availableSpots ?? 20}" min="1">
+        </div>
+      </div>
+    `,
       confirmButtonText: "💾 Guardar",
       showCancelButton: true,
       preConfirm: () => {
@@ -381,7 +574,7 @@ export default function TurnsTab() {
       await refetchAll();
       Swal.fire("✅ Actualizado", "Turno actualizado correctamente", "success");
     } catch (error: any) {
-      Swal.fire("❌ Error", error.message, "error");
+      handleApiError(error, "No se pudo actualizar el turno");
     }
   };
   const handleCancelTurn = async (turnId: string) => {
@@ -390,29 +583,27 @@ export default function TurnsTab() {
     const result = await Swal.fire({
       title: "⚠️ Cancelar Turno",
       html: `
-        <p>¿Estás seguro de cancelar este turno?</p>
-        <div class="mt-4 p-3 bg-yellow-50 rounded text-left">
-          <p class="text-sm"><strong>Actividad:</strong> ${
-            (turn as any).activityName || turn.activity?.name || "Actividad"
-          }</p>
-          <p class="text-sm"><strong>Fecha:</strong> ${format(
-            new Date(turn.date),
-            "dd/MM/yyyy",
-          )}</p>
-          <p class="text-sm"><strong>Horario:</strong> ${turn.startTime} - ${
-            turn.endTime
-          }</p>
-          ${
-            (turn as any).reservations?.length
-              ? `
-            <p class="text-sm text-red-600 mt-2">
-              ⚠️ Hay ${(turn as any).reservations.length} reserva(s) que serán canceladas y los usuarios serán notificados
-            </p>
-          `
-              : ""
-          }
-        </div>
-      `,
+      <p>¿Estás seguro de cancelar este turno?</p>
+      <div class="mt-4 p-3 bg-yellow-50 rounded text-left">
+        <p class="text-sm"><strong>Actividad:</strong> ${
+          (turn as any).activityName || turn.activity?.name || "Actividad"
+        }</p>
+        <p class="text-sm"><strong>Fecha:</strong> ${format(
+          new Date(turn.date),
+          "dd/MM/yyyy",
+        )}</p>
+        <p class="text-sm"><strong>Horario:</strong> ${turn.startTime} - ${turn.endTime}</p>
+        ${
+          (turn as any).reservations?.length
+            ? `
+          <p class="text-sm text-red-600 mt-2">
+            ⚠️ Hay ${(turn as any).reservations.length} reserva(s) que serán canceladas y los usuarios serán notificados
+          </p>
+        `
+            : ""
+        }
+      </div>
+    `,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#ef4444",
@@ -425,9 +616,10 @@ export default function TurnsTab() {
       await refetchAll();
       Swal.fire("✅ Cancelado", "El turno ha sido cancelado", "success");
     } catch (error: any) {
-      Swal.fire("❌ Error", error.message, "error");
+      handleApiError(error, "No se pudo cancelar el turno");
     }
   };
+
   const handleDeleteTurn = async (turnId: string) => {
     const turn = turns.find((t) => t.id === turnId);
     if (!turn) return;
@@ -446,7 +638,7 @@ export default function TurnsTab() {
       await refetchAll();
       Swal.fire("✅ Eliminado", "El turno ha sido eliminado", "success");
     } catch (error: any) {
-      Swal.fire("❌ Error", error.message, "error");
+      handleApiError(error, "No se pudo eliminar el turno");
     }
   };
 
@@ -511,7 +703,6 @@ export default function TurnsTab() {
                 <select
                   value={filterActivity}
                   onChange={(e) => {
-                    console.log("🎯 Actividad seleccionada:", e.target.value);
                     setFilterActivity(e.target.value);
                   }}
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
@@ -527,7 +718,6 @@ export default function TurnsTab() {
                 <select
                   value={filterStatus}
                   onChange={(e) => {
-                    console.log("📊 Estado seleccionado:", e.target.value);
                     setFilterStatus(e.target.value);
                   }}
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
