@@ -8,6 +8,7 @@ import { activityService, reservationService } from "src/app/lib";
 import Swal from "sweetalert2";
 import { Activity } from "src/interfaces/Activity";
 import { Turn } from "src/interfaces/Turn";
+import CalendarDatePicker from "src/components/CalendarDateSelector";
 
 export default function MisReservasPage() {
   const { user, isAuthenticated, loading } = useAppContext();
@@ -46,8 +47,6 @@ export default function MisReservasPage() {
       setIsLoading(true);
       setError(null);
       const data = await reservationService.getUserReservations();
-
-      // Ordenar por fecha (más recientes primero)
       const sortedData = data.sort((a, b) => {
         const dateA = new Date(`${a.activityDate}T${a.startTime}`);
         const dateB = new Date(`${b.activityDate}T${b.startTime}`);
@@ -69,12 +68,18 @@ export default function MisReservasPage() {
   const fetchDatesForActivity = async (activityId: string) => {
     try {
       setLoadingDates(true);
-      const today = new Date();
-      const futureDate = new Date();
-      futureDate.setDate(today.getDate() + 30);
       const turns = await reservationService.getAvailableTurns(activityId);
-      const uniqueDates = [...new Set(turns.map((turn) => turn.date))].sort();
-      setAvailableDates(uniqueDates);
+      const allDates = [...new Set(turns.map((turn) => turn.date))];
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const futureDates = allDates
+        .filter((dateStr) => {
+          const date = new Date(dateStr);
+          date.setHours(0, 0, 0, 0);
+          return date >= today;
+        })
+        .sort();
+      setAvailableDates(futureDates);
     } catch (error) {
       setAvailableDates([]);
     } finally {
@@ -86,8 +91,44 @@ export default function MisReservasPage() {
     try {
       setLoadingTurns(true);
       const allTurns = await reservationService.getAvailableTurns(activityId);
+
+      // Filtrar turnos del día seleccionado
       const turnsForDate = allTurns.filter((turn) => turn.date === date);
-      setAvailableTurns(turnsForDate);
+
+      // 🔥 Filtrar turnos que tengan al menos 1 hora de anticipación
+      const now = new Date();
+      const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
+
+      const availableTurnsForDate = turnsForDate.filter((turn) => {
+        const turnDateTime = new Date(`${turn.date}T${turn.startTime}`);
+        return turnDateTime > oneHourFromNow && turn.availableSpots > 0;
+      });
+
+      setAvailableTurns(availableTurnsForDate);
+
+      // Mostrar mensaje apropiado si no hay turnos disponibles
+      if (turnsForDate.length > 0 && availableTurnsForDate.length === 0) {
+        const hasPastTurns = turnsForDate.some((turn) => {
+          const turnDateTime = new Date(`${turn.date}T${turn.startTime}`);
+          return turnDateTime < oneHourFromNow;
+        });
+
+        if (hasPastTurns) {
+          Swal.fire({
+            icon: "info",
+            title: "Sin turnos disponibles",
+            text: "Los turnos deben reservarse con al menos 1 hora de anticipación. Selecciona otra fecha u horario más tarde.",
+            confirmButtonColor: "#dc2626",
+          });
+        } else {
+          Swal.fire({
+            icon: "info",
+            title: "Sin cupos disponibles",
+            text: "Todos los turnos de este día están llenos. Selecciona otra fecha.",
+            confirmButtonColor: "#dc2626",
+          });
+        }
+      }
     } catch (error) {
       setAvailableTurns([]);
       Swal.fire({
@@ -120,6 +161,59 @@ export default function MisReservasPage() {
   };
 
   const handleReservarTurno = async (turnId: string) => {
+    // 🔥 VALIDACIÓN: Verificar que el turno no sea en el pasado y que haya al menos 1 hora de anticipación
+    const turn = availableTurns.find((t) => t.id === turnId);
+    if (turn) {
+      const turnDateTime = new Date(`${turn.date}T${turn.startTime}`);
+      const now = new Date();
+
+      // Verificar si ya pasó
+      if (turnDateTime < now) {
+        Swal.fire({
+          icon: "warning",
+          title: "Turno no disponible",
+          text: "No puedes reservar un turno que ya pasó",
+          confirmButtonColor: "#dc2626",
+        });
+        return;
+      }
+
+      // 🔥 NUEVA VALIDACIÓN: Verificar que haya al menos 1 hora de anticipación
+      const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000); // Suma 1 hora
+
+      if (turnDateTime < oneHourFromNow) {
+        // Calcular cuántos minutos faltan
+        const minutesRemaining = Math.floor(
+          (turnDateTime.getTime() - now.getTime()) / (60 * 1000),
+        );
+
+        Swal.fire({
+          icon: "warning",
+          title: "Reserva muy próxima",
+          html: `
+          <p>Debes reservar con al menos <strong>1 hora de anticipación</strong>.</p>
+          <p class="text-sm text-gray-600 mt-2">
+            Este turno comienza en ${minutesRemaining} minutos.
+          </p>
+        `,
+          confirmButtonColor: "#dc2626",
+          confirmButtonText: "Entendido",
+        });
+        return;
+      }
+
+      // 🔥 Verificar que haya cupos disponibles
+      if (turn.availableSpots <= 0) {
+        Swal.fire({
+          icon: "info",
+          title: "Sin cupos disponibles",
+          text: "Este turno ya está lleno. Por favor selecciona otro horario.",
+          confirmButtonColor: "#dc2626",
+        });
+        return;
+      }
+    }
+
     try {
       await reservationService.createReservation({ turnId });
       Swal.fire({
@@ -135,11 +229,35 @@ export default function MisReservasPage() {
       setAvailableTurns([]);
       await fetchMisReservas();
     } catch (error: any) {
-      const isFreeTrialError = error.message
-        ?.toLowerCase()
-        .includes("free trial");
+      const errorMessage = getErrorMessage(error);
+      const isFreeTrialError = isErrorType(error, "free trial");
       const isSubscriptionError = error.statusCode === 403;
-      if (isFreeTrialError) {
+      const isPastTurnError =
+        isErrorType(error, "past") || isErrorType(error, "pasado");
+      const isTooCloseError =
+        isErrorType(error, "anticipación") || isErrorType(error, "advance");
+
+      if (isTooCloseError) {
+        Swal.fire({
+          icon: "warning",
+          title: "Reserva muy próxima",
+          text: "Debes reservar con al menos 1 hora de anticipación.",
+          confirmButtonColor: "#dc2626",
+        });
+        if (selectedDate && selectedActivity) {
+          await fetchTurnsForDate(selectedActivity, selectedDate);
+        }
+      } else if (isPastTurnError) {
+        Swal.fire({
+          icon: "warning",
+          title: "Turno no disponible",
+          text: "Este turno ya no está disponible. Por favor selecciona otro horario.",
+          confirmButtonColor: "#dc2626",
+        });
+        if (selectedDate && selectedActivity) {
+          await fetchTurnsForDate(selectedActivity, selectedDate);
+        }
+      } else if (isFreeTrialError) {
         Swal.fire({
           icon: "warning",
           title: "Clase gratis ya utilizada",
@@ -158,7 +276,7 @@ export default function MisReservasPage() {
         Swal.fire({
           icon: "error",
           title: "Error al reservar",
-          text: error.message || "No se pudo completar la reserva",
+          text: errorMessage,
           confirmButtonColor: "#dc2626",
         });
       }
@@ -234,6 +352,17 @@ export default function MisReservasPage() {
     return `${horas}:${minutos}`;
   };
 
+  const getErrorMessage = (error: any): string => {
+    if (typeof error === "string") return error;
+    if (error?.message) return error.message;
+    if (error?.response?.data?.message) return error.response.data.message;
+    return "Error desconocido";
+  };
+
+  const isErrorType = (error: any, keyword: string): boolean => {
+    const message = getErrorMessage(error).toLowerCase();
+    return message.includes(keyword.toLowerCase());
+  };
   const getEstadoColor = (estado: string) => {
     switch (estado) {
       case "confirmed":
@@ -287,7 +416,6 @@ export default function MisReservasPage() {
           break;
       }
     }
-
     return true;
   });
 
@@ -332,7 +460,6 @@ export default function MisReservasPage() {
               Gestiona todas tus reservas de actividades
             </p>
           </div>
-
           <button
             onClick={() => setShowReservaModal(true)}
             className="px-16 py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-lg font-medium hover:from-red-700 hover:to-orange-700 transition whitespace-nowrap"
@@ -488,9 +615,9 @@ export default function MisReservasPage() {
                         <div className="text-sm font-medium text-gray-900">
                           {reserva.activity.name}
                         </div>
-                        {reserva.turn?.isFreeTrial && (
+                        {reserva.isFreeTrial && (
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 mt-1">
-                            Clase Gratis
+                            ✨ Clase Gratis
                           </span>
                         )}
                       </td>
@@ -585,18 +712,11 @@ export default function MisReservasPage() {
                       No hay fechas disponibles para esta actividad
                     </div>
                   ) : (
-                    <select
-                      value={selectedDate}
-                      onChange={(e) => handleDateChange(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                    >
-                      <option value="">Seleccionar fecha...</option>
-                      {availableDates.map((date) => (
-                        <option key={date} value={date}>
-                          {formatearFecha(date)}
-                        </option>
-                      ))}
-                    </select>
+                    <CalendarDatePicker
+                      availableDates={availableDates}
+                      selectedDate={selectedDate}
+                      onDateSelect={handleDateChange}
+                    />
                   )}
                 </div>
               )}
@@ -616,42 +736,61 @@ export default function MisReservasPage() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {availableTurns.map((turn) => (
-                        <div
-                          key={turn.id}
-                          className="border border-gray-200 rounded-lg p-4 hover:border-red-500 hover:shadow-md transition"
-                        >
-                          <div className="flex justify-between items-start mb-3">
-                            <div>
-                              <div className="font-semibold text-gray-900">
-                                {formatearHora(turn.startTime)} -{" "}
-                                {formatearHora(turn.endTime)}
-                              </div>
-                              {turn.activity?.duration && (
-                                <div className="text-xs text-gray-500 mt-1">
-                                  {turn.activity.duration} minutos
+                      {availableTurns.map((turn) => {
+                        // Calcular tiempo restante
+                        const turnDateTime = new Date(
+                          `${turn.date}T${turn.startTime}`,
+                        );
+                        const now = new Date();
+                        const hoursRemaining = Math.floor(
+                          (turnDateTime.getTime() - now.getTime()) /
+                            (60 * 60 * 1000),
+                        );
+                        const isSoonToStart = hoursRemaining < 3; // Menos de 3 horas
+
+                        return (
+                          <div
+                            key={turn.id}
+                            className="border border-gray-200 rounded-lg p-4 hover:border-red-500 hover:shadow-md transition"
+                          >
+                            <div className="flex justify-between items-start mb-3">
+                              <div>
+                                <div className="font-semibold text-gray-900">
+                                  {formatearHora(turn.startTime)} -{" "}
+                                  {formatearHora(turn.endTime)}
                                 </div>
-                              )}
-                            </div>
-                            <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
-                              {turn.availableSpots} cupos
-                            </span>
-                          </div>
-                          {turn.isFreeTrial && (
-                            <div className="mb-3">
-                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                                ✨ Clase Gratis
+                                {turn.activity?.duration && (
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    {turn.activity.duration} minutos
+                                  </div>
+                                )}
+                                {/* 🔥 Indicador de tiempo restante */}
+                                {isSoonToStart && (
+                                  <div className="text-xs text-orange-600 font-medium mt-1">
+                                    ⏰ Comienza en {hoursRemaining}h
+                                  </div>
+                                )}
+                              </div>
+                              <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
+                                {turn.availableSpots} cupos
                               </span>
                             </div>
-                          )}
-                          <button
-                            onClick={() => handleReservarTurno(turn.id)}
-                            className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition"
-                          >
-                            Reservar
-                          </button>
-                        </div>
-                      ))}
+                            {turn.isFreeTrial && (
+                              <div className="mb-3">
+                                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                  ✨ Clase Gratis
+                                </span>
+                              </div>
+                            )}
+                            <button
+                              onClick={() => handleReservarTurno(turn.id)}
+                              className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition"
+                            >
+                              Reservar
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
