@@ -24,6 +24,9 @@ export default function MisReservasPage() {
   const [availableTurns, setAvailableTurns] = useState<Turn[]>([]);
   const [loadingDates, setLoadingDates] = useState(false);
   const [loadingTurns, setLoadingTurns] = useState(false);
+  const [filtroEstado, setFiltroEstado] = useState<string>("all");
+  const [filtroActividad, setFiltroActividad] = useState<string>("all");
+  const [filtroFecha, setFiltroFecha] = useState<string>("all");
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -43,7 +46,14 @@ export default function MisReservasPage() {
       setIsLoading(true);
       setError(null);
       const data = await reservationService.getUserReservations();
-      setReservas(data);
+
+      // Ordenar por fecha (más recientes primero)
+      const sortedData = data.sort((a, b) => {
+        const dateA = new Date(`${a.activityDate}T${a.startTime}`);
+        const dateB = new Date(`${b.activityDate}T${b.startTime}`);
+        return dateA.getTime() - dateB.getTime();
+      });
+      setReservas(sortedData);
     } catch (error: any) {
       console.error("Error cargando reservas:", error);
       setError(error.message || "Error al cargar tus reservas");
@@ -248,6 +258,57 @@ export default function MisReservasPage() {
     }
   };
 
+  const reservasFiltradas = reservas.filter((reserva) => {
+    if (filtroEstado !== "all" && reserva.status !== filtroEstado) {
+      return false;
+    }
+    if (filtroActividad !== "all" && reserva.activityId !== filtroActividad) {
+      return false;
+    }
+    if (filtroFecha !== "all") {
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+      const fechaReserva = new Date(reserva.activityDate);
+      fechaReserva.setHours(0, 0, 0, 0);
+
+      switch (filtroFecha) {
+        case "hoy":
+          if (fechaReserva.getTime() !== hoy.getTime()) return false;
+          break;
+        case "proximas":
+          if (fechaReserva < hoy) return false;
+          break;
+        case "pasadas":
+          if (fechaReserva >= hoy) return false;
+          break;
+        case "esta_semana":
+          const finSemana = new Date(hoy);
+          finSemana.setDate(hoy.getDate() + 7);
+          if (fechaReserva < hoy || fechaReserva > finSemana) return false;
+          break;
+        case "este_mes":
+          if (
+            fechaReserva.getMonth() !== hoy.getMonth() ||
+            fechaReserva.getFullYear() !== hoy.getFullYear()
+          )
+            return false;
+          break;
+      }
+    }
+
+    return true;
+  });
+
+  const actividadesUnicas = Array.from(
+    new Set(reservas.map((r) => r.activityId)),
+  ).map((id) => {
+    const reserva = reservas.find((r) => r.activityId === id);
+    return {
+      id,
+      name: reserva?.activity?.name || "Sin nombre",
+    };
+  });
+
   const getEstadoTexto = (estado: string) => {
     const estados: Record<string, string> = {
       active: "Activa",
@@ -272,7 +333,9 @@ export default function MisReservasPage() {
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="mb-8 flex justify-between items-center px-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Mis Reservas</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              📅 Mis Reservas
+            </h1>
             <p className="text-gray-600 mt-2">
               Gestiona todas tus reservas de actividades
             </p>
@@ -291,6 +354,88 @@ export default function MisReservasPage() {
             {error}
           </div>
         )}
+
+        <div className="bg-white rounded-lg shadow p-4 mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-sm font-medium text-gray-700">
+              🔍 Filtros:
+            </span>
+            {(filtroEstado !== "all" ||
+              filtroActividad !== "all" ||
+              filtroFecha !== "all") && (
+              <button
+                onClick={() => {
+                  setFiltroEstado("all");
+                  setFiltroActividad("all");
+                  setFiltroFecha("all");
+                }}
+                className="text-xs text-red-600 hover:text-red-700 font-medium"
+              >
+                Limpiar filtros
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Actividad
+              </label>
+              <select
+                value={filtroActividad}
+                onChange={(e) => setFiltroActividad(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              >
+                <option value="all">Todas las actividades</option>
+                {actividadesUnicas.map((actividad) => (
+                  <option key={actividad.id} value={actividad.id}>
+                    {actividad.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Fecha
+              </label>
+              <select
+                value={filtroFecha}
+                onChange={(e) => setFiltroFecha(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              >
+                <option value="all">Todas las fechas</option>
+                <option value="hoy">Hoy</option>
+                <option value="esta_semana">Esta semana</option>
+                <option value="este_mes">Este mes</option>
+                <option value="proximas">Próximas</option>
+                <option value="pasadas">Pasadas</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Estado
+              </label>
+              <select
+                value={filtroEstado}
+                onChange={(e) => setFiltroEstado(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              >
+                <option value="all">Todos los estados</option>
+                <option value="confirmed">Confirmada</option>
+                <option value="cancelled">Cancelada</option>
+                <option value="completed">Completada</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-3 text-sm text-gray-600">
+            Mostrando{" "}
+            <span className="font-semibold">{reservasFiltradas.length}</span> de{" "}
+            <span className="font-semibold">{reservas.length}</span> reservas
+          </div>
+        </div>
 
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
@@ -315,23 +460,27 @@ export default function MisReservasPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {reservas.length === 0 ? (
+                {reservasFiltradas.length === 0 ? (
                   <tr>
                     <td
                       colSpan={5}
                       className="px-6 py-8 text-center text-gray-500"
                     >
-                      No tienes reservas aún.
+                      {reservas.length === 0
+                        ? "No tienes reservas aún."
+                        : "No se encontraron reservas con los filtros seleccionados."}
                       <button
                         onClick={() => setShowReservaModal(true)}
                         className="text-red-600 hover:text-red-700 font-medium ml-1"
                       >
-                        ¡Reserva tu primera clase!
+                        {reservas.length === 0
+                          ? "¡Reserva tu primera clase!"
+                          : "Nueva reserva"}
                       </button>
                     </td>
                   </tr>
                 ) : (
-                  reservas.map((reserva) => (
+                  reservasFiltradas.map((reserva) => (
                     <tr key={reserva.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900 capitalize">
@@ -390,7 +539,6 @@ export default function MisReservasPage() {
         </div>
       </div>
 
-      {/* MODAL DE NUEVA RESERVA */}
       {showReservaModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -411,7 +559,6 @@ export default function MisReservasPage() {
             </div>
 
             <div className="p-6 space-y-6">
-              {/* PASO 1: Selector de actividad */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   1️⃣ Selecciona una actividad
@@ -429,8 +576,6 @@ export default function MisReservasPage() {
                   ))}
                 </select>
               </div>
-
-              {/* PASO 2: Selector de fecha */}
               {selectedActivity && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -463,8 +608,6 @@ export default function MisReservasPage() {
                   )}
                 </div>
               )}
-
-              {/* PASO 3: Lista de turnos disponibles */}
               {selectedDate && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-4">
