@@ -191,8 +191,42 @@ export default function AppProvider({
         );
       }
     } catch (err: any) {
-      console.error("❌ Error general en login:", err);
-      const message = err.message || "Error en login";
+      // Extraer mensaje del error de forma más limpia
+      let message = "Error en login";
+      
+      if (err.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err.response?.data?.error) {
+        message = err.response.data.error;
+      } else if (err.message) {
+        message = err.message;
+      }
+      
+      // Si es un error de autenticación manejado, retornar error sin lanzar excepción
+      if (err.isAuthError && err.isHandled) {
+        setError(message);
+        // Retornar un objeto de error en lugar de lanzar excepción
+        return {
+          success: false,
+          message: message,
+        };
+      }
+      
+      // Si es un error 401 de autenticación (aunque no esté marcado como manejado)
+      if (err.response?.status === 401) {
+        setError(message);
+        // Retornar un objeto de error en lugar de lanzar excepción
+        return {
+          success: false,
+          message: message,
+        };
+      }
+      
+      // Solo loggear errores que no sean de credenciales inválidas
+      if (err.response?.status !== 401) {
+        console.error("❌ Error en login:", err);
+      }
+      
       setError(message);
       throw err;
     } finally {

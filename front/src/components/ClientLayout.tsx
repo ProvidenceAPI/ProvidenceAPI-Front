@@ -15,6 +15,29 @@ export default function ClientLayout({
   const pathname = usePathname();
   const hasRedirected = useRef(false);
 
+  // Silenciar errores de autenticación no capturados
+  useEffect(() => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const error = event.reason;
+      // Silenciar errores 401 de autenticación
+      if (
+        error?.response?.status === 401 &&
+        (error?.config?.url?.includes('/auth/signin') || 
+         error?.config?.url?.includes('/auth/signup') ||
+         error?.isAuthError)
+      ) {
+        event.preventDefault(); // Prevenir que Next.js muestre el error
+        return;
+      }
+    };
+
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    
+    return () => {
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, []);
+
   // Debug
   useEffect(() => {
     if (!loading) {
