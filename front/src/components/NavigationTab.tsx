@@ -6,13 +6,16 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAppContext } from "src/contexts/AppContext";
 import ActivityTab from "./ActivityTab";
+import TurnsTab from "./TurnsTab";
+import AdminCreationFormTab from "./AdminCreationFormTab";
+import UsersTab from "./UsersTab";
 
 export default function NavigationTab() {
   const { user, isAuthenticated, isAdmin, isSuperAdmin, loading, logout } =
     useAppContext();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<
-    "overview" | "users" | "activities" | "reservations" | "turns"
+    "overview" | "users" | "activities" | "reservations" | "turns" |"AdminCreationForm"
   >("overview");
   const [users, setUsers] = useState([]);
   const [loadingData, setLoadingData] = useState(false);
@@ -172,7 +175,7 @@ export default function NavigationTab() {
               🗓️ Turnos
             </button>
             <button
-              onClick={() => setActiveTab("turns")}
+              onClick={() => setActiveTab("AdminCreationForm")}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === "turns"
                   ? "border-red-600 text-red-600"
@@ -365,7 +368,11 @@ export default function NavigationTab() {
         </div>
          </>
        )}
+       {activeTab === "turns" && <TurnsTab/>}
        {activeTab === "activities" && <ActivityTab/>}
+       {activeTab === "users" && <UsersTab/>}
+       {activeTab === "AdminCreationForm" && <AdminCreationFormTab/>}
+
       </main>   
     </div>
   );
