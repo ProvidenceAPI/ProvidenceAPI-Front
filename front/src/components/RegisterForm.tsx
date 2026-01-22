@@ -64,24 +64,6 @@ export default function RegisterForm() {
   const emailCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-
-  useEffect(() => {
-    // Limpiar timeout anterior
-    if (validationTimeoutRef.current) {
-      clearTimeout(validationTimeoutRef.current);
-    }
-
-    validationTimeoutRef.current = setTimeout(() => {
-      validateRealTime();
-    }, 100); // 100ms de delay
-    
-    return () => {
-      if (validationTimeoutRef.current) {
-        clearTimeout(validationTimeoutRef.current);
-      }
-    };
-  }, [registerForm]);
-
   const validateRealTime = useCallback(() => {
     const newValidations = { ...initialValidations };
 
