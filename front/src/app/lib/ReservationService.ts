@@ -6,7 +6,6 @@ import { Reservation } from "src/interfaces/Reservation";
 import { ReservationRequest } from "src/interfaces/ReservationRequest";
 import { Activity } from "src/interfaces/Activity";
 
-// Helper para normalizar respuestas de arrays
 const normalizeArrayResponse = (data: any, arrayKey?: string): any[] => {
   if (Array.isArray(data)) return data;
   if (arrayKey && data?.[arrayKey] && Array.isArray(data[arrayKey]))
@@ -23,8 +22,6 @@ const normalizeArrayResponse = (data: any, arrayKey?: string): any[] => {
   for (const key of commonKeys) {
     if (data?.[key] && Array.isArray(data[key])) return data[key];
   }
-
-  console.warn("⚠️ No se pudo normalizar respuesta a array:", data);
   return [];
 };
 
@@ -134,8 +131,17 @@ export const reservationService = {
     try {
       const response = await apiClient.post("/api/turns", data);
       return response.data.data || response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ Error creando turno:", error);
+      console.error("❌ Status:", error.response?.status);
+      console.error("❌ Data:", error.response?.data);
+      if (error.response) {
+        throw {
+          statusCode: error.response.status,
+          message: error.response.data?.message || error.message,
+          originalError: error,
+        };
+      }
       throw error;
     }
   },
