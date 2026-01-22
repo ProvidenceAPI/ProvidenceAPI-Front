@@ -20,8 +20,11 @@ export interface Activity {
   price: number;
   capacity: number;
   status: string;
+  schedule?: string[];
   color?: string;
   image?: string;
+  imageUrl?: string;
+  trainer?: string;
 }
 
 export interface Turn {
