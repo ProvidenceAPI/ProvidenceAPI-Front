@@ -17,10 +17,14 @@ apiClient.interceptors.response.use(
       const url = error.config?.url;
       const data = error.response.data;
 
-      console.error(`❌ Error ${status} en ${url}:`, data);
+      // Solo loggear el error, sin mensajes adicionales para login/signup
+      const isAuthEndpoint = url?.includes("/auth/signin") || url?.includes("/auth/signup");
+      
+      if (!isAuthEndpoint) {
+        console.error(`❌ Error ${status} en ${url}:`, data);
+      }
 
       if (status === 401) {
-        console.error("🔒 No autorizado - Token inválido o expirado");
         if (typeof window !== "undefined") {
           const currentPath = window.location.pathname;
           const isAuthPage = [
@@ -29,18 +33,24 @@ apiClient.interceptors.response.use(
             "/auth/callback",
             "/forgot-password",
           ].includes(currentPath);
-          const isLoginAttempt =
-            url?.includes("/auth/signin") || url?.includes("/auth/signup");
-          if (!isAuthPage && !isLoginAttempt) {
+          
+          // Si es un intento de login/signup, marcar el error como manejado
+          if (isAuthEndpoint) {
+            // Marcar el error como manejado para evitar que Next.js lo muestre en la consola
+            (error as any).isHandled = true;
+            (error as any).isAuthError = true;
+            // No limpiar token ni mostrar mensaje - es un error de credenciales, no de token
+            return Promise.reject(error);
+          }
+          
+          // Si NO es una página de auth ni un intento de login, entonces es un token inválido
+          if (!isAuthPage) {
+            console.error("🔒 No autorizado - Token inválido o expirado");
             localStorage.removeItem("providence_token");
             localStorage.removeItem("providence_user");
             setTimeout(() => {
               window.location.href = "/login";
             }, 1000);
-          }
-          if (isLoginAttempt) {
-            localStorage.removeItem("providence_token");
-            localStorage.removeItem("providence_user");
           }
         }
       }

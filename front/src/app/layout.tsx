@@ -23,8 +23,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es"suppressHydrationWarning>
-      <body className={`${inter.className} bg-gray-50`}>
+    <html lang="es" suppressHydrationWarning>
+      <body className={`${inter.className} bg-gray-50`} suppressHydrationWarning>
         {/* APP PROVIDER (Auth + Admin + Cart) */}
         <AppProvider>
           {/* CALENDAR PROVIDER (Reservations + Turns) */}
