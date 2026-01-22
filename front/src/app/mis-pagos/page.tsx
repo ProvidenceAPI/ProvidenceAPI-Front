@@ -134,7 +134,7 @@ export default function MisPagosPage() {
           timer: 1500,
           showConfirmButton: false,
         }).then(() => {
-          window.location.href = initPoint;
+         window.open(initPoint, "_blank"); 
         });
       } else {
         setError("No se pudo generar el link de pago. Intenta nuevamente.");
