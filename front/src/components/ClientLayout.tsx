@@ -17,6 +17,28 @@ export default function ClientLayout({
   const hasRedirected = useRef(false);
 
   useEffect(() => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const error = event.reason;
+      if (
+        error?.response?.status === 401 &&
+        (error?.config?.url?.includes("/auth/signin") ||
+          error?.config?.url?.includes("/auth/signup") ||
+          error?.isAuthError)
+      ) {
+        event.preventDefault();
+        return;
+      }
+    };
+    window.addEventListener("unhandledrejection", handleUnhandledRejection);
+    return () => {
+      window.removeEventListener(
+        "unhandledrejection",
+        handleUnhandledRejection,
+      );
+    };
+  }, []);
+
+  useEffect(() => {
     hasRedirected.current = false;
   }, [pathname]);
 

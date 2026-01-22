@@ -20,7 +20,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className={`${inter.className} bg-gray-50`}>
+      <body
+        className={`${inter.className} bg-gray-50`}
+        suppressHydrationWarning
+      >
         <AppProvider>
           <CalendarProvider>
             <div className="min-h-screen flex flex-col">

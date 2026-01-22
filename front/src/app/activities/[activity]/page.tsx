@@ -150,7 +150,6 @@ export default function ActivityPage() {
   }
   return (
     <main className="min-h-screen bg-white">
-      {/* Hero Section - 🔥 FIX: Usar imageUrl en lugar de image */}
       <div className="relative h-64 md:h-80 bg-gray-900">
         {(activity.image || activity.imageUrl) &&
         !(activity.image || activity.imageUrl).includes("ejemplo") ? (
@@ -265,9 +264,145 @@ export default function ActivityPage() {
                   )}
                 </div>
               </div>
+              {!isAuthenticated && (
+                <div className="mt-8">
+                  <div className="bg-[#FEFCE8] border-l-4 border-yellow-400 p-6 rounded-md">
+                    <h3 className="text-base font-bold text-gray-900 mb-2">
+                      Inicia sesión para reservar
+                    </h3>
+                    <p className="text-sm text-gray-700 mb-4">
+                      Debes iniciar sesión para ver y reservar horarios
+                      disponibles.
+                    </p>
+                    <Link
+                      href="/login"
+                      className="inline-flex items-center justify-center w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2.5 px-4 rounded-md transition-colors duration-200"
+                    >
+                      Iniciar Sesión
+                    </Link>
+                  </div>
+                </div>
+              )}
+              {isAuthenticated && (
+                <div className="mt-8">
+                  <ScheduleList
+                    activity={activity}
+                    turns={turns}
+                    isAuthenticated={isAuthenticated}
+                    userId={user?.id}
+                    onReserve={handleReserve}
+                    userHasFreeReservation={userHasFreeReservation}
+                  />
+                </div>
+              )}
             </div>
-            {/* Sidebar */}
             <div className="lg:col-span-1">
+              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-6">
+                <h3 className="text-xl font-bold mb-4">Precios</h3>
+                {activity.hasFreeTrial ? (
+                  <div className="text-center">
+                    {activity.price && (
+                      <div className="mt-4">
+                        <div className="text-2xl font-bold text-gray-900">
+                          $
+                          {typeof activity.price === "number"
+                            ? activity.price.toLocaleString("es-AR")
+                            : Number(activity.price || 0).toLocaleString(
+                                "es-AR",
+                              )}
+                        </div>
+                        <div className="text-sm text-gray-600">mensual</div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-gray-900">
+                      $
+                      {typeof activity.price === "number"
+                        ? activity.price.toLocaleString("es-AR")
+                        : Number(activity.price || 0).toLocaleString("es-AR")}
+                    </div>
+                    <div className="text-sm text-gray-600">mensual</div>
+                  </div>
+                )}
+                <button
+                  onClick={() => router.push("/register")}
+                  className="w-full bg-[#DC2626] hover:bg-[#B01C1C] text-white py-3 rounded-md font-bold uppercase tracking-wider transition-colors duration-200 mt-6"
+                >
+                  Inscribirse Ahora
+                </button>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <h3 className="text-xl font-bold text-gray-900">
+                    📅 Horarios
+                  </h3>
+                </div>
+                {activity.schedule && activity.schedule.length > 0 ? (
+                  <div className="space-y-4">
+                    {(() => {
+                      const scheduleByDay: Record<string, string[]> = {};
+                      activity.schedule.forEach((item) => {
+                        const trimmed = item.trim();
+                        const spaceIndex = trimmed.indexOf(" ");
+                        if (spaceIndex > 0) {
+                          const day = trimmed.substring(0, spaceIndex);
+                          const time = trimmed.substring(spaceIndex + 1).trim();
+
+                          const timeOnly = time.split("-")[0].trim();
+                          if (!scheduleByDay[day]) {
+                            scheduleByDay[day] = [];
+                          }
+                          if (!scheduleByDay[day].includes(timeOnly)) {
+                            scheduleByDay[day].push(timeOnly);
+                          }
+                        }
+                      });
+                      const dayOrder: Record<string, number> = {
+                        Lunes: 1,
+                        Martes: 2,
+                        Miércoles: 3,
+                        Miercoles: 3,
+                        Jueves: 4,
+                        Viernes: 5,
+                        Sábado: 6,
+                        Sabado: 6,
+                        Domingo: 7,
+                      };
+                      const sortedDays = Object.entries(scheduleByDay).sort(
+                        ([a], [b]) => {
+                          return (dayOrder[a] || 99) - (dayOrder[b] || 99);
+                        },
+                      );
+                      return sortedDays.map(([day, times]) => (
+                        <div
+                          key={day}
+                          className="border-b border-gray-100 pb-3 last:border-0"
+                        >
+                          <div className="font-medium text-gray-900 mb-2">
+                            {day}
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {times.sort().map((time, idx) => (
+                              <span
+                                key={idx}
+                                className="px-3 py-1 bg-gray-100 text-gray-700 rounded-md text-sm"
+                              >
+                                {time}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">
+                    No hay horarios configurados
+                  </p>
+                )}
+              </div>
               <div className="mt-6">
                 <Link
                   href="/home"
@@ -290,23 +425,6 @@ export default function ActivityPage() {
                 </Link>
               </div>
             </div>
-          </div>
-          {/* Schedule Section */}
-          <div>
-            {loadingTurns ? (
-              <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[#DC2626]"></div>
-              </div>
-            ) : (
-              <ScheduleList
-                activity={activity}
-                turns={turns}
-                isAuthenticated={isAuthenticated}
-                userId={user?.id}
-                onReserve={handleReserve}
-                userHasFreeReservation={userHasFreeReservation}
-              />
-            )}
           </div>
         </div>
       </section>

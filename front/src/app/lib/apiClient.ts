@@ -15,6 +15,12 @@ apiClient.interceptors.response.use(
     if (error.response) {
       const status = error.response.status;
       const url = error.config?.url;
+      const data = error.response.data;
+      const isAuthEndpoint =
+        url?.includes("/auth/signin") || url?.includes("/auth/signup");
+      if (!isAuthEndpoint) {
+        console.error(`❌ Error ${status} en ${url}:`, data);
+      }
       if (status === 401) {
         if (typeof window !== "undefined") {
           const currentPath = window.location.pathname;
@@ -24,18 +30,18 @@ apiClient.interceptors.response.use(
             "/auth/callback",
             "/forgot-password",
           ].includes(currentPath);
-          const isLoginAttempt =
-            url?.includes("/auth/signin") || url?.includes("/auth/signup");
-          if (!isAuthPage && !isLoginAttempt) {
+          if (isAuthEndpoint) {
+            (error as any).isHandled = true;
+            (error as any).isAuthError = true;
+            return Promise.reject(error);
+          }
+          if (!isAuthPage) {
+            console.error("🔒 No autorizado - Token inválido o expirado");
             localStorage.removeItem("providence_token");
             localStorage.removeItem("providence_user");
             setTimeout(() => {
               window.location.href = "/login";
             }, 1000);
-          }
-          if (isLoginAttempt) {
-            localStorage.removeItem("providence_token");
-            localStorage.removeItem("providence_user");
           }
         }
       }

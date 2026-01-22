@@ -190,7 +190,31 @@ export default function AppProvider({
         );
       }
     } catch (err: any) {
-      const message = err.message || "Error en login";
+      let message = "Error en login";
+      if (err.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err.response?.data?.error) {
+        message = err.response.data.error;
+      } else if (err.message) {
+        message = err.message;
+      }
+      if (err.isAuthError && err.isHandled) {
+        setError(message);
+        return {
+          success: false,
+          message: message,
+        };
+      }
+      if (err.response?.status === 401) {
+        setError(message);
+        return {
+          success: false,
+          message: message,
+        };
+      }
+      if (err.response?.status !== 401) {
+        console.error("❌ Error en login:", err);
+      }
       setError(message);
       throw err;
     } finally {

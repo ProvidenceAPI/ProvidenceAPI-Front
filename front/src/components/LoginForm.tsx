@@ -81,10 +81,22 @@ export default function LoginForm() {
           confirmButtonText: "Continuar",
         });
         router.push("/dashboard");
+      } else {
+        const errorMessage = result.message || "Email o contraseña incorrectos";
+        setApiError(errorMessage);
+        await Swal.fire({
+          title: "Error",
+          text: errorMessage,
+          icon: "error",
+          confirmButtonText: "Reintentar",
+        });
       }
     } catch (error: any) {
+      if (error.response?.status !== 401 && !error.isAuthError) {
+        console.error("Login error:", error);
+      }
       let errorMessage = "Error al iniciar sesión";
-      if (error.response?.status === 401) {
+      if (error.response?.status === 401 || error.isAuthError) {
         errorMessage = "Email o contraseña incorrectos";
       } else if (error.message?.includes("Credenciales")) {
         errorMessage = "Email o contraseña incorrectos";
