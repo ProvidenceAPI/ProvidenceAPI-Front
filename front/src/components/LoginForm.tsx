@@ -240,7 +240,8 @@ export default function LoginForm() {
                   aria-label={
                     showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
                   }
-                >{showPassword ? (
+                >
+                   {showPassword ? (
                       <svg
                         className="w-5 h-5"
                         fill="none"
@@ -275,7 +276,6 @@ export default function LoginForm() {
                         />
                       </svg>
                     )}
-                 
                 </button>
               </div>
               {errors.password && (
