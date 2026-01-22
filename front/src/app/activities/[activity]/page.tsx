@@ -12,7 +12,6 @@ import { ReservationRequest } from "src/interfaces/ReservationRequest";
 import { Activity } from "src/interfaces/Activity";
 import { reservationService, activityService } from "src/app/lib";
 
-// 🔥 FIX: Agregar todos los slugs posibles
 const ACTIVITY_SLUG_MAP: Record<string, string> = {
   crossfit: "CrossFit",
   hiit: "HIIT",
@@ -32,7 +31,6 @@ export default function ActivityPage() {
   const router = useRouter();
   const { user, isAuthenticated } = useAppContext();
   const activitySlug = params.activity as string;
-
   const [activity, setActivity] = useState<Activity | null>(null);
   const [loading, setLoading] = useState(true);
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -42,22 +40,12 @@ export default function ActivityPage() {
   const loadActivity = useCallback(async () => {
     try {
       setLoading(true);
-
       const activities = await activityService.getAllActivities();
-      console.log("📋 Actividades del backend:", activities);
-      console.log(
-        "📋 Primera actividad completa:",
-        JSON.stringify(activities[0], null, 2),
-      );
-
-      // 🔥 Búsqueda más flexible
       const searchName = ACTIVITY_SLUG_MAP[activitySlug.toLowerCase()];
-
       const foundActivity = activities.find((act: Activity) => {
         const activityName = act.name.toLowerCase().trim();
         const slugName = activitySlug.toLowerCase().trim();
         const mappedName = searchName?.toLowerCase().trim();
-
         return (
           activityName === slugName ||
           activityName === mappedName ||
@@ -67,26 +55,17 @@ export default function ActivityPage() {
       });
 
       if (foundActivity) {
-        console.log("✅ Actividad encontrada:", foundActivity);
         setActivity(foundActivity);
       } else {
-        console.error("❌ Actividad no encontrada para slug:", activitySlug);
-        console.log(
-          "🔍 Actividades disponibles:",
-          activities.map((a: Activity) => a.name),
-        );
-
         await Swal.fire({
           title: "Actividad no encontrada",
           text: `No se pudo encontrar la actividad "${activitySlug}"`,
           icon: "error",
           confirmButtonText: "Volver",
         });
-
         router.push("/home");
       }
     } catch (error) {
-      console.error("❌ Error loading activity:", error);
       await Swal.fire({
         title: "Error",
         text: "Error al cargar la actividad",
@@ -104,14 +83,11 @@ export default function ActivityPage() {
 
     setLoadingTurns(true);
     try {
-      console.log("🔄 Cargando turnos para actividad:", activity.id);
       const availableTurns = await reservationService.getAvailableTurns(
         activity.id,
       );
-      console.log("✅ Turnos cargados:", availableTurns);
       setTurns(availableTurns);
     } catch (error) {
-      console.error("❌ Error loading turns:", error);
       await Swal.fire({
         title: "Error",
         text: "Error al cargar los horarios disponibles",
@@ -125,12 +101,11 @@ export default function ActivityPage() {
 
   const checkUserFreeReservation = useCallback(async () => {
     if (!user?.id) return;
-
     try {
       const hasFree = await reservationService.checkFreeReservation();
       setUserHasFreeReservation(hasFree);
     } catch (error) {
-      console.error("❌ Error checking free reservation:", error);
+      setUserHasFreeReservation(false);
     }
   }, [user?.id]);
 
@@ -155,14 +130,11 @@ export default function ActivityPage() {
     if (!user?.id || !activity) {
       throw new Error("Debes iniciar sesión para reservar");
     }
-
     const reservationData: ReservationRequest = { turnId };
     await reservationService.createReservation(reservationData);
-
     await loadAvailableTurns();
     await checkUserFreeReservation();
   };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -173,11 +145,9 @@ export default function ActivityPage() {
       </div>
     );
   }
-
   if (!activity) {
     return null;
   }
-
   return (
     <main className="min-h-screen bg-white">
       {/* Hero Section - 🔥 FIX: Usar imageUrl en lugar de image */}
@@ -192,7 +162,6 @@ export default function ActivityPage() {
             priority
             unoptimized
             onError={(e) => {
-              console.error("❌ Error cargando imagen hero:", activity.image);
               const target = e.currentTarget as HTMLImageElement;
               target.style.display = "none";
             }}
@@ -297,7 +266,6 @@ export default function ActivityPage() {
                 </div>
               </div>
             </div>
-
             {/* Sidebar */}
             <div className="lg:col-span-1">
               <div className="mt-6">
@@ -323,7 +291,6 @@ export default function ActivityPage() {
               </div>
             </div>
           </div>
-
           {/* Schedule Section */}
           <div>
             {loadingTurns ? (

@@ -55,7 +55,6 @@ export default function MisReservasPage() {
       });
       setReservas(sortedData);
     } catch (error: any) {
-      console.error("Error cargando reservas:", error);
       setError(error.message || "Error al cargar tus reservas");
     } finally {
       setIsLoading(false);
@@ -63,12 +62,8 @@ export default function MisReservasPage() {
   };
 
   const fetchActivities = async () => {
-    try {
-      const data = await activityService.getActiveActivities();
-      setActivities(data);
-    } catch (error) {
-      console.error("Error cargando actividades:", error);
-    }
+    const data = await activityService.getActiveActivities();
+    setActivities(data);
   };
 
   const fetchDatesForActivity = async (activityId: string) => {
@@ -81,7 +76,6 @@ export default function MisReservasPage() {
       const uniqueDates = [...new Set(turns.map((turn) => turn.date))].sort();
       setAvailableDates(uniqueDates);
     } catch (error) {
-      console.error("❌ Error cargando fechas:", error);
       setAvailableDates([]);
     } finally {
       setLoadingDates(false);
@@ -95,7 +89,6 @@ export default function MisReservasPage() {
       const turnsForDate = allTurns.filter((turn) => turn.date === date);
       setAvailableTurns(turnsForDate);
     } catch (error) {
-      console.error("❌ Error cargando turnos:", error);
       setAvailableTurns([]);
       Swal.fire({
         icon: "error",
@@ -196,7 +189,6 @@ export default function MisReservasPage() {
         confirmButtonColor: "#dc2626",
       });
     } catch (error: any) {
-      console.error("Error cancelando reserva:", error);
       Swal.fire({
         title: "Error",
         text: error.message || "Error al cancelar la reserva",

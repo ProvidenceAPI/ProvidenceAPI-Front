@@ -197,19 +197,14 @@ export default function RegisterForm() {
     }
     setEmailChecking(true);
     try {
-      // Aquí deberías hacer la llamada real a tu backend
-      // Ejemplo: const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/check-email/${email}`);
-      // setEmailExists(response.data.exists);
-
-      // Simulación - en producción, quitar esto y usar la llamada real
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      setEmailChecking(false);
-      setEmailExists(false);
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/check-email/${email}`,
+      );
+      setEmailExists(response.data.exists);
     } catch (error) {
-      console.error("Error checking email:", error);
-      setEmailChecking(false);
       setEmailExists(false);
+    } finally {
+      setEmailChecking(false);
     }
   };
 
@@ -342,7 +337,7 @@ export default function RegisterForm() {
   const postRegister = async (registerDto: RegisterDto) => {
     return await axios.post(
       `${process.env.NEXT_PUBLIC_API_URL}/api/auth/signup`,
-      registerDto
+      registerDto,
     );
   };
 
@@ -440,8 +435,11 @@ export default function RegisterForm() {
     <div className="min-h-screen flex">
       <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-center item-center px-12 py-20">
         <div className="text-2xl font-bold tracking-[0.2em] mb-8">
-          <Link href="/" className="inline flex flex-col items-center hover:no-underline">
-          <Image
+          <Link
+            href="/"
+            className="inline flex flex-col items-center hover:no-underline"
+          >
+            <Image
               src="/logo.png"
               alt="Logo"
               width={400}

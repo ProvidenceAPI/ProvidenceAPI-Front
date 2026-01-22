@@ -24,21 +24,15 @@ export default function TurnsTab() {
   const [selectedActivity, setSelectedActivity] = useState<string>("");
   const [filterActivity, setFilterActivity] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState<string>("");
-
   const handleApiError = (
     error: any,
     defaultMessage: string = "Ocurrió un error",
   ) => {
-    console.error("❌ Error:", error);
-
     let title = "❌ Error";
     let message = defaultMessage;
     let icon: "error" | "warning" | "info" = "error";
-
     const statusCode = error.statusCode || error.response?.status;
     const errorMessage = error.message || error.response?.data?.message || "";
-
-    // Casos específicos por mensaje
     if (errorMessage.includes("already exists")) {
       Swal.fire({
         icon: "warning",
@@ -48,7 +42,6 @@ export default function TurnsTab() {
       });
       return;
     }
-
     if (errorMessage.includes("inactive activities")) {
       Swal.fire({
         icon: "warning",
@@ -58,7 +51,6 @@ export default function TurnsTab() {
       });
       return;
     }
-
     if (errorMessage.includes("existing reservations")) {
       Swal.fire({
         icon: "warning",
@@ -69,7 +61,6 @@ export default function TurnsTab() {
       return;
     }
 
-    // Casos por código de estado
     switch (statusCode) {
       case 400:
         title = "❌ Datos Inválidos";
@@ -108,7 +99,6 @@ export default function TurnsTab() {
       default:
         message = errorMessage || defaultMessage;
     }
-
     Swal.fire({
       icon,
       title,
@@ -146,7 +136,6 @@ export default function TurnsTab() {
   };
   const handleDayClick = (day: Date) => {
     const dayTurns = getTurnsForDay(day);
-
     if (dayTurns.length === 0) {
       Swal.fire(
         "🔭 Sin turnos",

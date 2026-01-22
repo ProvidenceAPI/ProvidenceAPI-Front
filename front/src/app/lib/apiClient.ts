@@ -15,12 +15,7 @@ apiClient.interceptors.response.use(
     if (error.response) {
       const status = error.response.status;
       const url = error.config?.url;
-      const data = error.response.data;
-
-      console.error(`❌ Error ${status} en ${url}:`, data);
-
       if (status === 401) {
-        console.error("🔒 No autorizado - Token inválido o expirado");
         if (typeof window !== "undefined") {
           const currentPath = window.location.pathname;
           const isAuthPage = [
@@ -44,10 +39,6 @@ apiClient.interceptors.response.use(
           }
         }
       }
-    } else if (error.request) {
-      console.error("❌ No se recibió respuesta del servidor:", error.request);
-    } else {
-      console.error("❌ Error configurando request:", error.message);
     }
     return Promise.reject(error);
   },
@@ -67,7 +58,6 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error("❌ Error en request interceptor:", error);
     return Promise.reject(error);
   },
 );

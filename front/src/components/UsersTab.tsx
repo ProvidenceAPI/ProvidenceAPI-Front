@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAppContext } from "src/contexts/AppContext";
 import { userService, type User } from "src/app/lib";
-
 import Swal from "sweetalert2";
 
 export default function UsersTab() {
@@ -20,9 +19,6 @@ export default function UsersTab() {
     setLoading(true);
     try {
       const data: any = await userService.getUsers(currentPage, 10, searchTerm);
-      console.log("📊 Respuesta completa del backend:", data);
-
-      // 🔥 Manejar diferentes estructuras de respuesta
       let count = 0;
       if (Array.isArray(data)) {
         setUsers(data);
@@ -40,15 +36,12 @@ export default function UsersTab() {
         setTotalUsers(data.total || data.data.length);
         count = data.data.length;
       } else {
-        console.error("❌ Estructura de datos no reconocida:", data);
         setUsers([]);
         setTotalPages(1);
         setTotalUsers(0);
       }
-      console.log("✅ Usuarios procesados:", count);
     } catch (error: any) {
-      console.error("❌ Error fetching users:", error);
-      setUsers([]); // 🔥 Asegurar que users nunca sea undefined
+      setUsers([]);
       setTotalPages(1);
       setTotalUsers(0);
       Swal.fire({
@@ -67,9 +60,8 @@ export default function UsersTab() {
 
   const handleStatusChange = async (
     userId: string,
-    newStatus: User["status"]
+    newStatus: User["status"],
   ) => {
-    // Solo SuperAdmin puede cambiar estados
     if (!isSuperAdmin) {
       Swal.fire({
         icon: "warning",
@@ -78,14 +70,11 @@ export default function UsersTab() {
       });
       return;
     }
-
     try {
       await userService.updateUserStatus(userId, newStatus);
-
       setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, status: newStatus } : u))
+        prev.map((u) => (u.id === userId ? { ...u, status: newStatus } : u)),
       );
-
       Swal.fire({
         icon: "success",
         title: "Estado actualizado",
@@ -93,7 +82,6 @@ export default function UsersTab() {
         showConfirmButton: false,
       });
     } catch (error: any) {
-      console.error("❌ Error updating status:", error);
       Swal.fire({
         icon: "error",
         title: "Error",
@@ -104,8 +92,6 @@ export default function UsersTab() {
 
   const handleSaveUser = async () => {
     if (!editingUser) return;
-
-    // Solo SuperAdmin puede editar usuarios
     if (!isSuperAdmin) {
       Swal.fire({
         icon: "warning",
@@ -124,11 +110,9 @@ export default function UsersTab() {
       });
 
       setUsers((prev) =>
-        prev.map((u) => (u.id === editingUser.id ? editingUser : u))
+        prev.map((u) => (u.id === editingUser.id ? editingUser : u)),
       );
-
       setEditingUser(null);
-
       Swal.fire({
         icon: "success",
         title: "Usuario actualizado",
@@ -136,7 +120,6 @@ export default function UsersTab() {
         showConfirmButton: false,
       });
     } catch (error: any) {
-      console.error("❌ Error updating user:", error);
       Swal.fire({
         icon: "error",
         title: "Error",
@@ -146,7 +129,6 @@ export default function UsersTab() {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    // Solo SuperAdmin puede eliminar
     if (!isSuperAdmin) {
       Swal.fire({
         icon: "warning",
@@ -168,11 +150,9 @@ export default function UsersTab() {
     });
 
     if (!result.isConfirmed) return;
-
     try {
       await userService.deleteUser(userId);
       setUsers((prev) => prev.filter((u) => u.id !== userId));
-
       Swal.fire({
         icon: "success",
         title: "Usuario eliminado",
@@ -180,7 +160,6 @@ export default function UsersTab() {
         showConfirmButton: false,
       });
     } catch (error: any) {
-      console.error("❌ Error deleting user:", error);
       Swal.fire({
         icon: "error",
         title: "Error",
@@ -217,13 +196,11 @@ export default function UsersTab() {
       Inactive: "bg-gray-100 text-gray-800",
       Suspended: "bg-red-100 text-red-800",
     };
-
     const labels = {
       Active: "✅ Activo",
       Inactive: "⏸️ Inactivo",
       Suspended: "🚫 Suspendido",
     };
-
     return (
       <span
         className={`px-2 py-1 rounded-full text-xs font-medium ${badges[status]}`}
@@ -246,7 +223,6 @@ export default function UsersTab() {
               Total: {totalUsers} usuarios registrados
             </p>
           </div>
-
           <div className="flex gap-4">
             <input
               type="text"
@@ -261,13 +237,11 @@ export default function UsersTab() {
           </div>
         </div>
       </div>
-
       {/* MODAL EDITAR */}
       {editingUser && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-md">
             <h3 className="text-xl font-bold mb-4">✏️ Editar Usuario</h3>
-
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -282,7 +256,6 @@ export default function UsersTab() {
                   }
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Email
@@ -296,7 +269,6 @@ export default function UsersTab() {
                   }
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Teléfono
@@ -310,7 +282,6 @@ export default function UsersTab() {
                   }
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Estado
@@ -330,7 +301,6 @@ export default function UsersTab() {
                   <option value="suspended">🚫 Suspendido</option>
                 </select>
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Role
@@ -350,7 +320,6 @@ export default function UsersTab() {
                   <option value="user">👤 Usuario</option>
                 </select>
               </div>
-
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={handleSaveUser}
@@ -369,7 +338,6 @@ export default function UsersTab() {
           </div>
         </div>
       )}
-
       {/* TABLA */}
       <div className="bg-white rounded-xl shadow overflow-hidden">
         {loading ? (
@@ -405,14 +373,10 @@ export default function UsersTab() {
                   </th>
                 </tr>
               </thead>
-
               <tbody className="divide-y divide-gray-200">
                 {users && users.length > 0
                   ? users.map((user) => (
-                      <tr
-                        key={user.id}
-                        className="hover:bg-gray-50 transition"
-                      >
+                      <tr key={user.id} className="hover:bg-gray-50 transition">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="font-medium text-gray-900">
                             {user.name}
@@ -438,7 +402,7 @@ export default function UsersTab() {
                           <div className="text-sm text-gray-600">
                             {user.createdAt
                               ? new Date(user.createdAt).toLocaleDateString(
-                                  "es-AR"
+                                  "es-AR",
                                 )
                               : "-"}
                           </div>
@@ -470,13 +434,9 @@ export default function UsersTab() {
                       </tr>
                     ))
                   : null}
-
                 {(!users || users.length === 0) && !loading && (
                   <tr>
-                    <td
-                      colSpan={7}
-                      className="text-center py-12"
-                    >
+                    <td colSpan={7} className="text-center py-12">
                       <div className="text-gray-400 text-lg">
                         📭 No se encontraron usuarios
                       </div>
@@ -488,7 +448,6 @@ export default function UsersTab() {
           </div>
         )}
       </div>
-
       {/* PAGINACIÓN */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-4 bg-white rounded-xl shadow p-4">
@@ -499,11 +458,9 @@ export default function UsersTab() {
           >
             ← Anterior
           </button>
-
           <span className="text-gray-700 font-medium">
             Página {currentPage} de {totalPages}
           </span>
-
           <button
             disabled={currentPage === totalPages}
             onClick={() => setCurrentPage((p) => p + 1)}

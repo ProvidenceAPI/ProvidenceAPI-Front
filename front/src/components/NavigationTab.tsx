@@ -9,6 +9,7 @@ import ActivityTab from "./ActivityTab";
 import TurnsTab from "./TurnsTab";
 import AdminCreationFormTab from "./AdminCreationFormTab";
 import UsersTab from "./UsersTab";
+import Swal from "sweetalert2";
 
 export default function NavigationTab() {
   const { user, isAuthenticated, isAdmin, isSuperAdmin, loading, logout } =
@@ -26,45 +27,21 @@ export default function NavigationTab() {
   const [loadingData, setLoadingData] = useState(false);
 
   useEffect(() => {
-    console.log(`
-╔═══════════════════════════════════════════════════════
-║ 🔍 DEBUG ADMIN DASHBOARD
-╠═══════════════════════════════════════════════════════
-║ 🔐 isAuthenticated: ${isAuthenticated}
-║ 👤 user: ${user ? JSON.stringify(user, null, 2) : "null"}
-║ 🎭 user.role: ${user?.rol}
-║ 👔 isAdmin: ${isAdmin}
-║ 👑 isSuperAdmin: ${isSuperAdmin}
-║ 🔄 loading: ${loading}
-╠═══════════════════════════════════════════════════════
-║ 📦 LOCALSTORAGE:
-║ - providence_user: ${localStorage.getItem("providence_user")?.substring(0, 50)}...
-║ - providence_token: ${localStorage.getItem("providence_token")?.substring(0, 30)}...
-╚═══════════════════════════════════════════════════════
-    `);
-
-    // Si no está autenticado y ya terminó de cargar, redirigir
     if (!loading && !isAuthenticated) {
-      console.log("❌ No autenticado, redirigiendo a login");
       router.push("/login?admin=true");
       return;
     }
-
-    // Si está autenticado pero no es admin
     if (!loading && isAuthenticated && !isAdmin) {
-      console.log("❌ No es admin, redirigiendo a dashboard");
       router.push("/dashboard");
       return;
     }
-    console.log("✅ Usuario admin verificado, mostrando dashboard");
-  }, [isAuthenticated, isAdmin, isSuperAdmin, loading, user, router]);
+  }, [isAuthenticated, isAdmin, loading, router]);
 
   useEffect(() => {
     if (activeTab === "users" && (isAdmin || isSuperAdmin)) {
       loadUsers();
     }
   }, [activeTab, isAdmin, isSuperAdmin]);
-
   const loadUsers = async () => {
     setLoadingData(true);
     try {
@@ -79,13 +56,17 @@ export default function NavigationTab() {
       const data = await response.json();
       setUsers(Array.isArray(data) ? data : data.users || []);
     } catch (error) {
-      console.error("Error loading users:", error);
+      setUsers([]);
+      Swal.fire({
+        icon: "error",
+        title: "Error al cargar usuarios",
+        text: "No se pudieron cargar los usuarios. Por favor intenta nuevamente.",
+        confirmButtonColor: "#ef4444",
+      });
     } finally {
       setLoadingData(false);
     }
   };
-
-  // Mientras carga
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -96,8 +77,6 @@ export default function NavigationTab() {
       </div>
     );
   }
-
-  // Si no está autenticado
   if (!isAuthenticated || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -107,8 +86,6 @@ export default function NavigationTab() {
       </div>
     );
   }
-
-  // Si no es admin
   if (!isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -121,7 +98,6 @@ export default function NavigationTab() {
     );
   }
 
-  // DASHBOARD ADMIN
   return (
     <div className="min-h-screen bg-gray-100">
       {/* ⬅️ AGREGAR PESTAÑAS AQUÍ */}
@@ -194,7 +170,6 @@ export default function NavigationTab() {
         </div>
       </div>
       {/* Main Content */}
-
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === "overview" && (
           <>
@@ -229,7 +204,6 @@ export default function NavigationTab() {
                   </div>
                 </div>
               </div>
-
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center">
                   <div className="flex-shrink-0 bg-green-500 rounded-md p-3">
@@ -259,7 +233,6 @@ export default function NavigationTab() {
                   </div>
                 </div>
               </div>
-
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center">
                   <div className="flex-shrink-0 bg-red-500 rounded-md p-3">
@@ -290,7 +263,6 @@ export default function NavigationTab() {
                 </div>
               </div>
             </div>
-
             {/* Quick Actions */}
             <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
               <button className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition text-left">
@@ -320,7 +292,6 @@ export default function NavigationTab() {
                   </div>
                 </div>
               </button>
-
               <button className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition text-left">
                 <div className="flex items-center">
                   <div className="flex-shrink-0 bg-indigo-500 rounded-md p-3">
@@ -346,7 +317,6 @@ export default function NavigationTab() {
                   </div>
                 </div>
               </button>
-
               <button className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition text-left">
                 <div className="flex items-center">
                   <div className="flex-shrink-0 bg-yellow-500 rounded-md p-3">

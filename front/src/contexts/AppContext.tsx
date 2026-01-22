@@ -137,7 +137,6 @@ export default function AppProvider({
             JSON.stringify(freshUserData),
           );
         } catch (err) {
-          console.error("Error cargando usuario:", err);
           logout();
         }
       }
@@ -191,7 +190,6 @@ export default function AppProvider({
         );
       }
     } catch (err: any) {
-      console.error("❌ Error general en login:", err);
       const message = err.message || "Error en login";
       setError(message);
       throw err;
@@ -258,12 +256,10 @@ export default function AppProvider({
       setAdminLoading(true);
       setLoading(true);
       setError(null);
-
       const token = localStorage.getItem("providence_token");
       if (!token) {
         throw new Error("No hay sesión activa");
       }
-
       const { data } = await apiClient.put("/api/users/profile", userData);
       if (user) {
         const updatedUser = { ...user, ...data };
@@ -293,7 +289,6 @@ export default function AppProvider({
       setAdminLoading(true);
       setLoading(true);
       setError(null);
-
       const token = localStorage.getItem("providence_token");
       if (!token) {
         throw new Error("No hay sesión activa");
@@ -328,9 +323,7 @@ export default function AppProvider({
         if (cloudinaryUrl) {
           try {
             await updateProfile({ profileImage: cloudinaryUrl });
-          } catch (err) {
-            console.log("⚠️ No se pudo guardar URL en perfil, pero se muestra");
-          }
+          } catch (err) {}
         }
       }
       return {
@@ -343,7 +336,6 @@ export default function AppProvider({
     } catch (err: any) {
       const message = err.message || "Error al subir imagen";
       setError(message);
-      console.error("❌ Error subiendo imagen:", err);
       return {
         success: false,
         message: "La imagen se muestra localmente. Error: " + message,
@@ -374,14 +366,12 @@ export default function AppProvider({
     if (!canCreateAdmins) {
       throw new Error("No tienes permisos para crear administradores");
     }
-
     setAdminLoading(true);
     setAdminError(null);
     try {
       const { data } = await apiClient.post("/api/users", userData);
       return data;
     } catch (error: any) {
-      console.error("Error creating admin:", error);
       setAdminError(error.message);
       throw error;
     } finally {
@@ -437,16 +427,5 @@ export default function AppProvider({
     clearCart,
   };
 
-  useEffect(() => {
-    if (!authLoading) {
-      console.log("🔍 AppContext cargado:", {
-        user: user?.email,
-        isAuthenticated,
-        isAdmin,
-        loading,
-        cartCount,
-      });
-    }
-  }, [user, authLoading, isAuthenticated, isAdmin, loading, cartCount]);
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

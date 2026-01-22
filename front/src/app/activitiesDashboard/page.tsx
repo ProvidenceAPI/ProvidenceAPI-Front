@@ -1,12 +1,10 @@
-import React from 'react'
-import ActivityTab from 'src/components/ActivityTab'
+import React from "react";
+import ActivityTab from "src/components/ActivityTab";
 
 export default function ActivitiesPage() {
   return (
     <div>
-      <ActivityTab/>
+      <ActivityTab />
     </div>
-  )
+  );
 }
-
-

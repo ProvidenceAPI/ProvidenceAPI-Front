@@ -27,7 +27,6 @@ export default function LoginForm() {
   const [apiError, setApiError] = useState<string>("");
   const changeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-
     setLoginForm((prev) => ({
       ...prev,
       [name]: value,
@@ -84,7 +83,6 @@ export default function LoginForm() {
         router.push("/dashboard");
       }
     } catch (error: any) {
-      console.error("Login error:", error);
       let errorMessage = "Error al iniciar sesión";
       if (error.response?.status === 401) {
         errorMessage = "Email o contraseña incorrectos";

@@ -37,7 +37,6 @@ export default function AdminCreationFormPage() {
   const [errors, setErrors] = useState<Partial<AdminFormData>>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-
   useEffect(() => {
     const userData = localStorage.getItem("providence_user");
     if (userData) {
@@ -45,28 +44,26 @@ export default function AdminCreationFormPage() {
         const user = JSON.parse(userData);
         setCurrentUserId(user.id);
       } catch (error) {
-        console.error("Error parsing user data:", error);
+        localStorage.removeItem("providence_user");
+        localStorage.removeItem("providence_token");
+        setCurrentUserId(null);
       }
     }
   }, []);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
-    
-    // Formateo especial para teléfono y DNI
     if (name === "phone") {
-      const formatted = value.replace(/\D/g, '').substring(0, 15);
+      const formatted = value.replace(/\D/g, "").substring(0, 15);
       setFormData((prev) => ({ ...prev, [name]: formatted }));
     } else if (name === "dni") {
-      const formatted = value.replace(/\D/g, '').substring(0, 10);
+      const formatted = value.replace(/\D/g, "").substring(0, 10);
       setFormData((prev) => ({ ...prev, [name]: formatted }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
-
-    // Limpiar error al escribir
     if (errors[name as keyof AdminFormData]) {
       setErrors((prev) => ({
         ...prev,
@@ -77,40 +74,31 @@ export default function AdminCreationFormPage() {
 
   const validateForm = (): boolean => {
     const newErrors: Partial<AdminFormData> = {};
-
-    // Validaciones
     if (!formData.name.trim() || formData.name.length < 3) {
       newErrors.name = "Nombre mínimo 3 caracteres";
     }
-
     if (!formData.lastname.trim() || formData.lastname.length < 3) {
       newErrors.lastname = "Apellido mínimo 3 caracteres";
     }
-
     if (!formData.email.trim()) {
       newErrors.email = "El email es requerido";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = "Email inválido";
     }
-
     if (!formData.password) {
       newErrors.password = "La contraseña es requerida";
     } else if (formData.password.length < 8) {
       newErrors.password = "Mínimo 8 caracteres";
     }
-
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Las contraseñas no coinciden";
     }
-
     if (!formData.birthdate) {
       newErrors.birthdate = "Fecha de nacimiento requerida";
     }
-
     if (!formData.phone || formData.phone.length < 10) {
       newErrors.phone = "Teléfono mínimo 10 dígitos";
     }
-
     if (!formData.dni || formData.dni.length < 7) {
       newErrors.dni = "DNI mínimo 7 dígitos";
     }
@@ -119,13 +107,11 @@ export default function AdminCreationFormPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Función para crear usuario normal (signup)
   const createUser = async (userData: any) => {
     const { data } = await apiClient.post("/api/auth/signup", userData);
     return data;
   };
 
-  // Función para convertir usuario a admin (update role)
   const convertToAdmin = async (userId: string, role: string) => {
     const { data } = await apiClient.put(`/api/users/${userId}/role`, { role });
     return data;
@@ -133,7 +119,6 @@ export default function AdminCreationFormPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validateForm()) {
       Swal.fire({
         title: "❌ Error de validación",
@@ -144,11 +129,9 @@ export default function AdminCreationFormPage() {
       });
       return;
     }
-
     setLoading(true);
 
     try {
-      // PASO 1: Crear usuario normal
       const userData = {
         name: formData.name,
         lastname: formData.lastname,
@@ -160,27 +143,13 @@ export default function AdminCreationFormPage() {
         dni: parseInt(formData.dni),
         genre: formData.genre,
       };
-
-      console.log("PASO 1: Creando usuario normal...", userData);
-      
       const userResponse = await createUser(userData);
-      console.log("Usuario creado:", userResponse);
-
       if (!userResponse.user || !userResponse.user.id) {
         throw new Error("No se recibió ID de usuario en la respuesta");
       }
-
       const userId = userResponse.user.id;
-      
-      // PASO 2: Convertir usuario a admin/superadmin
-      console.log(`PASO 2: Convirtiendo a ${formData.role}...`);
-      
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Pequeña pausa
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       const adminResponse = await convertToAdmin(userId, formData.role);
-      console.log("Usuario convertido a admin:", adminResponse);
-
-      // PASO 3: Mostrar éxito
       await Swal.fire({
         title: "✅ ¡Administrador creado!",
         html: `
@@ -202,7 +171,6 @@ export default function AdminCreationFormPage() {
         confirmButtonColor: "#DC2626",
       });
 
-      // Limpiar formulario
       setFormData({
         name: "",
         lastname: "",
@@ -215,23 +183,23 @@ export default function AdminCreationFormPage() {
         genre: "Male",
         role: "admin",
       });
-
-      // Opcional: Redirigir a lista de usuarios
-      // router.push('/admin/users');
-
     } catch (error: any) {
-      console.error("Error completo:", error);
-      
       let errorMessage = "No se pudo crear el administrador.";
-      
-      if (error.message.includes("already exists") || error.message.includes("ya existe")) {
-        errorMessage = "❌ Este email ya está registrado. Intenta con otro email.";
-      } else if (error.message.includes("Unauthorized") || error.message.includes("token")) {
-        errorMessage = "❌ No tienes permisos para crear administradores. Debes ser SuperAdmin.";
+      if (
+        error.message.includes("already exists") ||
+        error.message.includes("ya existe")
+      ) {
+        errorMessage =
+          "❌ Este email ya está registrado. Intenta con otro email.";
+      } else if (
+        error.message.includes("Unauthorized") ||
+        error.message.includes("token")
+      ) {
+        errorMessage =
+          "❌ No tienes permisos para crear administradores. Debes ser SuperAdmin.";
       } else if (error.message.includes("network")) {
         errorMessage = "❌ Error de conexión. Verifica tu internet.";
       }
-      
       await Swal.fire({
         title: "Error",
         html: `
@@ -251,14 +219,11 @@ export default function AdminCreationFormPage() {
       setLoading(false);
     }
   };
-
-  // Formatear fecha para input date (mínimo 18 años)
   const getMaxBirthdate = () => {
     const today = new Date();
     const maxDate = new Date(today.setFullYear(today.getFullYear() - 18));
     return maxDate.toISOString().split("T")[0];
   };
-
   const getMinBirthdate = () => {
     const today = new Date();
     const minDate = new Date(today.setFullYear(today.getFullYear() - 100));
@@ -279,9 +244,7 @@ export default function AdminCreationFormPage() {
           <p className="text-lg text-gray-600">
             Formulario para agregar nuevos usuarios al sistema
           </p>
-          
         </div>
-
         {/* Formulario */}
         <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -306,7 +269,6 @@ export default function AdminCreationFormPage() {
                   <p className="text-red-600 text-sm mt-1">{errors.name}</p>
                 )}
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Apellido *
@@ -327,7 +289,6 @@ export default function AdminCreationFormPage() {
                 )}
               </div>
             </div>
-
             {/* Email */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -348,7 +309,6 @@ export default function AdminCreationFormPage() {
                 <p className="text-red-600 text-sm mt-1">{errors.email}</p>
               )}
             </div>
-
             {/* Contraseñas */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -370,7 +330,6 @@ export default function AdminCreationFormPage() {
                   <p className="text-red-600 text-sm mt-1">{errors.password}</p>
                 )}
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Confirmar contraseña *
@@ -381,7 +340,9 @@ export default function AdminCreationFormPage() {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
-                    errors.confirmPassword ? "border-red-500" : "border-gray-300"
+                    errors.confirmPassword
+                      ? "border-red-500"
+                      : "border-gray-300"
                   }`}
                   placeholder="Repite la contraseña"
                   disabled={loading}
@@ -393,7 +354,6 @@ export default function AdminCreationFormPage() {
                 )}
               </div>
             </div>
-
             {/* Fecha de nacimiento */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -418,7 +378,6 @@ export default function AdminCreationFormPage() {
                 Debe ser mayor de 18 años
               </p>
             </div>
-
             {/* Teléfono y DNI */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -440,7 +399,6 @@ export default function AdminCreationFormPage() {
                   <p className="text-red-600 text-sm mt-1">{errors.phone}</p>
                 )}
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   DNI *
@@ -461,7 +419,6 @@ export default function AdminCreationFormPage() {
                 )}
               </div>
             </div>
-
             {/* Género y Rol */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -481,10 +438,7 @@ export default function AdminCreationFormPage() {
                   <option value="Other">Otro</option>
                 </select>
               </div>
-
-              
             </div>
-
             {/* Info de privacidad */}
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <h4 className="font-bold text-blue-800 mb-2">
@@ -497,7 +451,6 @@ export default function AdminCreationFormPage() {
                 <li>Se recomienda cambiar la contraseña en el primer login</li>
               </ol>
             </div>
-
             {/* Botones */}
             <div className="pt-6 flex flex-col gap-4">
               <button
@@ -514,10 +467,9 @@ export default function AdminCreationFormPage() {
                   "Crear Administrador"
                 )}
               </button>
-
               <button
                 type="button"
-                onClick={() => router.push('/admin/dashboard')}
+                onClick={() => router.push("/admin/dashboard")}
                 className="w-full py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
                 disabled={loading}
               >
