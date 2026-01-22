@@ -121,7 +121,7 @@ export default function NavigationTab() {
     <div className="min-h-screen bg-gray-100">
       
       {/* ⬅️ AGREGAR PESTAÑAS AQUÍ */}
-      <div className="bg-white rounded-xl shadow-lg mb-8">
+      <div className="bg-white flex items-center justify-center rounded-xl shadow-lg mb-8">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8 px-6">
             <button
