@@ -133,16 +133,16 @@ export default function LoginForm() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left side - Black section */}
-      <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-center px-12 py-20">
-        <div className="text-2xl font-bold tracking-[0.2em]">
-          <Link href="/" className="flex flex-col hover:no-underline">
+      <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-center items-center px-12 py-20">
+      <div className="w-full max-w-lg mx-auto text-center">
+      <div className="text-2xl font-bold tracking-[0.2em] mb-8">
+      <Link href="/" className="inline-flex flex-col items-center hover:no-underline">
             <Image 
               src="/logo.png"
               alt="Providence Fitness Logo"
               width={400}
                 height={100}
-              className="h-8 w-auto"
+              className="w-90h-auto"
             />
           </Link>
         </div>
@@ -155,6 +155,7 @@ export default function LoginForm() {
         <p className="text-gray-400 text-lg leading-relaxed">
           Continúa tu transformación. Inicia sesión y accede a tu entrenamiento.
         </p>
+      </div>
       </div>
 
       {/* Right Panel - Form */}
