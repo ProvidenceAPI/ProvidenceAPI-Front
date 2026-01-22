@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-
 import { useCalendar } from "src/contexts/CalendarContext";
 import { reservationService } from "src/app/lib";
-import { Turn } from "src/interfaces/Turn";
 import CalendarView from "src/components/CalendarView";
 import Swal from "sweetalert2";
 import { format, isSameDay } from "date-fns";
@@ -27,39 +25,40 @@ export default function TurnsTab() {
   const [filterActivity, setFilterActivity] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState<string>("");
 
-  // Recargar turnos cuando cambia la fecha o filtros
   useEffect(() => {
     const startDate = new Date(selectedDate);
     startDate.setDate(1);
+    startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(selectedDate);
     endDate.setMonth(endDate.getMonth() + 1, 0);
+    endDate.setHours(23, 59, 59, 999);
 
-    fetchTurns({
+    const filters: any = {
       startDate: startDate.toISOString().split("T")[0],
       endDate: endDate.toISOString().split("T")[0],
-      ...(filterActivity && { activityId: filterActivity }),
-      ...(filterStatus && { status: filterStatus }),
-    });
+    };
+    if (filterActivity) {
+      filters.activityId = filterActivity;
+    }
+    if (filterStatus) {
+      filters.status = filterStatus;
+    }
+    fetchTurns(filters);
   }, [selectedDate, filterActivity, filterStatus, fetchTurns]);
 
-  // Obtener turnos de un día específico
   const getTurnsForDay = (day: Date) => {
     return turns.filter((turn) => isSameDay(new Date(turn.date), day));
   };
-
-  // Ver detalles de un día
   const handleDayClick = (day: Date) => {
     const dayTurns = getTurnsForDay(day);
-
     if (dayTurns.length === 0) {
       Swal.fire(
         "📭 Sin turnos",
         "No hay turnos programados para este día",
-        "info"
+        "info",
       );
       return;
     }
-
     Swal.fire({
       title: `📅 ${format(day, "EEEE d 'de' MMMM", { locale: es })}`,
       html: `
@@ -72,37 +71,39 @@ export default function TurnsTab() {
               turn.status === "available"
                 ? "bg-green-50 border border-green-200"
                 : turn.status === "full"
-                ? "bg-yellow-50 border border-yellow-200"
-                : "bg-red-50 border border-red-200"
+                  ? "bg-yellow-50 border border-yellow-200"
+                  : "bg-red-50 border border-red-200"
             }">
               <div class="flex justify-between items-start mb-2">
                 <div>
                   <div class="font-bold text-gray-900">${
-                    (turn as any).activityName || turn.activity?.name || 'Actividad'
+                    (turn as any).activityName ||
+                    turn.activity?.name ||
+                    "Actividad"
                   }</div>
                   <div class="text-sm text-gray-600">${turn.startTime} - ${
-                turn.endTime
-              }</div>
+                    turn.endTime
+                  }</div>
                 </div>
                 <span class="px-2 py-1 rounded text-xs font-medium ${
                   turn.status === "available"
                     ? "bg-green-100 text-green-800"
                     : turn.status === "full"
-                    ? "bg-yellow-100 text-yellow-800"
-                    : "bg-red-100 text-red-800"
+                      ? "bg-yellow-100 text-yellow-800"
+                      : "bg-red-100 text-red-800"
                 }">
                   ${
                     turn.status === "available"
                       ? "✅ Disponible"
                       : turn.status === "full"
-                      ? "⚠️ Lleno"
-                      : "❌ Cancelado"
+                        ? "⚠️ Lleno"
+                        : "❌ Cancelado"
                   }
                 </span>
               </div>
               <div class="flex gap-4 text-sm">
                 <span class="text-gray-600">
-                  👥 ${turn.availableSpots}/${(turn as any).capacity ?? '-'} disponibles
+                  👥 ${turn.availableSpots}/${(turn as any).capacity ?? "-"} disponibles
                 </span>
                 ${
                   (turn as any).reservations
@@ -142,7 +143,7 @@ export default function TurnsTab() {
                 }
               </div>
             </div>
-          `
+          `,
             )
             .join("")}
         </div>
@@ -151,37 +152,29 @@ export default function TurnsTab() {
       confirmButtonText: "Cerrar",
       confirmButtonColor: "#6b7280",
     });
-
-    // Funciones globales para los botones
     (window as any).editTurn = (turnId: string) => {
       Swal.close();
       handleEditTurn(turnId);
     };
-
     (window as any).cancelTurn = (turnId: string) => {
       Swal.close();
       handleCancelTurn(turnId);
     };
-
     (window as any).deleteTurn = (turnId: string) => {
       Swal.close();
       handleDeleteTurn(turnId);
     };
   };
-
-  // Generar turnos automáticamente
   const handleGenerateTurns = async () => {
     if (!selectedActivity) {
       Swal.fire(
         "⚠️ Selecciona actividad",
         "Primero selecciona una actividad",
-        "warning"
+        "warning",
       );
       return;
     }
-
     const activity = activities.find((a) => a.id === selectedActivity);
-
     const { value: dates } = await Swal.fire({
       title: `📅 Generar Turnos - ${activity?.name}`,
       html: `
@@ -224,7 +217,7 @@ export default function TurnsTab() {
         }
         if (new Date(start) > new Date(end)) {
           Swal.showValidationMessage(
-            "La fecha de inicio debe ser anterior a la fecha fin"
+            "La fecha de inicio debe ser anterior a la fecha fin",
           );
           return null;
         }
@@ -233,7 +226,6 @@ export default function TurnsTab() {
     });
 
     if (!dates) return;
-
     try {
       Swal.fire({
         title: "Generando turnos...",
@@ -241,15 +233,12 @@ export default function TurnsTab() {
         allowOutsideClick: false,
         didOpen: () => Swal.showLoading(),
       });
-
       const generated = await reservationService.generateTurns({
         activityId: selectedActivity,
         startDate: dates.start,
         endDate: dates.end,
       });
-
       await refetchAll();
-
       Swal.fire({
         icon: "success",
         title: "✅ Turnos Generados",
@@ -257,7 +246,7 @@ export default function TurnsTab() {
           <p>Se generaron <strong>${generated.length} turnos</strong></p>
           <p class="text-sm text-gray-600 mt-2">Del ${format(
             new Date(dates.start),
-            "dd/MM/yyyy"
+            "dd/MM/yyyy",
           )} al ${format(new Date(dates.end), "dd/MM/yyyy")}</p>
         `,
         confirmButtonColor: "#10b981",
@@ -266,20 +255,16 @@ export default function TurnsTab() {
       Swal.fire("❌ Error", error.message, "error");
     }
   };
-
-  // Crear turno manual
   const handleCreateManualTurn = async () => {
     if (!selectedActivity) {
       Swal.fire(
         "⚠️ Selecciona actividad",
         "Primero selecciona una actividad",
-        "warning"
+        "warning",
       );
       return;
     }
-
     const activity = activities.find((a) => a.id === selectedActivity);
-
     const { value: formData } = await Swal.fire({
       title: `➕ Crear Turno - ${activity?.name}`,
       html: `
@@ -327,9 +312,8 @@ export default function TurnsTab() {
         const endTime = (document.getElementById("endTime") as HTMLInputElement)
           .value;
         const capacity = parseInt(
-          (document.getElementById("capacity") as HTMLInputElement).value
+          (document.getElementById("capacity") as HTMLInputElement).value,
         );
-
         if (!date || !startTime || !endTime || !capacity) {
           Swal.showValidationMessage("Completa todos los campos");
           return null;
@@ -337,17 +321,13 @@ export default function TurnsTab() {
         return { date, startTime, endTime, capacity };
       },
     });
-
     if (!formData) return;
-
     try {
       await reservationService.createTurn({
         activityId: selectedActivity,
         ...formData,
       });
-
       await refetchAll();
-
       Swal.fire({
         icon: "success",
         title: "✅ Turno Creado",
@@ -358,12 +338,9 @@ export default function TurnsTab() {
       Swal.fire("❌ Error", error.message, "error");
     }
   };
-
-  // Editar turno
   const handleEditTurn = async (turnId: string) => {
     const turn = turns.find((t) => t.id === turnId);
     if (!turn) return;
-
     const { value: formData } = await Swal.fire({
       title: "✏️ Editar Turno",
       html: `
@@ -393,14 +370,12 @@ export default function TurnsTab() {
         const endTime = (document.getElementById("endTime") as HTMLInputElement)
           .value;
         const capacity = parseInt(
-          (document.getElementById("capacity") as HTMLInputElement).value
+          (document.getElementById("capacity") as HTMLInputElement).value,
         );
         return { startTime, endTime, capacity };
       },
     });
-
     if (!formData) return;
-
     try {
       await reservationService.updateTurn(turnId, formData);
       await refetchAll();
@@ -409,27 +384,24 @@ export default function TurnsTab() {
       Swal.fire("❌ Error", error.message, "error");
     }
   };
-
-  // Cancelar turno
   const handleCancelTurn = async (turnId: string) => {
     const turn = turns.find((t) => t.id === turnId);
     if (!turn) return;
-
     const result = await Swal.fire({
       title: "⚠️ Cancelar Turno",
       html: `
         <p>¿Estás seguro de cancelar este turno?</p>
         <div class="mt-4 p-3 bg-yellow-50 rounded text-left">
           <p class="text-sm"><strong>Actividad:</strong> ${
-            (turn as any).activityName || turn.activity?.name || 'Actividad'
+            (turn as any).activityName || turn.activity?.name || "Actividad"
           }</p>
           <p class="text-sm"><strong>Fecha:</strong> ${format(
             new Date(turn.date),
-            "dd/MM/yyyy"
+            "dd/MM/yyyy",
           )}</p>
           <p class="text-sm"><strong>Horario:</strong> ${turn.startTime} - ${
-        turn.endTime
-      }</p>
+            turn.endTime
+          }</p>
           ${
             (turn as any).reservations?.length
               ? `
@@ -447,9 +419,7 @@ export default function TurnsTab() {
       confirmButtonText: "Sí, cancelar",
       cancelButtonText: "No",
     });
-
     if (!result.isConfirmed) return;
-
     try {
       await reservationService.cancelTurn(turnId);
       await refetchAll();
@@ -458,12 +428,9 @@ export default function TurnsTab() {
       Swal.fire("❌ Error", error.message, "error");
     }
   };
-
-  // Eliminar turno (solo si no tiene reservas)
   const handleDeleteTurn = async (turnId: string) => {
     const turn = turns.find((t) => t.id === turnId);
     if (!turn) return;
-
     const result = await Swal.fire({
       title: "🗑️ Eliminar Turno",
       text: "Esta acción no se puede deshacer",
@@ -473,9 +440,7 @@ export default function TurnsTab() {
       confirmButtonText: "Sí, eliminar",
       cancelButtonText: "Cancelar",
     });
-
     if (!result.isConfirmed) return;
-
     try {
       await reservationService.deleteTurn(turnId);
       await refetchAll();
@@ -500,7 +465,6 @@ export default function TurnsTab() {
               </p>
             </div>
           </div>
-
           {/* Controles */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
             {/* Panel de creación */}
@@ -516,15 +480,11 @@ export default function TurnsTab() {
                 >
                   <option value="">Seleccionar actividad</option>
                   {activities.map((activity) => (
-                    <option
-                      key={activity.id}
-                      value={activity.id}
-                    >
+                    <option key={activity.id} value={activity.id}>
                       {activity.name}
                     </option>
                   ))}
                 </select>
-
                 <div className="flex gap-2">
                   <button
                     onClick={handleGenerateTurns}
@@ -543,30 +503,33 @@ export default function TurnsTab() {
                 </div>
               </div>
             </div>
-
             {/* Panel de filtros */}
             <div className="bg-white rounded-lg shadow p-4">
               <h3 className="font-semibold text-gray-900 mb-3">🔍 Filtros</h3>
               <div className="grid grid-cols-2 gap-3">
+                {/* FILTRO DE ACTIVIDAD */}
                 <select
                   value={filterActivity}
-                  onChange={(e) => setFilterActivity(e.target.value)}
+                  onChange={(e) => {
+                    console.log("🎯 Actividad seleccionada:", e.target.value);
+                    setFilterActivity(e.target.value);
+                  }}
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
                 >
                   <option value="">Todas las actividades</option>
                   {activities.map((activity) => (
-                    <option
-                      key={activity.id}
-                      value={activity.id}
-                    >
+                    <option key={activity.id} value={activity.id}>
                       {activity.name}
                     </option>
                   ))}
                 </select>
-
+                {/* FILTRO DE ESTADO */}
                 <select
                   value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
+                  onChange={(e) => {
+                    console.log("📊 Estado seleccionado:", e.target.value);
+                    setFilterStatus(e.target.value);
+                  }}
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
                 >
                   <option value="">Todos los estados</option>
@@ -577,7 +540,6 @@ export default function TurnsTab() {
               </div>
             </div>
           </div>
-
           {/* Stats */}
           <div className="grid grid-cols-4 gap-4">
             <div className="bg-white rounded-lg shadow p-4">
@@ -606,7 +568,6 @@ export default function TurnsTab() {
             </div>
           </div>
         </div>
-
         {/* Calendario */}
         {loading ? (
           <div className="bg-white rounded-xl shadow-lg p-12 flex justify-center">
@@ -622,7 +583,8 @@ export default function TurnsTab() {
             reservations={turns.map((t) => ({
               id: t.id,
               date: t.date,
-              activityName: (t as any).activityName || t.activity?.name || 'Actividad',
+              activityName:
+                (t as any).activityName || t.activity?.name || "Actividad",
               status: t.status,
             }))}
             onDayClick={handleDayClick}
