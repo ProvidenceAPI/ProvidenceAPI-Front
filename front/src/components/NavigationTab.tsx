@@ -372,7 +372,9 @@ export default function NavigationTab() {
                         Ingresos del Mes
                       </dt>
                       <dd className="text-3xl font-semibold text-gray-900">
-                        ${stats.revenue.total.toLocaleString("es-AR")}
+                        {isSuperAdmin
+                          ? `$${stats.revenue.total.toLocaleString("es-AR")}`
+                          : "****"}
                       </dd>
                     </dl>
                   </div>
@@ -495,112 +497,118 @@ export default function NavigationTab() {
                 ✕
               </button>
             </div>
-
             {/* Contenido del Modal */}
             <div className="p-6 space-y-6">
-              {/* Sección 2: Tasas de Cancelación */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Tasa de Cancelación de Reservas */}
-                <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">
-                    📅 Reservas - Tasa de Cancelación
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Total Reservas:</span>
-                      <span className="font-bold text-gray-900">
-                        {reportData.reservationCancellation.total}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Canceladas:</span>
-                      <span className="font-bold text-red-600">
-                        {reportData.reservationCancellation.cancelled}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Completadas:</span>
-                      <span className="font-bold text-green-600">
-                        {reportData.reservationCancellation.completed}
-                      </span>
-                    </div>
-                    <div className="pt-3 border-t">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="font-semibold">
-                          Tasa de Cancelación:
-                        </span>
-                        <span className="text-2xl font-bold text-red-600">
-                          {reportData.reservationCancellation.cancellationRate}%
+              {/* SOLO SUPERADMIN: Tasas de Cancelación y Métricas */}
+              {isSuperAdmin && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Tasa de Cancelación de Reservas */}
+                  <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">
+                      📅 Reservas - Tasa de Cancelación
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Total Reservas:</span>
+                        <span className="font-bold text-gray-900">
+                          {reportData.reservationCancellation.total}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="font-semibold">
-                          Tasa de Completitud:
+                        <span className="text-gray-600">Canceladas:</span>
+                        <span className="font-bold text-red-600">
+                          {reportData.reservationCancellation.cancelled}
                         </span>
-                        <span className="text-2xl font-bold text-green-600">
-                          {reportData.reservationCancellation.completionRate}%
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Completadas:</span>
+                        <span className="font-bold text-green-600">
+                          {reportData.reservationCancellation.completed}
                         </span>
+                      </div>
+                      <div className="pt-3 border-t">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-semibold">
+                            Tasa de Cancelación:
+                          </span>
+                          <span className="text-2xl font-bold text-red-600">
+                            {
+                              reportData.reservationCancellation
+                                .cancellationRate
+                            }
+                            %
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold">
+                            Tasa de Completitud:
+                          </span>
+                          <span className="text-2xl font-bold text-green-600">
+                            {reportData.reservationCancellation.completionRate}%
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Métricas de Suscripciones */}
-                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">
-                    💳 Métricas de Suscripciones
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Total:</span>
-                      <span className="font-bold text-gray-900">
-                        {reportData.subscriptionMetrics.total}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Activas:</span>
-                      <span className="font-bold text-green-600">
-                        {reportData.subscriptionMetrics.active}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">
-                        ⚠️ Por vencer (7 días):
-                      </span>
-                      <span className="font-bold text-yellow-600">
-                        {reportData.subscriptionMetrics.expiringSoon}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">
-                        Expiradas (último mes):
-                      </span>
-                      <span className="font-bold text-red-600">
-                        {reportData.subscriptionMetrics.expiredRecently}
-                      </span>
-                    </div>
-                    <div className="pt-3 border-t">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="font-semibold">
-                          Tasa de Retención:
-                        </span>
-                        <span className="text-2xl font-bold text-green-600">
-                          {reportData.subscriptionMetrics.retentionRate}%
+                  {/* Métricas de Suscripciones */}
+                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">
+                      💳 Métricas de Suscripciones
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Total:</span>
+                        <span className="font-bold text-gray-900">
+                          {reportData.subscriptionMetrics.total}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="font-semibold">
-                          Tasa de Expiración:
+                        <span className="text-gray-600">Activas:</span>
+                        <span className="font-bold text-green-600">
+                          {reportData.subscriptionMetrics.active}
                         </span>
-                        <span className="text-2xl font-bold text-orange-600">
-                          {reportData.subscriptionMetrics.expirationRate}%
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">
+                          ⚠️ Por vencer (7 días):
                         </span>
+                        <span className="font-bold text-yellow-600">
+                          {reportData.subscriptionMetrics.expiringSoon}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">
+                          Expiradas (último mes):
+                        </span>
+                        <span className="font-bold text-red-600">
+                          {reportData.subscriptionMetrics.expiredRecently}
+                        </span>
+                      </div>
+                      <div className="pt-3 border-t">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-semibold">
+                            Tasa de Retención:
+                          </span>
+                          <span className="text-2xl font-bold text-green-600">
+                            {reportData.subscriptionMetrics.retentionRate}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold">
+                            Tasa de Expiración:
+                          </span>
+                          <span className="text-2xl font-bold text-orange-600">
+                            {reportData.subscriptionMetrics.expirationRate}%
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-              {/* Sección 3: Promedio de Asistencia por Actividad */}
+              )}
+
+              {/* TODOS (Admin y SuperAdmin): Promedio de Asistencia por Actividad */}
               <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-6">
                 <h3 className="text-xl font-bold text-gray-900 mb-4">
                   🎯 Promedio de Asistencia por Actividad
