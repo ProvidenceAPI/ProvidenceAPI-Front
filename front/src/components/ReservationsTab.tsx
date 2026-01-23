@@ -63,7 +63,8 @@ export default function ReservationsTab() {
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
-  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
+  const [selectedReservation, setSelectedReservation] =
+    useState<Reservation | null>(null);
   const [selectedActivityId, setSelectedActivityId] = useState<string>("");
   const [loadingTurns, setLoadingTurns] = useState(false);
 
@@ -148,15 +149,15 @@ export default function ReservationsTab() {
       const turnsList = Array.isArray(data)
         ? data
         : data?.data || data?.turns || [];
-      
+
       // Filtrar solo turnos disponibles y no cancelados
       const availableTurns = turnsList.filter(
         (turn: Turn) =>
           turn.status !== "cancelled" &&
           turn.status !== "completed" &&
-          turn.availableSpots > 0
+          turn.availableSpots > 0,
       );
-      
+
       setTurns(availableTurns);
     } catch (error: any) {
       console.error("Error loading turns:", error);
@@ -170,9 +171,12 @@ export default function ReservationsTab() {
     if (!selectedReservation) return;
 
     try {
-      await apiClient.patch(`/api/reservations/${selectedReservation.id}/turn`, {
-        turnId,
-      });
+      await apiClient.patch(
+        `/api/reservations/${selectedReservation.id}/turn`,
+        {
+          turnId,
+        },
+      );
 
       await Swal.fire({
         icon: "success",
@@ -190,7 +194,8 @@ export default function ReservationsTab() {
       Swal.fire({
         icon: "error",
         title: "Error",
-        text: error.response?.data?.message || "No se pudo reasignar la reserva",
+        text:
+          error.response?.data?.message || "No se pudo reasignar la reserva",
       });
     }
   };
@@ -236,7 +241,10 @@ export default function ReservationsTab() {
       .split("T")[0];
     const reservationTime = reservation.startTime.substring(0, 5); // HH:MM
 
-    if (filterActivity && activityName.toLowerCase() !== filterActivity.toLowerCase()) {
+    if (
+      filterActivity &&
+      activityName.toLowerCase() !== filterActivity.toLowerCase()
+    ) {
       return false;
     }
     if (filterDate && reservationDate !== filterDate) {
@@ -284,7 +292,9 @@ export default function ReservationsTab() {
     <div className="space-y-6">
       {/* Header con botón de crear */}
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Gestión de Reservas</h2>
+        <h2 className="text-2xl font-bold text-gray-900">
+          Gestión de Reservas
+        </h2>
         <button
           onClick={() => setShowCreateForm(true)}
           className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium"
@@ -400,7 +410,10 @@ export default function ReservationsTab() {
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredReservations.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                  <td
+                    colSpan={6}
+                    className="px-6 py-4 text-center text-gray-500"
+                  >
                     No hay reservas que coincidan con los filtros
                   </td>
                 </tr>
@@ -411,7 +424,7 @@ export default function ReservationsTab() {
                     reservation.turn?.activity?.name ||
                     "N/A";
                   const reservationDate = new Date(
-                    reservation.activityDate
+                    reservation.activityDate,
                   ).toLocaleDateString("es-ES", {
                     year: "numeric",
                     month: "long",
@@ -509,7 +522,9 @@ export default function ReservationsTab() {
                 </p>
                 <p className="text-sm text-gray-600">
                   <strong>Fecha y hora actual:</strong>{" "}
-                  {new Date(selectedReservation.activityDate).toLocaleDateString("es-ES")}{" "}
+                  {new Date(
+                    selectedReservation.activityDate,
+                  ).toLocaleDateString("es-ES")}{" "}
                   {selectedReservation.startTime}
                 </p>
               </div>
@@ -532,7 +547,7 @@ export default function ReservationsTab() {
                       (a) =>
                         a.id !==
                         (selectedReservation.activity?.id ||
-                          selectedReservation.turn?.activityId)
+                          selectedReservation.turn?.activityId),
                     )
                     .map((activity) => (
                       <option key={activity.id} value={activity.id}>
@@ -573,7 +588,7 @@ export default function ReservationsTab() {
                             year: "numeric",
                             month: "short",
                             day: "numeric",
-                          }
+                          },
                         );
                         return (
                           <option key={turn.id} value={turn.id}>
@@ -591,7 +606,7 @@ export default function ReservationsTab() {
                 <button
                   onClick={() => {
                     const select = document.getElementById(
-                      "turn-select"
+                      "turn-select",
                     ) as HTMLSelectElement;
                     if (select && select.value) {
                       handleChangeReservationTurn(select.value);
