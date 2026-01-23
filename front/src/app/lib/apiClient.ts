@@ -19,7 +19,7 @@ apiClient.interceptors.response.use(
       const isAuthEndpoint =
         url?.includes("/auth/signin") || url?.includes("/auth/signup");
       if (!isAuthEndpoint) {
-        console.error(`❌ Error ${status} en ${url}:`, data);
+       
       }
       if (status === 401) {
         if (typeof window !== "undefined") {
