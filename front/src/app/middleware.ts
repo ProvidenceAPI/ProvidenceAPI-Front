@@ -1,4 +1,3 @@
-// middleware.ts - VERSIÓN FINAL CORREGIDA
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -7,12 +6,13 @@ const publicRoutes = [
   "/",
   "/home",
   "/login",
+  "/activities",
   "/register",
   "/nosotros",
   "/ubicacion",
   "/testimonios",
   "/auth/callback", // ¡IMPORTANTE! Mantener como pública
-  "/api/auth/callback", // Si existe esta ruta también
+ 
 ];
 
 // Rutas que requieren autenticación como USUARIO
@@ -27,9 +27,10 @@ const protectedRoutes = [
 const adminRoutes = [
   "/dashboard",
   "/activitiesDashboard",
+  "/admin-dashboard",
   "/users",
   "/turns",
-  "/mis-reservas",
+ 
 ];
 
 // Rutas que requieren ROL SUPER ADMIN
@@ -50,6 +51,7 @@ export function middleware(request: NextRequest) {
   const userCookie = request.cookies.get("providence_user");
   let user = null;
   let userRole = "";
+  let userStatus = "";
 
   if (userCookie) {
     try {

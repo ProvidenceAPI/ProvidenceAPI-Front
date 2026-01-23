@@ -34,8 +34,22 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
+      // AGREGAR ESTAS CONFIGURACIONES PARA GOOGLE
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        port: '',
+        pathname: '/**',
+      },
+      // También puedes agregar el patrón comodín para todos los subdominios de Google
+      {
+        protocol: 'https',
+        hostname: '*.googleusercontent.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
 }
 
-module.exports = nextConfig
+module.exports = nextConfig;
