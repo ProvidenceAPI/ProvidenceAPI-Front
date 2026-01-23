@@ -476,6 +476,7 @@ export default function NavigationTab() {
         {activeTab === "turns" && <TurnsTab />}
         {activeTab === "activities" && <ActivityTab />}
         {activeTab === "users" && <UsersTab />}
+        {activeTab === "reservations" && <ReservationsTab />}
         {activeTab === "AdminCreationForm" && <AdminCreationFormTab />}
       </main>
       {/* MODAL DE REPORTES */}

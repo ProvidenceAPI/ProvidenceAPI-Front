@@ -1,10 +1,24 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useCalendar } from "src/contexts/CalendarContext";
-import { reservationService } from "src/app/lib";
-import type { User } from "src/app/lib";
-import { Activity } from "src/interfaces/Activity";
+import { useState, useEffect, useCallback } from 'react';
+import { apiClient } from 'src/app/lib/apiClient';
+import type { User } from 'src/app/lib';
+import { Activity } from 'src/interfaces/Activity';
+import Swal from 'sweetalert2';
+
+interface Turn {
+  id: string;
+  activityId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  availableSpots: number;
+  status: string;
+  activity?: {
+    id: string;
+    name: string;
+  };
+}
 
 interface ManualReservationFormProps {
   users: User[];
@@ -19,20 +33,17 @@ export default function ManualReservationForm({
   onClose,
   defaultDate,
 }: ManualReservationFormProps) {
-  const { createManualReservation } = useCalendar();
   const [loading, setLoading] = useState(false);
-  const [availability, setAvailability] = useState<{
-    available: boolean;
-    availableSlots: number;
-    maxParticipants: number;
-  } | null>(null);
+  const [loadingTurns, setLoadingTurns] = useState(false);
+  const [availableTurns, setAvailableTurns] = useState<Turn[]>([]);
+  const [selectedTurnId, setSelectedTurnId] = useState<string>('');
+  const [filterDate, setFilterDate] = useState<string>(
+    defaultDate ? defaultDate.toISOString().split('T')[0] : ''
+  );
 
   const [formData, setFormData] = useState({
-    userId: "",
-    activityId: "",
-    date: defaultDate ? defaultDate.toISOString().split("T")[0] : "",
-    startTime: "08:00",
-    endTime: "09:00",
+    userId: '',
+    activityId: '',
   });
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -44,62 +55,101 @@ export default function ManualReservationForm({
       )
     : users;
 
-  const selectedActivity = activities.find((a) => a.id === formData.activityId);
-  const checkAvailability = useCallback(async () => {
-    if (
-      !formData.activityId ||
-      !formData.date ||
-      !formData.startTime ||
-      !formData.endTime
-    ) {
+  const selectedActivity = activities.find(a => a.id === formData.activityId);
+  const selectedTurn = availableTurns.find(t => t.id === selectedTurnId);
+
+  // Cargar turnos disponibles cuando se selecciona una actividad
+  const loadAvailableTurns = useCallback(async () => {
+    if (!formData.activityId) {
+      setAvailableTurns([]);
+      setSelectedTurnId('');
       return;
     }
 
+    setLoadingTurns(true);
     try {
-      const availability = await reservationService.checkAvailability({
-        activityId: formData.activityId,
-        date: formData.date,
-        startTime: formData.startTime,
-        endTime: formData.endTime,
+      const params: any = { activityId: formData.activityId };
+      
+      // Si hay una fecha seleccionada, filtrar por esa fecha
+      if (filterDate) {
+        params.startDate = filterDate;
+        params.endDate = filterDate;
+      } else {
+        // Cargar turnos de los próximos 30 días
+        const startDate = new Date();
+        const endDate = new Date();
+        endDate.setDate(endDate.getDate() + 30);
+        params.startDate = startDate.toISOString().split('T')[0];
+        params.endDate = endDate.toISOString().split('T')[0];
+      }
+
+      const { data } = await apiClient.get("/api/turns", { params });
+      const turnsList = Array.isArray(data)
+        ? data
+        : data?.data || data?.turns || [];
+      
+      // Filtrar solo turnos disponibles (no cancelados, no completados, con cupos)
+      const available = turnsList.filter(
+        (turn: Turn) =>
+          turn.status !== "cancelled" &&
+          turn.status !== "completed" &&
+          turn.availableSpots > 0
+      );
+      
+      // Ordenar por fecha y hora
+      available.sort((a: Turn, b: Turn) => {
+        const dateA = new Date(`${a.date}T${a.startTime}`);
+        const dateB = new Date(`${b.date}T${b.startTime}`);
+        return dateA.getTime() - dateB.getTime();
       });
-      setAvailability(availability);
-    } catch (error) {
-      setAvailability(null);
-      alert("No se pudo verificar la disponibilidad");
+      
+      setAvailableTurns(available);
+      setSelectedTurnId(''); // Resetear selección al cambiar actividad
+    } catch (error: any) {
+      console.error('Error loading turns:', error);
+      setAvailableTurns([]);
+    } finally {
+      setLoadingTurns(false);
     }
-  }, [
-    formData.activityId,
-    formData.date,
-    formData.startTime,
-    formData.endTime,
-  ]);
+  }, [formData.activityId, filterDate]);
 
   useEffect(() => {
-    const timeoutId = setTimeout(checkAvailability, 500);
-    return () => clearTimeout(timeoutId);
-  }, [
-    formData.activityId,
-    formData.date,
-    formData.startTime,
-    formData.endTime,
-    checkAvailability,
-  ]);
+    loadAvailableTurns();
+  }, [loadAvailableTurns]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!selectedTurnId) {
+      await Swal.fire({
+        icon: "warning",
+        title: "Selecciona un turno",
+        text: "Debes seleccionar un turno disponible para crear la reserva",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      await createManualReservation(formData);
-      alert(
-        "Reserva creada exitosamente. Se envió un email de confirmación al usuario.",
-      );
+      // Usar el endpoint de admin para crear la reserva
+      await apiClient.post("/api/reservations/admin", {
+        turnId: selectedTurnId,
+        userId: formData.userId,
+      });
+
+      await Swal.fire({
+        icon: "success",
+        title: "¡Éxito!",
+        text: "Reserva creada exitosamente. Se envió un email de confirmación al usuario.",
+      });
       onClose();
     } catch (error: any) {
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Error al crear la reserva";
-      alert(errorMessage);
+      console.error("Error creating reservation:", error);
+      await Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error.response?.data?.message || error.message || "Error al crear la reserva",
+      });
     } finally {
       setLoading(false);
     }
@@ -157,9 +207,10 @@ export default function ManualReservationForm({
               </label>
               <select
                 value={formData.activityId}
-                onChange={(e) =>
-                  setFormData({ ...formData, activityId: e.target.value })
-                }
+                onChange={(e) => {
+                  setFormData({ ...formData, activityId: e.target.value });
+                  setSelectedTurnId('');
+                }}
                 className="w-full px-3 py-2 border rounded-lg"
                 required
               >
@@ -171,72 +222,103 @@ export default function ManualReservationForm({
                 ))}
               </select>
             </div>
-            <div className="grid grid-cols-3 gap-4">
-              {/* Fecha */}
+
+            {/* Filtro de fecha (opcional) */}
+            {formData.activityId && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Fecha *
+                  Filtrar por fecha (opcional)
                 </label>
                 <input
                   type="date"
-                  value={formData.date}
-                  onChange={(e) =>
-                    setFormData({ ...formData, date: e.target.value })
-                  }
+                  value={filterDate}
+                  onChange={(e) => {
+                    setFilterDate(e.target.value);
+                    setSelectedTurnId('');
+                  }}
                   className="w-full px-3 py-2 border rounded-lg"
-                  required
+                  min={new Date().toISOString().split('T')[0]}
                 />
+                {filterDate && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFilterDate('');
+                      setSelectedTurnId('');
+                    }}
+                    className="mt-2 text-sm text-red-600 hover:text-red-700"
+                  >
+                    Limpiar filtro de fecha
+                  </button>
+                )}
               </div>
-              {/* Hora inicio */}
+            )}
+
+            {/* Lista de turnos disponibles */}
+            {formData.activityId && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Hora Inicio *
+                  Seleccionar turno disponible *
                 </label>
-                <input
-                  type="time"
-                  value={formData.startTime}
-                  onChange={(e) =>
-                    setFormData({ ...formData, startTime: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border rounded-lg"
-                  required
-                />
+                {loadingTurns ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="text-sm text-gray-500 mt-2">Cargando horarios disponibles...</p>
+                  </div>
+                ) : availableTurns.length === 0 ? (
+                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-800">
+                      {filterDate
+                        ? `No hay turnos disponibles para esta actividad en la fecha seleccionada.`
+                        : `No hay turnos disponibles para esta actividad en los próximos 30 días.`}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="border rounded-lg max-h-64 overflow-y-auto">
+                    <select
+                      value={selectedTurnId}
+                      onChange={(e) => setSelectedTurnId(e.target.value)}
+                      className="w-full px-3 py-2 border-0 rounded-lg"
+                      required
+                      size={Math.min(availableTurns.length, 8)}
+                    >
+                      <option value="">Seleccionar un turno...</option>
+                      {availableTurns.map((turn) => {
+                        const turnDate = new Date(turn.date).toLocaleDateString("es-ES", {
+                          weekday: "short",
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        });
+                        return (
+                          <option key={turn.id} value={turn.id}>
+                            {turnDate} - {turn.startTime} a {turn.endTime} ({turn.availableSpots} cupos disponibles)
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                )}
               </div>
-              {/* Hora fin */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Hora Fin *
-                </label>
-                <input
-                  type="time"
-                  value={formData.endTime}
-                  onChange={(e) =>
-                    setFormData({ ...formData, endTime: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border rounded-lg"
-                  required
-                />
-              </div>
-            </div>
-            {/* Validación de cupos */}
-            {availability && (
-              <div
-                className={`p-4 rounded-lg ${
-                  availability.available
-                    ? "bg-green-50 border border-green-200"
-                    : "bg-red-50 border border-red-200"
-                }`}
-              >
+            )}
+
+            {/* Información del turno seleccionado */}
+            {selectedTurn && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-medium">
-                      {availability.available
-                        ? "✅ Cupos disponibles"
-                        : "❌ No hay cupos"}
+                    <div className="font-medium text-green-800">
+                      ✅ Turno seleccionado
                     </div>
-                    <div className="text-sm text-gray-600 mt-1">
-                      {availability.availableSlots} de{" "}
-                      {availability.maxParticipants} cupos disponibles
+                    <div className="text-sm text-green-700 mt-1">
+                      <p><strong>Fecha:</strong> {new Date(selectedTurn.date).toLocaleDateString("es-ES", {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}</p>
+                      <p><strong>Horario:</strong> {selectedTurn.startTime} - {selectedTurn.endTime}</p>
+                      <p><strong>Cupos disponibles:</strong> {selectedTurn.availableSpots}</p>
                     </div>
                   </div>
                 </div>
@@ -246,7 +328,7 @@ export default function ManualReservationForm({
             <div className="flex gap-3 pt-4">
               <button
                 type="submit"
-                disabled={loading || (availability && !availability.available)}
+                disabled={loading || !selectedTurnId || !formData.userId}
                 className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
               >
                 {loading ? "Creando..." : "Crear Reserva"}
