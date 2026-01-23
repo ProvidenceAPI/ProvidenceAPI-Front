@@ -9,6 +9,7 @@ import ActivityTab from "./ActivityTab";
 import TurnsTab from "./TurnsTab";
 import AdminCreationFormTab from "./AdminCreationFormTab";
 import UsersTab from "./UsersTab";
+import ReservationsTab from "./ReservationsTab";
 
 export default function NavigationTab() {
   const { user, isAuthenticated, isAdmin, isSuperAdmin, loading, logout } =
@@ -24,6 +25,12 @@ export default function NavigationTab() {
   >("overview");
   const [users, setUsers] = useState([]);
   const [loadingData, setLoadingData] = useState(false);
+  const [dashboardStats, setDashboardStats] = useState({
+    totalUsers: 0,
+    activeUsers: 0,
+    monthlyRevenue: 0,
+  });
+  const [loadingStats, setLoadingStats] = useState(false);
 
   useEffect(() => {
     console.log(`
@@ -64,6 +71,49 @@ export default function NavigationTab() {
       loadUsers();
     }
   }, [activeTab, isAdmin, isSuperAdmin]);
+
+  useEffect(() => {
+    if (activeTab === "overview" && (isAdmin || isSuperAdmin)) {
+      loadDashboardStats();
+    }
+  }, [activeTab, isAdmin, isSuperAdmin]);
+
+  const loadDashboardStats = async () => {
+    setLoadingStats(true);
+    try {
+      const token = localStorage.getItem("providence_token");
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+      // Cargar estadísticas de usuarios
+      const usersResponse = await fetch(`${apiUrl}/api/users/stats`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const usersStats = await usersResponse.json();
+
+      // Cargar ingresos mensuales
+      const revenueResponse = await fetch(
+        `${apiUrl}/api/payments/stats/monthly-revenue`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+      const revenueStats = await revenueResponse.json();
+
+      setDashboardStats({
+        totalUsers: usersStats.total || 0,
+        activeUsers: usersStats.active || 0,
+        monthlyRevenue: revenueStats.total || 0,
+      });
+    } catch (error) {
+      console.error("Error loading dashboard stats:", error);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
 
   const loadUsers = async () => {
     setLoadingData(true);
@@ -223,7 +273,11 @@ export default function NavigationTab() {
                         Total Usuarios
                       </dt>
                       <dd className="text-3xl font-semibold text-gray-900">
-                        152
+                        {loadingStats ? (
+                          <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                        ) : (
+                          dashboardStats.totalUsers
+                        )}
                       </dd>
                     </dl>
                   </div>
@@ -253,7 +307,11 @@ export default function NavigationTab() {
                         Usuarios Activos
                       </dt>
                       <dd className="text-3xl font-semibold text-gray-900">
-                        143
+                        {loadingStats ? (
+                          <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                        ) : (
+                          dashboardStats.activeUsers
+                        )}
                       </dd>
                     </dl>
                   </div>
@@ -283,7 +341,11 @@ export default function NavigationTab() {
                         Ingresos del Mes
                       </dt>
                       <dd className="text-3xl font-semibold text-gray-900">
-                        $12,450
+                        {loadingStats ? (
+                          <div className="animate-pulse bg-gray-200 h-8 w-24 rounded"></div>
+                        ) : (
+                          `$${dashboardStats.monthlyRevenue.toLocaleString('es-AR')}`
+                        )}
                       </dd>
                     </dl>
                   </div>
@@ -384,6 +446,7 @@ export default function NavigationTab() {
         {activeTab === "turns" && <TurnsTab />}
         {activeTab === "activities" && <ActivityTab />}
         {activeTab === "users" && <UsersTab />}
+        {activeTab === "reservations" && <ReservationsTab />}
         {activeTab === "AdminCreationForm" && <AdminCreationFormTab />}
       </main>
     </div>
