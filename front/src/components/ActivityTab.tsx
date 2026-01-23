@@ -386,7 +386,7 @@ export default function ActivityTab() {
           {(isAdmin || isSuperAdmin) && (
             <button
               onClick={openCreateModal}
-              className="px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-lg font-medium hover:from-red-700 hover:to-orange-700 transition"
+              className="px-12 py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-lg font-medium hover:from-red-700 hover:to-orange-700 transition"
             >
               ➕ Nueva Actividad
             </button>
@@ -394,7 +394,7 @@ export default function ActivityTab() {
         </div>
       </div>
       {/* Lista de actividades */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-8 max-w-8xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-6 max-w-full mx-auto">
         {loading ? (
           <div className="col-span-full text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
@@ -410,7 +410,7 @@ export default function ActivityTab() {
           activities.map((activity) => (
             <div
               key={activity.id}
-              className="bg-white rounded-xl shadow overflow-hidden hover:shadow-lg transition"
+              className="bg-white rounded-xl shadow overflow-hidden hover:shadow-lg transition flex flex-col h-full"
             >
               {(activity.image || activity.imageUrl) &&
               !(activity.image || activity.imageUrl).includes("ejemplo") ? (
@@ -433,7 +433,7 @@ export default function ActivityTab() {
                   <span className="text-white text-6xl">🏋️</span>
                 </div>
               )}
-              <div className="p-6">
+              <div className="p-6 flex flex-col flex-1">
                 <div className="flex justify-between items-start mb-3">
                   <h3 className="text-xl font-bold text-gray-900">
                     {activity.name}
@@ -476,7 +476,7 @@ export default function ActivityTab() {
                   </div>
                 </div>
                 {(isAdmin || isSuperAdmin) && (
-                  <div className="pt-4 border-t flex gap-2">
+                  <div className="pt-4 border-t flex gap-2 mt-auto">
                     <button
                       onClick={() => openEditModal(activity)}
                       className="flex-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition text-sm font-medium"
