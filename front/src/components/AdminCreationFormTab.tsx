@@ -1,4 +1,3 @@
-// app/adminCreationForm/page.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -169,7 +168,6 @@ export default function AdminCreationFormTab() {
         confirmButtonColor: "#DC2626",
       });
 
-      // Limpiar formulario
       setFormData({
         name: "",
         lastname: "",
@@ -246,7 +244,6 @@ export default function AdminCreationFormTab() {
             <span>Solo SuperAdmins pueden crear usuarios</span>
           </div>
         </div>
-
         {/* Formulario */}
         <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -271,7 +268,6 @@ export default function AdminCreationFormTab() {
                   <p className="text-red-600 text-sm mt-1">{errors.name}</p>
                 )}
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Apellido *
@@ -292,7 +288,6 @@ export default function AdminCreationFormTab() {
                 )}
               </div>
             </div>
-
             {/* Email */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -313,7 +308,6 @@ export default function AdminCreationFormTab() {
                 <p className="text-red-600 text-sm mt-1">{errors.email}</p>
               )}
             </div>
-
             {/* Contraseñas */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -335,7 +329,6 @@ export default function AdminCreationFormTab() {
                   <p className="text-red-600 text-sm mt-1">{errors.password}</p>
                 )}
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Confirmar contraseña *
@@ -360,7 +353,6 @@ export default function AdminCreationFormTab() {
                 )}
               </div>
             </div>
-
             {/* Fecha de nacimiento */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -385,7 +377,6 @@ export default function AdminCreationFormTab() {
                 Debe ser mayor de 18 años
               </p>
             </div>
-
             {/* Teléfono y DNI */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -407,7 +398,6 @@ export default function AdminCreationFormTab() {
                   <p className="text-red-600 text-sm mt-1">{errors.phone}</p>
                 )}
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   DNI *
@@ -428,7 +418,6 @@ export default function AdminCreationFormTab() {
                 )}
               </div>
             </div>
-
             {/* Género y Rol */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -449,7 +438,6 @@ export default function AdminCreationFormTab() {
                 </select>
               </div>
             </div>
-
             {/* Info de privacidad */}
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <h4 className="font-bold text-blue-800 mb-2">
@@ -461,7 +449,6 @@ export default function AdminCreationFormTab() {
                 <li>Se recomienda cambiar la contraseña en el primer login</li>
               </ol>
             </div>
-
             {/* Botones */}
             <div className="pt-6 flex flex-col gap-4">
               <button
@@ -478,7 +465,6 @@ export default function AdminCreationFormTab() {
                   "Crear Usuario"
                 )}
               </button>
-
               <button
                 type="button"
                 onClick={() => router.push("/admin/dashboard")}

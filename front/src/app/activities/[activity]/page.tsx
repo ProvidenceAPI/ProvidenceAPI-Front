@@ -36,6 +36,8 @@ export default function ActivityPage() {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [loadingTurns, setLoadingTurns] = useState(false);
   const [userHasFreeReservation, setUserHasFreeReservation] = useState(true);
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
+  const [checkingSubscription, setCheckingSubscription] = useState(false);
 
   const loadActivity = useCallback(async () => {
     try {
@@ -109,6 +111,35 @@ export default function ActivityPage() {
     }
   }, [user?.id]);
 
+  const checkActiveSubscription = useCallback(async () => {
+    if (!user?.id || !activity?.id) return;
+
+    setCheckingSubscription(true);
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/subscriptions/user/${user.id}/activity/${activity.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("providence_token")}`,
+          },
+        },
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setHasActiveSubscription(
+          data?.status === "Active" || data?.status === "active",
+        );
+      } else {
+        setHasActiveSubscription(false);
+      }
+    } catch (error) {
+      console.error("Error checking subscription:", error);
+      setHasActiveSubscription(false);
+    } finally {
+      setCheckingSubscription(false);
+    }
+  }, [user?.id, activity?.id]);
+
   useEffect(() => {
     loadActivity();
   }, [loadActivity]);
@@ -117,6 +148,7 @@ export default function ActivityPage() {
     if (isAuthenticated && user && activity) {
       loadAvailableTurns();
       checkUserFreeReservation();
+      checkActiveSubscription();
     }
   }, [
     isAuthenticated,
@@ -124,6 +156,7 @@ export default function ActivityPage() {
     activity,
     loadAvailableTurns,
     checkUserFreeReservation,
+    checkActiveSubscription,
   ]);
 
   const handleReserve = async (turnId: string) => {
@@ -292,6 +325,7 @@ export default function ActivityPage() {
                     userId={user?.id}
                     onReserve={handleReserve}
                     userHasFreeReservation={userHasFreeReservation}
+                    hasActiveSubscription={hasActiveSubscription}
                   />
                 </div>
               )}
@@ -327,7 +361,13 @@ export default function ActivityPage() {
                   </div>
                 )}
                 <button
-                  onClick={() => router.push("/register")}
+                  onClick={() => {
+                    if (isAuthenticated) {
+                      router.push("/mis-pagos");
+                    } else {
+                      router.push("/register");
+                    }
+                  }}
                   className="w-full bg-[#DC2626] hover:bg-[#B01C1C] text-white py-3 rounded-md font-bold uppercase tracking-wider transition-colors duration-200 mt-6"
                 >
                   Inscribirse Ahora

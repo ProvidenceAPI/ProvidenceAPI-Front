@@ -1,13 +1,9 @@
-
-import RegisterForm from 'src/components/RegisterForm';
+import RegisterForm from "src/components/RegisterForm";
 
 export default function RegisterPage() {
-return (
-<div> 
-
-  <RegisterForm/>
-
-</div>
-
-);
+  return (
+    <div>
+      <RegisterForm />
+    </div>
+  );
 }

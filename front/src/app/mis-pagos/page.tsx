@@ -3,9 +3,7 @@
 import { useAppContext } from "src/contexts/AppContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-
 import Swal from "sweetalert2";
-
 import { paymentService, isValidUUID, activityService } from "src/app/lib";
 import { Payment } from "src/interfaces/Payments";
 import { Activity } from "src/interfaces/Activity";
@@ -13,7 +11,6 @@ import { Activity } from "src/interfaces/Activity";
 export default function MisPagosPage() {
   const { isAuthenticated, loading } = useAppContext();
   const router = useRouter();
-
   const [pagos, setPagos] = useState<Payment[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<string>("");
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -109,14 +106,12 @@ export default function MisPagosPage() {
       setError("Por favor selecciona una actividad");
       return;
     }
-
     if (!isValidUUID(selectedActivity)) {
       setError(
         "La reserva seleccionada no tiene un ID válido. Por favor contacta al administrador.",
       );
       return;
     }
-
     try {
       setIsProcessing(true);
       setError("");
@@ -124,7 +119,6 @@ export default function MisPagosPage() {
 
       const initPoint =
         await paymentService.createPaymentPreference(selectedActivity);
-
       if (initPoint) {
         Swal.fire({
           icon: "info",
@@ -211,7 +205,6 @@ export default function MisPagosPage() {
             <h1 className="text-3xl font-bold text-gray-900">💳 Mis Pagos</h1>
             <p className="text-gray-600 mt-2">Historial y gestión de pagos</p>
           </div>
-
           <button
             onClick={() => setShowPaymentCard(!showPaymentCard)}
             className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-md flex items-center gap-2"
@@ -223,7 +216,6 @@ export default function MisPagosPage() {
             )}
           </button>
         </div>
-
         {/* MENSAJES */}
         {successMessage && (
           <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 animate-pulse">
@@ -236,7 +228,6 @@ export default function MisPagosPage() {
             </div>
           </div>
         )}
-
         {warningMessage && (
           <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <div className="flex items-start">
@@ -248,7 +239,6 @@ export default function MisPagosPage() {
             </div>
           </div>
         )}
-
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-start">
@@ -260,7 +250,6 @@ export default function MisPagosPage() {
             </div>
           </div>
         )}
-
         {/* CARD DE PAGO DESPLEGABLE */}
         {showPaymentCard && (
           <div className="mb-8 bg-white rounded-lg shadow-lg p-6 border-2 border-blue-500 animate-fadeIn">
@@ -291,7 +280,6 @@ export default function MisPagosPage() {
                   ))}
                 </select>
               </div>
-
               {selectedActivity && actividadSeleccionada && (
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
                   <h3 className="font-bold text-gray-900 mb-2 text-lg">
@@ -315,7 +303,6 @@ export default function MisPagosPage() {
                   </div>
                 </div>
               )}
-
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={iniciarPagoMercadoPago}
@@ -337,7 +324,6 @@ export default function MisPagosPage() {
             </div>
           </div>
         )}
-
         {/* HISTORIAL DE PAGOS */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="px-6 py-4 border-b bg-gray-50">
@@ -345,7 +331,6 @@ export default function MisPagosPage() {
               <h2 className="text-xl font-bold text-gray-900">
                 📋 Historial de Pagos
               </h2>
-
               {/* FILTROS */}
               <div className="flex gap-2 flex-wrap">
                 <button
@@ -391,7 +376,6 @@ export default function MisPagosPage() {
               </div>
             </div>
           </div>
-
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">

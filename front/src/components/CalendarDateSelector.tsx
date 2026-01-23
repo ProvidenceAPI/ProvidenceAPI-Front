@@ -20,12 +20,10 @@ export default function CalendarDatePicker({
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
     const startingDayOfWeek = firstDay.getDay();
-
     return { daysInMonth, startingDayOfWeek };
   };
 
   const { daysInMonth, startingDayOfWeek } = getDaysInMonth(currentMonth);
-
   const isDateAvailable = (day: number) => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
@@ -37,9 +35,8 @@ export default function CalendarDatePicker({
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-
     if (isDateAvailable(day)) {
-      onDateSelect(dateStr); // 👈 Usar la prop
+      onDateSelect(dateStr);
     }
   };
 
@@ -71,7 +68,6 @@ export default function CalendarDatePicker({
   ];
 
   const dayNames = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
-
   const days = [];
   for (let i = 0; i < startingDayOfWeek; i++) {
     days.push(null);
@@ -102,11 +98,9 @@ export default function CalendarDatePicker({
             />
           </svg>
         </button>
-
         <div className="text-xs font-semibold text-gray-900">
           {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
         </div>
-
         <button
           onClick={goToNextMonth}
           className="p-1 hover:bg-gray-100 rounded transition"
@@ -126,7 +120,6 @@ export default function CalendarDatePicker({
           </svg>
         </button>
       </div>
-
       {/* Nombres de días */}
       <div className="grid grid-cols-7 gap-0.5 mb-1">
         {dayNames.map((day) => (
@@ -138,20 +131,17 @@ export default function CalendarDatePicker({
           </div>
         ))}
       </div>
-
       {/* Grid de días - MÁS ESTRECHO */}
       <div className="grid grid-cols-7 gap-0.5">
         {days.map((day, index) => {
           if (day === null) {
             return <div key={`empty-${index}`} className="w-7 h-7" />;
           }
-
           const isAvailable = isDateAvailable(day);
           const year = currentMonth.getFullYear();
           const month = currentMonth.getMonth();
           const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
           const isSelected = selectedDate === dateStr;
-
           return (
             <button
               key={day}
@@ -173,7 +163,6 @@ export default function CalendarDatePicker({
           );
         })}
       </div>
-
       {/* Leyenda compacta */}
       <div className="mt-2 flex flex-col gap-1 text-[9px]">
         <div className="flex items-center gap-1">
@@ -185,7 +174,6 @@ export default function CalendarDatePicker({
           <span className="text-gray-600">Seleccionado</span>
         </div>
       </div>
-
       {/* Fecha seleccionada */}
       {selectedDate && (
         <div className="mt-2 p-1.5 bg-blue-50 border border-blue-200 rounded">

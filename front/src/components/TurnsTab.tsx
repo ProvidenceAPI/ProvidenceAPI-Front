@@ -730,19 +730,25 @@ export default function TurnsTab() {
             <div className="bg-white rounded-lg shadow p-4">
               <div className="text-sm text-gray-600">Disponibles</div>
               <div className="text-2xl font-bold text-green-600">
-                {turns.filter((t) => t.status === "available").length}
+                {
+                  turns.filter((t) => t.status?.toLowerCase() === "available")
+                    .length
+                }
               </div>
             </div>
             <div className="bg-white rounded-lg shadow p-4">
               <div className="text-sm text-gray-600">Llenos</div>
               <div className="text-2xl font-bold text-yellow-600">
-                {turns.filter((t) => t.status === "full").length}
+                {turns.filter((t) => t.status?.toLowerCase() === "full").length}
               </div>
             </div>
             <div className="bg-white rounded-lg shadow p-4">
               <div className="text-sm text-gray-600">Cancelados</div>
               <div className="text-2xl font-bold text-red-600">
-                {turns.filter((t) => t.status === "cancelled").length}
+                {
+                  turns.filter((t) => t.status?.toLowerCase() === "cancelled")
+                    .length
+                }
               </div>
             </div>
           </div>
