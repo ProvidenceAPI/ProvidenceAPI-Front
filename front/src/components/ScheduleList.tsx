@@ -3,7 +3,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
-
 import { Turn } from "src/interfaces/Turn";
 import { ScheduleListProps } from "src/interfaces/ScheduleListProps";
 
@@ -17,12 +16,6 @@ export default function ScheduleList({
   const router = useRouter();
   const [reservingTurnId, setReservingTurnId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>("");
-
-  useEffect(() => {
-    console.log("📅 Turnos recibidos en ScheduleList:", turns);
-    console.log("📅 Total de turnos:", turns.length);
-  }, [turns]);
-
   const handleReserve = async (turnId: string) => {
     if (!isAuthenticated) {
       Swal.fire({
@@ -33,24 +26,20 @@ export default function ScheduleList({
       });
       return;
     }
-
     try {
       setReservingTurnId(turnId);
-
       await onReserve(turnId);
-
       Swal.fire({
         icon: "success",
         title: "¡Reserva exitosa!",
         text: "¡Reserva creada exitosamente! Puedes verla en tus reservas.",
         confirmButtonColor: "#DC2626",
-        confirmButtonText: "Aceptar"
+        confirmButtonText: "Aceptar",
       });
     } catch (error: any) {
-      console.error("Error al reservar:", error);
-
       const status = error?.response?.status;
-      const backendMsg = error?.response?.data?.message || error?.response?.data?.error || "";
+      const backendMsg =
+        error?.response?.data?.message || error?.response?.data?.error || "";
       const raw = (backendMsg || error?.message || "").toLowerCase();
       const esReservaGratisUsada =
         status === 403 &&
@@ -62,7 +51,9 @@ export default function ScheduleList({
 
       const texto = esReservaGratisUsada
         ? "Ya usaste tu reserva gratuita. Para reservar más turnos debes suscribirte o pagar la actividad."
-        : backendMsg || error?.message || "No se pudo realizar la reserva. Intenta nuevamente.";
+        : backendMsg ||
+          error?.message ||
+          "No se pudo realizar la reserva. Intenta nuevamente.";
 
       const result = await Swal.fire({
         icon: "warning",
@@ -74,8 +65,11 @@ export default function ScheduleList({
         cancelButtonText: "Ir a Mis Pagos",
         cancelButtonColor: "#6b7280",
       });
-
-      if (esReservaGratisUsada && result.isDismissed && result.dismiss === "cancel") {
+      if (
+        esReservaGratisUsada &&
+        result.isDismissed &&
+        result.dismiss === "cancel"
+      ) {
         router.push("/mis-pagos");
       }
     } finally {
@@ -85,26 +79,39 @@ export default function ScheduleList({
 
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) {
-      console.warn("formatDate recibió un valor undefined o vacío");
       return "Fecha no disponible";
     }
-
     try {
-      const [year, month, day] = dateString.split('-').map(Number);
-      
+      const [year, month, day] = dateString.split("-").map(Number);
       if (isNaN(year) || isNaN(month) || isNaN(day)) {
-        console.warn("Fecha inválida:", dateString);
         return "Fecha inválida";
       }
-      
       const date = new Date(year, month - 1, day);
-      
-      const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
-      const months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-      
+      const days = [
+        "Domingo",
+        "Lunes",
+        "Martes",
+        "Miércoles",
+        "Jueves",
+        "Viernes",
+        "Sábado",
+      ];
+      const months = [
+        "Enero",
+        "Febrero",
+        "Marzo",
+        "Abril",
+        "Mayo",
+        "Junio",
+        "Julio",
+        "Agosto",
+        "Septiembre",
+        "Octubre",
+        "Noviembre",
+        "Diciembre",
+      ];
       return `${days[date.getDay()]} ${date.getDate()} de ${months[date.getMonth()]}`;
     } catch (error) {
-      console.error("Error formateando fecha:", error, "dateString:", dateString);
       return "Fecha inválida";
     }
   };
@@ -114,37 +121,30 @@ export default function ScheduleList({
       typeof turn.availableSpots === "number"
         ? turn.availableSpots
         : parseInt(String(turn.availableSpots || "0"), 10);
-
     const status = (turn.status || "").toLowerCase();
     return status === "available" && spots > 0;
   };
 
   const availableDates = useMemo(() => {
-    // Usar 'date' en lugar de 'activityDate'
-    const turnsWithDates = turns.filter(turn => turn.date);
-    console.log("📅 Turnos con fecha válida:", turnsWithDates.length);
-    
-    const uniqueDates = Array.from(new Set(turnsWithDates.map((turn) => turn.date)));
-    console.log("📅 Fechas únicas encontradas:", uniqueDates);
-    
+    const turnsWithDates = turns.filter((turn) => turn.date);
+    const uniqueDates = Array.from(
+      new Set(turnsWithDates.map((turn) => turn.date)),
+    );
     return uniqueDates.sort();
   }, [turns]);
 
   useEffect(() => {
     if (availableDates.length > 0 && !selectedDate) {
-      console.log("📅 Seleccionando fecha inicial:", availableDates[0]);
       setSelectedDate(availableDates[0]);
     }
   }, [availableDates, selectedDate]);
 
   const filteredTurns = useMemo(() => {
     if (!selectedDate) {
-      console.log("⚠️ No hay fecha seleccionada");
       return [];
     }
 
     const filtered = turns.filter((turn) => turn.date === selectedDate);
-    console.log(`📅 Turnos filtrados para ${selectedDate}:`, filtered.length);
     return filtered;
   }, [turns, selectedDate]);
 
@@ -157,7 +157,7 @@ export default function ScheduleList({
         <p className="text-sm text-gray-700 mb-4">
           Debes iniciar sesión para ver y reservar horarios disponibles.
         </p>
-        <a 
+        <a
           href="/login"
           className="inline-flex items-center justify-center w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2.5 px-4 rounded-md transition-colors duration-200"
         >
@@ -176,16 +176,15 @@ export default function ScheduleList({
         <p className="text-gray-600">
           Selecciona el día y horario que prefieras
         </p>
-
         {!userHasFreeReservation && (
           <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
             <p className="text-sm text-green-800">
-              🎉 <strong>¡Tu primera reserva es gratis!</strong> Las siguientes requerirán pago mensual.
+              🎉 <strong>¡Tu primera reserva es gratis!</strong> Las siguientes
+              requerirán pago mensual.
             </p>
           </div>
         )}
       </div>
-
       {availableDates.length > 0 ? (
         <>
           <div className="bg-white border border-gray-200 rounded-lg p-6">
@@ -204,7 +203,6 @@ export default function ScheduleList({
               ))}
             </select>
           </div>
-
           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
             {filteredTurns.length > 0 ? (
               <div className="divide-y divide-gray-100">
@@ -214,17 +212,22 @@ export default function ScheduleList({
                     typeof turn.availableSpots === "number"
                       ? turn.availableSpots
                       : parseInt(String(turn.availableSpots || "0"), 10);
-
                   return (
-                    <div key={turn.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                    <div
+                      key={turn.id}
+                      className="px-6 py-4 hover:bg-gray-50 transition-colors"
+                    >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-lg font-semibold text-gray-900">{turn.startTime}</p>
-                          <p className={`text-sm mt-1 ${isAvailable ? "text-gray-600" : "text-red-600 font-medium"}`}>
+                          <p className="text-lg font-semibold text-gray-900">
+                            {turn.startTime}
+                          </p>
+                          <p
+                            className={`text-sm mt-1 ${isAvailable ? "text-gray-600" : "text-red-600 font-medium"}`}
+                          >
                             {spots} de {turn.capacity} cupos disponibles
                           </p>
                         </div>
-
                         {isAvailable ? (
                           !userHasFreeReservation ? (
                             <button
@@ -243,7 +246,9 @@ export default function ScheduleList({
                                   : "bg-[#DC2626] hover:bg-[#B01C1C] text-white"
                               }`}
                             >
-                              {reservingTurnId === turn.id ? "Reservando..." : "Reservar"}
+                              {reservingTurnId === turn.id
+                                ? "Reservando..."
+                                : "Reservar"}
                             </button>
                           )
                         ) : (
@@ -258,7 +263,9 @@ export default function ScheduleList({
               </div>
             ) : (
               <div className="px-6 py-8 text-center">
-                <p className="text-sm text-gray-500">No hay turnos disponibles para este día.</p>
+                <p className="text-sm text-gray-500">
+                  No hay turnos disponibles para este día.
+                </p>
               </div>
             )}
           </div>

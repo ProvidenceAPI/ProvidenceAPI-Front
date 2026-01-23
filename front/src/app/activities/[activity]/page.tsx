@@ -12,7 +12,6 @@ import { ReservationRequest } from "src/interfaces/ReservationRequest";
 import { Activity } from "src/interfaces/Activity";
 import { reservationService, activityService } from "src/app/lib";
 
-// 🔥 FIX: Agregar todos los slugs posibles
 const ACTIVITY_SLUG_MAP: Record<string, string> = {
   crossfit: "CrossFit",
   hiit: "HIIT",
@@ -32,7 +31,6 @@ export default function ActivityPage() {
   const router = useRouter();
   const { user, isAuthenticated } = useAppContext();
   const activitySlug = params.activity as string;
-
   const [activity, setActivity] = useState<Activity | null>(null);
   const [loading, setLoading] = useState(true);
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -42,22 +40,12 @@ export default function ActivityPage() {
   const loadActivity = useCallback(async () => {
     try {
       setLoading(true);
-
       const activities = await activityService.getAllActivities();
-      console.log("📋 Actividades del backend:", activities);
-      console.log(
-        "📋 Primera actividad completa:",
-        JSON.stringify(activities[0], null, 2),
-      );
-
-      // 🔥 Búsqueda más flexible
       const searchName = ACTIVITY_SLUG_MAP[activitySlug.toLowerCase()];
-
       const foundActivity = activities.find((act: Activity) => {
         const activityName = act.name.toLowerCase().trim();
         const slugName = activitySlug.toLowerCase().trim();
         const mappedName = searchName?.toLowerCase().trim();
-
         return (
           activityName === slugName ||
           activityName === mappedName ||
@@ -67,26 +55,17 @@ export default function ActivityPage() {
       });
 
       if (foundActivity) {
-        console.log("✅ Actividad encontrada:", foundActivity);
         setActivity(foundActivity);
       } else {
-        console.error("❌ Actividad no encontrada para slug:", activitySlug);
-        console.log(
-          "🔍 Actividades disponibles:",
-          activities.map((a: Activity) => a.name),
-        );
-
         await Swal.fire({
           title: "Actividad no encontrada",
           text: `No se pudo encontrar la actividad "${activitySlug}"`,
           icon: "error",
           confirmButtonText: "Volver",
         });
-
         router.push("/home");
       }
     } catch (error) {
-      console.error("❌ Error loading activity:", error);
       await Swal.fire({
         title: "Error",
         text: "Error al cargar la actividad",
@@ -104,14 +83,11 @@ export default function ActivityPage() {
 
     setLoadingTurns(true);
     try {
-      console.log("🔄 Cargando turnos para actividad:", activity.id);
       const availableTurns = await reservationService.getAvailableTurns(
         activity.id,
       );
-      console.log("✅ Turnos cargados:", availableTurns);
       setTurns(availableTurns);
     } catch (error) {
-      console.error("❌ Error loading turns:", error);
       await Swal.fire({
         title: "Error",
         text: "Error al cargar los horarios disponibles",
@@ -125,12 +101,11 @@ export default function ActivityPage() {
 
   const checkUserFreeReservation = useCallback(async () => {
     if (!user?.id) return;
-
     try {
       const hasFree = await reservationService.checkFreeReservation();
       setUserHasFreeReservation(hasFree);
     } catch (error) {
-      console.error("❌ Error checking free reservation:", error);
+      setUserHasFreeReservation(false);
     }
   }, [user?.id]);
 
@@ -155,14 +130,11 @@ export default function ActivityPage() {
     if (!user?.id || !activity) {
       throw new Error("Debes iniciar sesión para reservar");
     }
-
     const reservationData: ReservationRequest = { turnId };
     await reservationService.createReservation(reservationData);
-
     await loadAvailableTurns();
     await checkUserFreeReservation();
   };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -173,14 +145,11 @@ export default function ActivityPage() {
       </div>
     );
   }
-
   if (!activity) {
     return null;
   }
-
   return (
     <main className="min-h-screen bg-white">
-      {/* Hero Section - 🔥 FIX: Usar imageUrl en lugar de image */}
       <div className="relative h-64 md:h-80 bg-gray-900">
         {(activity.image || activity.imageUrl) &&
         !(activity.image || activity.imageUrl).includes("ejemplo") ? (
@@ -192,7 +161,6 @@ export default function ActivityPage() {
             priority
             unoptimized
             onError={(e) => {
-              console.error("❌ Error cargando imagen hero:", activity.image);
               const target = e.currentTarget as HTMLImageElement;
               target.style.display = "none";
             }}
@@ -212,258 +180,254 @@ export default function ActivityPage() {
       </div>
 
       <section className="py-12">
-  <div className="container mx-auto px-4 max-w-6xl">
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      {/* Información de la actividad */}
-      <div className="lg:col-span-2">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-4">Descripción</h2>
-          <p className="text-gray-700 leading-relaxed">
-            {activity.description}
-          </p>
-        </div>
-
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-4">
-            Información de la Clase
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-start">
-              <svg
-                className="w-5 h-5 text-[#DC2626] mt-0.5 mr-2 flex-shrink-0"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span className="text-gray-700">
-                Duración: {activity.duration} minutos
-              </span>
-            </div>
-            <div className="flex items-start">
-              <svg
-                className="w-5 h-5 text-[#DC2626] mt-0.5 mr-2 flex-shrink-0"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span className="text-gray-700">
-                Capacidad: {activity.capacity} personas
-              </span>
-            </div>
-            <div className="flex items-start">
-              <svg
-                className="w-5 h-5 text-[#DC2626] mt-0.5 mr-2 flex-shrink-0"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span className="text-gray-700">
-                Cancelación: {activity.cancellationTime || 24}h antes
-              </span>
-            </div>
-            {activity.hasFreeTrial && (
-              <div className="flex items-start">
-                <svg
-                  className="w-5 h-5 text-[#DC2626] mt-0.5 mr-2 flex-shrink-0"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span className="text-gray-700 font-semibold">
-                  ¡Primera clase gratuita!
-                </span>
+        <div className="container mx-auto px-4 max-w-6xl">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Información de la actividad */}
+            <div className="lg:col-span-2">
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-4">Descripción</h2>
+                <p className="text-gray-700 leading-relaxed">
+                  {activity.description}
+                </p>
               </div>
-            )}
-          </div>
-        </div>
 
-        {/* Bloque de Iniciar Sesión (cuando NO está autenticado) */}
-        {!isAuthenticated && (
-          <div className="mt-8">
-            <div className="bg-[#FEFCE8] border-l-4 border-yellow-400 p-6 rounded-md">
-              <h3 className="text-base font-bold text-gray-900 mb-2">
-                Inicia sesión para reservar
-              </h3>
-              <p className="text-sm text-gray-700 mb-4">
-                Debes iniciar sesión para ver y reservar horarios disponibles.
-              </p>
-              <Link
-                href="/login"
-                className="inline-flex items-center justify-center w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2.5 px-4 rounded-md transition-colors duration-200"
-              >
-                Iniciar Sesión
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {/* Horarios Disponibles - Solo se muestra si está autenticado */}
-        {isAuthenticated && (
-          <div className="mt-8">
-            <ScheduleList
-              activity={activity}
-              turns={turns}
-              isAuthenticated={isAuthenticated}
-              userId={user?.id}
-              onReserve={handleReserve}
-              userHasFreeReservation={userHasFreeReservation}
-            />
-          </div>
-        )}
-      </div>
-
-      <div className="lg:col-span-1">
-        {/* Precio de la actividad */}
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-6">
-          <h3 className="text-xl font-bold mb-4">Precios</h3>
-          {activity.hasFreeTrial ? (
-            <div className="text-center">
-               {activity.price && (
-                <div className="mt-4">
-                  <div className="text-2xl font-bold text-gray-900">
-                    ${typeof activity.price === 'number' 
-                      ? activity.price.toLocaleString('es-AR') 
-                      : Number(activity.price || 0).toLocaleString('es-AR')}
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-4">
+                  Información de la Clase
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-start">
+                    <svg
+                      className="w-5 h-5 text-[#DC2626] mt-0.5 mr-2 flex-shrink-0"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span className="text-gray-700">
+                      Duración: {activity.duration} minutos
+                    </span>
                   </div>
-                  <div className="text-sm text-gray-600">mensual</div>
+                  <div className="flex items-start">
+                    <svg
+                      className="w-5 h-5 text-[#DC2626] mt-0.5 mr-2 flex-shrink-0"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span className="text-gray-700">
+                      Capacidad: {activity.capacity} personas
+                    </span>
+                  </div>
+                  <div className="flex items-start">
+                    <svg
+                      className="w-5 h-5 text-[#DC2626] mt-0.5 mr-2 flex-shrink-0"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span className="text-gray-700">
+                      Cancelación: {activity.cancellationTime || 24}h antes
+                    </span>
+                  </div>
+                  {activity.hasFreeTrial && (
+                    <div className="flex items-start">
+                      <svg
+                        className="w-5 h-5 text-[#DC2626] mt-0.5 mr-2 flex-shrink-0"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span className="text-gray-700 font-semibold">
+                        ¡Primera clase gratuita!
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {!isAuthenticated && (
+                <div className="mt-8">
+                  <div className="bg-[#FEFCE8] border-l-4 border-yellow-400 p-6 rounded-md">
+                    <h3 className="text-base font-bold text-gray-900 mb-2">
+                      Inicia sesión para reservar
+                    </h3>
+                    <p className="text-sm text-gray-700 mb-4">
+                      Debes iniciar sesión para ver y reservar horarios
+                      disponibles.
+                    </p>
+                    <Link
+                      href="/login"
+                      className="inline-flex items-center justify-center w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2.5 px-4 rounded-md transition-colors duration-200"
+                    >
+                      Iniciar Sesión
+                    </Link>
+                  </div>
+                </div>
+              )}
+              {isAuthenticated && (
+                <div className="mt-8">
+                  <ScheduleList
+                    activity={activity}
+                    turns={turns}
+                    isAuthenticated={isAuthenticated}
+                    userId={user?.id}
+                    onReserve={handleReserve}
+                    userHasFreeReservation={userHasFreeReservation}
+                  />
                 </div>
               )}
             </div>
-          ) : (
-            <div className="text-center">
-              <div className="text-3xl font-bold text-gray-900">
-                ${typeof activity.price === 'number' 
-                  ? activity.price.toLocaleString('es-AR') 
-                  : Number(activity.price || 0).toLocaleString('es-AR')}
-              </div>
-              <div className="text-sm text-gray-600">mensual</div>
-            </div>
-          )}
-          {/* Botón de inscripción */}
-          <button 
-            onClick={() => router.push('/register')}
-            className="w-full bg-[#DC2626] hover:bg-[#B01C1C] text-white py-3 rounded-md font-bold uppercase tracking-wider transition-colors duration-200 mt-6"
-          >
-            Inscribirse Ahora
-          </button>
-        </div>
-        
-        {/* Card de Horarios */}
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex items-center gap-2 mb-4">
-
-            <h3 className="text-xl font-bold text-gray-900">📅 Horarios</h3>
-          </div>
-          {activity.schedule && activity.schedule.length > 0 ? (
-            <div className="space-y-4">
-              {(() => {
-             
-                const scheduleByDay: Record<string, string[]> = {};
-                activity.schedule.forEach((item) => {
-                  
-                  const trimmed = item.trim();
-                  const spaceIndex = trimmed.indexOf(' ');
-                  if (spaceIndex > 0) {
-                    const day = trimmed.substring(0, spaceIndex);
-                    const time = trimmed.substring(spaceIndex + 1).trim();
-                    
-                    const timeOnly = time.split('-')[0].trim();
-                    if (!scheduleByDay[day]) {
-                      scheduleByDay[day] = [];
-                    }
-                    if (!scheduleByDay[day].includes(timeOnly)) {
-                      scheduleByDay[day].push(timeOnly);
-                    }
-                  }
-                });
-
-               
-                const dayOrder: Record<string, number> = {
-                  'Lunes': 1,
-                  'Martes': 2,
-                  'Miércoles': 3,
-                  'Miercoles': 3,
-                  'Jueves': 4,
-                  'Viernes': 5,
-                  'Sábado': 6,
-                  'Sabado': 6,
-                  'Domingo': 7,
-                };
-
-                const sortedDays = Object.entries(scheduleByDay).sort(([a], [b]) => {
-                  return (dayOrder[a] || 99) - (dayOrder[b] || 99);
-                });
-
-                return sortedDays.map(([day, times]) => (
-                  <div key={day} className="border-b border-gray-100 pb-3 last:border-0">
-                    <div className="font-medium text-gray-900 mb-2">{day}</div>
-                    <div className="flex flex-wrap gap-2">
-                      {times.sort().map((time, idx) => (
-                        <span
-                          key={idx}
-                          className="px-3 py-1 bg-gray-100 text-gray-700 rounded-md text-sm"
-                        >
-                          {time}
-                        </span>
-                      ))}
-                    </div>
+            <div className="lg:col-span-1">
+              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-6">
+                <h3 className="text-xl font-bold mb-4">Precios</h3>
+                {activity.hasFreeTrial ? (
+                  <div className="text-center">
+                    {activity.price && (
+                      <div className="mt-4">
+                        <div className="text-2xl font-bold text-gray-900">
+                          $
+                          {typeof activity.price === "number"
+                            ? activity.price.toLocaleString("es-AR")
+                            : Number(activity.price || 0).toLocaleString(
+                                "es-AR",
+                              )}
+                        </div>
+                        <div className="text-sm text-gray-600">mensual</div>
+                      </div>
+                    )}
                   </div>
-                ));
-              })()}
+                ) : (
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-gray-900">
+                      $
+                      {typeof activity.price === "number"
+                        ? activity.price.toLocaleString("es-AR")
+                        : Number(activity.price || 0).toLocaleString("es-AR")}
+                    </div>
+                    <div className="text-sm text-gray-600">mensual</div>
+                  </div>
+                )}
+                <button
+                  onClick={() => router.push("/register")}
+                  className="w-full bg-[#DC2626] hover:bg-[#B01C1C] text-white py-3 rounded-md font-bold uppercase tracking-wider transition-colors duration-200 mt-6"
+                >
+                  Inscribirse Ahora
+                </button>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <h3 className="text-xl font-bold text-gray-900">
+                    📅 Horarios
+                  </h3>
+                </div>
+                {activity.schedule && activity.schedule.length > 0 ? (
+                  <div className="space-y-4">
+                    {(() => {
+                      const scheduleByDay: Record<string, string[]> = {};
+                      activity.schedule.forEach((item) => {
+                        const trimmed = item.trim();
+                        const spaceIndex = trimmed.indexOf(" ");
+                        if (spaceIndex > 0) {
+                          const day = trimmed.substring(0, spaceIndex);
+                          const time = trimmed.substring(spaceIndex + 1).trim();
+
+                          const timeOnly = time.split("-")[0].trim();
+                          if (!scheduleByDay[day]) {
+                            scheduleByDay[day] = [];
+                          }
+                          if (!scheduleByDay[day].includes(timeOnly)) {
+                            scheduleByDay[day].push(timeOnly);
+                          }
+                        }
+                      });
+                      const dayOrder: Record<string, number> = {
+                        Lunes: 1,
+                        Martes: 2,
+                        Miércoles: 3,
+                        Miercoles: 3,
+                        Jueves: 4,
+                        Viernes: 5,
+                        Sábado: 6,
+                        Sabado: 6,
+                        Domingo: 7,
+                      };
+                      const sortedDays = Object.entries(scheduleByDay).sort(
+                        ([a], [b]) => {
+                          return (dayOrder[a] || 99) - (dayOrder[b] || 99);
+                        },
+                      );
+                      return sortedDays.map(([day, times]) => (
+                        <div
+                          key={day}
+                          className="border-b border-gray-100 pb-3 last:border-0"
+                        >
+                          <div className="font-medium text-gray-900 mb-2">
+                            {day}
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {times.sort().map((time, idx) => (
+                              <span
+                                key={idx}
+                                className="px-3 py-1 bg-gray-100 text-gray-700 rounded-md text-sm"
+                              >
+                                {time}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">
+                    No hay horarios configurados
+                  </p>
+                )}
+              </div>
+              <div className="mt-6">
+                <Link
+                  href="/home"
+                  className="inline-flex items-center text-gray-600 hover:text-[#DC2626] transition-colors"
+                >
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                    />
+                  </svg>
+                  Volver a actividades
+                </Link>
+              </div>
             </div>
-          ) : (
-            <p className="text-sm text-gray-500">No hay horarios configurados</p>
-          )}
+          </div>
         </div>
-
-        {/* Botón Volver */}
-        <div className="mt-6">
-          <Link
-            href="/home"
-            className="inline-flex items-center text-gray-600 hover:text-[#DC2626] transition-colors"
-          >
-            <svg
-              className="w-4 h-4 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-              />
-            </svg>
-            Volver a actividades
-          </Link>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</section>
-
+      </section>
     </main>
   );
 }

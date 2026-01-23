@@ -117,12 +117,6 @@ const HomePage: React.FC = () => {
                           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                           unoptimized
                           onError={(e) => {
-                            console.error(
-                              "❌ Error cargando imagen:",
-                              imageSource,
-                              "para actividad:",
-                              activity.name,
-                            );
                             const target = e.currentTarget as HTMLImageElement;
                             target.style.display = "none";
                           }}

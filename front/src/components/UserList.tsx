@@ -1,18 +1,11 @@
 "use client";
 
 import { useState } from "react";
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  registrationDate: string;
-  status: "active" | "inactive" | "suspended";
-}
+import { IUser } from "src/interfaces/IUser";
+import Swal from "sweetalert2";
 
 interface UserListProps {
-  users: User[];
+  users: IUser[];
 }
 
 export default function UserList({ users }: UserListProps) {
@@ -37,8 +30,10 @@ export default function UserList({ users }: UserListProps) {
     setCurrentPage(page);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("es-ES");
+  const formatDate = (dateString: string | Date) => {
+    const date =
+      typeof dateString === "string" ? new Date(dateString) : dateString;
+    return date.toLocaleDateString("es-ES");
   };
 
   return (
@@ -99,21 +94,21 @@ export default function UserList({ users }: UserListProps) {
                   {user.phone || "No registrado"}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {formatDate(user.registrationDate)}
+                  {formatDate(user.createdAt)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
                     className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      user.status === "active"
+                      user.status === "Active"
                         ? "bg-green-100 text-green-800"
-                        : user.status === "suspended"
+                        : user.status === "Cancelled"
                           ? "bg-yellow-100 text-yellow-800"
                           : "bg-red-100 text-red-800"
                     }`}
                   >
-                    {user.status === "active"
+                    {user.status === "Active"
                       ? "Activo"
-                      : user.status === "suspended"
+                      : user.status === "Cancelled"
                         ? "Suspendido"
                         : "Inactivo"}
                   </span>
@@ -121,13 +116,32 @@ export default function UserList({ users }: UserListProps) {
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button
                     className="text-blue-600 hover:text-blue-900 mr-3"
-                    onClick={() => console.log("Ver detalle usuario:", user.id)}
+                    onClick={() => {
+                      Swal.fire({
+                        title: `Usuario: ${user.name}`,
+                        html: `
+          <div class="text-left">
+            <p><strong>Email:</strong> ${user.email}</p>
+            <p><strong>Rol:</strong> ${user.rol}</p>
+            <p><strong>Estado:</strong> ${user.status}</p>
+          </div>
+        `,
+                        confirmButtonColor: "#3b82f6",
+                      });
+                    }}
                   >
                     Ver
                   </button>
                   <button
                     className="text-gray-600 hover:text-gray-900"
-                    onClick={() => console.log("Editar usuario:", user.id)}
+                    onClick={() => {
+                      Swal.fire({
+                        icon: "info",
+                        title: "Función en desarrollo",
+                        text: "La edición de usuarios estará disponible próximamente",
+                        confirmButtonColor: "#6b7280",
+                      });
+                    }}
                   >
                     Editar
                   </button>
@@ -137,7 +151,6 @@ export default function UserList({ users }: UserListProps) {
           </tbody>
         </table>
       </div>
-
       {totalPages > 1 && (
         <div className="px-6 py-4 border-t">
           <div className="flex items-center justify-between">
@@ -158,7 +171,6 @@ export default function UserList({ users }: UserListProps) {
               >
                 ← Anterior
               </button>
-
               {Array.from({ length: totalPages }, (_, i) => i + 1)
                 .filter((page) => {
                   return (
@@ -176,7 +188,6 @@ export default function UserList({ users }: UserListProps) {
                       </span>
                     );
                   }
-
                   return (
                     <button
                       key={page}
@@ -191,7 +202,6 @@ export default function UserList({ users }: UserListProps) {
                     </button>
                   );
                 })}
-
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
@@ -207,7 +217,6 @@ export default function UserList({ users }: UserListProps) {
           </div>
         </div>
       )}
-
       {filteredUsers.length === 0 && (
         <div className="text-center py-12">
           <p className="text-gray-500">

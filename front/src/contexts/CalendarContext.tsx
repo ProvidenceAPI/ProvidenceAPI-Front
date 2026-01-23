@@ -106,7 +106,6 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   const [viewMode, setViewMode] = useState<"day" | "week" | "month">("month");
   const fetchActivities = useCallback(async () => {
     try {
-      console.log("📡 Fetching activities...");
       const { data } = await apiClient.get("/api/activities/active");
 
       const colors = [
@@ -128,10 +127,8 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         ...activity,
         color: colors[index % colors.length],
       }));
-
       setActivities(withColors);
     } catch (err: any) {
-      console.error("❌ Error fetching activities:", err);
       setError(err.message);
       setActivities([]);
     }
@@ -167,10 +164,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           ? data
           : data?.data || data?.turns || [];
         setTurns(list);
-        console.log("✅ Turns loaded:", list.length);
       } catch (err: any) {
-        console.error("❌ Error fetching turns:", err);
-        console.error("❌ Error response:", err.response?.data);
         setError(err.message);
         setTurns([]);
       }
@@ -180,7 +174,6 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
 
   const fetchReservations = useCallback(async () => {
     if (!isAuthenticated || !token) {
-      console.log("⚠️ Not authenticated, skipping reservations fetch");
       return;
     }
 
@@ -191,7 +184,6 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         : data?.data || data?.reservations || [];
       setReservations(list);
     } catch (err: any) {
-      console.error("❌ Error fetching reservations:", err);
       setError(err.message);
       setReservations([]);
     }
@@ -204,7 +196,6 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       await fetchReservations();
       return data;
     } catch (err: any) {
-      console.error("❌ Error creating reservation:", err);
       setError(err.message);
       throw err;
     }
@@ -276,7 +267,6 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       });
       await fetchReservations();
     } catch (err: any) {
-      console.error("❌ Error canceling reservation:", err);
       setError(err.message);
       throw err;
     }
@@ -299,7 +289,6 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         isAuthenticated ? fetchReservations() : Promise.resolve(),
       ]);
     } catch (err: any) {
-      console.error("❌ Error refetching:", err);
       setError(err.message);
     } finally {
       setLoading(false);

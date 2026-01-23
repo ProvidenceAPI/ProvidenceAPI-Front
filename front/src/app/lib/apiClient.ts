@@ -16,14 +16,11 @@ apiClient.interceptors.response.use(
       const status = error.response.status;
       const url = error.config?.url;
       const data = error.response.data;
-
-      // Solo loggear el error, sin mensajes adicionales para login/signup
-      const isAuthEndpoint = url?.includes("/auth/signin") || url?.includes("/auth/signup");
-      
+      const isAuthEndpoint =
+        url?.includes("/auth/signin") || url?.includes("/auth/signup");
       if (!isAuthEndpoint) {
         console.error(`❌ Error ${status} en ${url}:`, data);
       }
-
       if (status === 401) {
         if (typeof window !== "undefined") {
           const currentPath = window.location.pathname;
@@ -33,17 +30,11 @@ apiClient.interceptors.response.use(
             "/auth/callback",
             "/forgot-password",
           ].includes(currentPath);
-          
-          // Si es un intento de login/signup, marcar el error como manejado
           if (isAuthEndpoint) {
-            // Marcar el error como manejado para evitar que Next.js lo muestre en la consola
             (error as any).isHandled = true;
             (error as any).isAuthError = true;
-            // No limpiar token ni mostrar mensaje - es un error de credenciales, no de token
             return Promise.reject(error);
           }
-          
-          // Si NO es una página de auth ni un intento de login, entonces es un token inválido
           if (!isAuthPage) {
             console.error("🔒 No autorizado - Token inválido o expirado");
             localStorage.removeItem("providence_token");
@@ -54,10 +45,6 @@ apiClient.interceptors.response.use(
           }
         }
       }
-    } else if (error.request) {
-      console.error("❌ No se recibió respuesta del servidor:", error.request);
-    } else {
-      console.error("❌ Error configurando request:", error.message);
     }
     return Promise.reject(error);
   },
@@ -77,7 +64,6 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error("❌ Error en request interceptor:", error);
     return Promise.reject(error);
   },
 );

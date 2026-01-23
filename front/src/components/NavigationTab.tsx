@@ -9,7 +9,7 @@ import ActivityTab from "./ActivityTab";
 import TurnsTab from "./TurnsTab";
 import AdminCreationFormTab from "./AdminCreationFormTab";
 import UsersTab from "./UsersTab";
-import ReservationsTab from "./ReservationsTab";
+import Swal from "sweetalert2";
 
 export default function NavigationTab() {
   const { user, isAuthenticated, isAdmin, isSuperAdmin, loading, logout } =
@@ -25,46 +25,85 @@ export default function NavigationTab() {
   >("overview");
   const [users, setUsers] = useState([]);
   const [loadingData, setLoadingData] = useState(false);
-  const [dashboardStats, setDashboardStats] = useState({
-    totalUsers: 0,
-    activeUsers: 0,
-    monthlyRevenue: 0,
+  const [showReportsModal, setShowReportsModal] = useState(false);
+  const [reportData, setReportData] = useState<any>(null);
+  const [loadingReports, setLoadingReports] = useState(false);
+  const [stats, setStats] = useState({
+    users: { total: 0, active: 0 },
+    revenue: { total: 0, count: 0 },
+    peakHour: { hour: "Cargando...", reservations: 0 },
+    cancellationRates: {
+      reservations: 0,
+      subscriptions: 0,
+    },
+    attendance: [],
   });
-  const [loadingStats, setLoadingStats] = useState(false);
 
   useEffect(() => {
-    console.log(`
-╔═══════════════════════════════════════════════════════
-║ 🔍 DEBUG ADMIN DASHBOARD
-╠═══════════════════════════════════════════════════════
-║ 🔐 isAuthenticated: ${isAuthenticated}
-║ 👤 user: ${user ? JSON.stringify(user, null, 2) : "null"}
-║ 🎭 user.role: ${user?.rol}
-║ 👔 isAdmin: ${isAdmin}
-║ 👑 isSuperAdmin: ${isSuperAdmin}
-║ 🔄 loading: ${loading}
-╠═══════════════════════════════════════════════════════
-║ 📦 LOCALSTORAGE:
-║ - providence_user: ${localStorage.getItem("providence_user")?.substring(0, 50)}...
-║ - providence_token: ${localStorage.getItem("providence_token")?.substring(0, 30)}...
-╚═══════════════════════════════════════════════════════
-    `);
+    const fetchDashboardStats = async () => {
+      if (activeTab !== "overview") return;
+      try {
+        const token = localStorage.getItem("providence_token");
+        const headers = { Authorization: `Bearer ${token}` };
+        const [
+          userStats,
+          revenue,
+          peakHours,
+          resCancellation,
+          subCancellation,
+          attendance,
+        ] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/stats`, {
+            headers,
+          }).then((r) => r.json()),
+          fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/payments/stats/monthly-revenue`,
+            { headers },
+          ).then((r) => r.json()),
+          fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/reservations/stats/peak-hours`,
+            { headers },
+          ).then((r) => r.json()),
+          fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/reservations/stats/cancellation-rate`,
+            { headers },
+          ).then((r) => r.json()),
+          fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/subscriptions/admin/cancellation-rate`,
+            { headers },
+          ).then((r) => r.json()),
+          fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/reservations/stats/attendance`,
+            { headers },
+          ).then((r) => r.json()),
+        ]);
+        setStats({
+          users: userStats,
+          revenue: revenue,
+          peakHour: peakHours[0] || { hour: "N/A", reservations: 0 },
+          cancellationRates: {
+            reservations: resCancellation.cancellationRate,
+            subscriptions: subCancellation.cancellationRate,
+          },
+          attendance: attendance,
+        });
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      }
+    };
+    fetchDashboardStats();
+  }, [activeTab]);
 
-    // Si no está autenticado y ya terminó de cargar, redirigir
+  useEffect(() => {
     if (!loading && !isAuthenticated) {
-      console.log("❌ No autenticado, redirigiendo a login");
       router.push("/login?admin=true");
       return;
     }
-
-    // Si está autenticado pero no es admin
     if (!loading && isAuthenticated && !isAdmin) {
-      console.log("❌ No es admin, redirigiendo a dashboard");
       router.push("/dashboard");
       return;
     }
-    console.log("✅ Usuario admin verificado, mostrando dashboard");
-  }, [isAuthenticated, isAdmin, isSuperAdmin, loading, user, router]);
+  }, [isAuthenticated, isAdmin, loading, router]);
 
   useEffect(() => {
     if (activeTab === "users" && (isAdmin || isSuperAdmin)) {
@@ -72,46 +111,50 @@ export default function NavigationTab() {
     }
   }, [activeTab, isAdmin, isSuperAdmin]);
 
-  useEffect(() => {
-    if (activeTab === "overview" && (isAdmin || isSuperAdmin)) {
-      loadDashboardStats();
-    }
-  }, [activeTab, isAdmin, isSuperAdmin]);
-
-  const loadDashboardStats = async () => {
-    setLoadingStats(true);
+  const handleOpenReports = async () => {
+    setLoadingReports(true);
     try {
       const token = localStorage.getItem("providence_token");
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-
-      // Cargar estadísticas de usuarios
-      const usersResponse = await fetch(`${apiUrl}/api/users/stats`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const headers = { Authorization: `Bearer ${token}` };
+      const [
+        subscriptionStats,
+        reservationCancellation,
+        subscriptionMetrics,
+        attendanceStats,
+      ] = await Promise.all([
+        fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/subscriptions/admin/stats`,
+          { headers },
+        ).then((r) => r.json()),
+        fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/reservations/stats/cancellation-rate`,
+          { headers },
+        ).then((r) => r.json()),
+        fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/subscriptions/admin/metrics`,
+          { headers },
+        ).then((r) => r.json()),
+        fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/reservations/stats/attendance`,
+          { headers },
+        ).then((r) => r.json()),
+      ]);
+      setReportData({
+        subscriptionStats,
+        reservationCancellation,
+        subscriptionMetrics,
+        attendanceStats,
       });
-      const usersStats = await usersResponse.json();
-
-      // Cargar ingresos mensuales
-      const revenueResponse = await fetch(
-        `${apiUrl}/api/payments/stats/monthly-revenue`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-      const revenueStats = await revenueResponse.json();
-
-      setDashboardStats({
-        totalUsers: usersStats.total || 0,
-        activeUsers: usersStats.active || 0,
-        monthlyRevenue: revenueStats.total || 0,
+      setShowReportsModal(true);
+    } catch (error: any) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "No se pudieron cargar las estadísticas",
+        confirmButtonColor: "#ef4444",
       });
-    } catch (error) {
-      console.error("Error loading dashboard stats:", error);
     } finally {
-      setLoadingStats(false);
+      setLoadingReports(false);
     }
   };
 
@@ -129,13 +172,17 @@ export default function NavigationTab() {
       const data = await response.json();
       setUsers(Array.isArray(data) ? data : data.users || []);
     } catch (error) {
-      console.error("Error loading users:", error);
+      setUsers([]);
+      Swal.fire({
+        icon: "error",
+        title: "Error al cargar usuarios",
+        text: "No se pudieron cargar los usuarios. Por favor intenta nuevamente.",
+        confirmButtonColor: "#ef4444",
+      });
     } finally {
       setLoadingData(false);
     }
   };
-
-  // Mientras carga
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -146,8 +193,6 @@ export default function NavigationTab() {
       </div>
     );
   }
-
-  // Si no está autenticado
   if (!isAuthenticated || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -157,8 +202,6 @@ export default function NavigationTab() {
       </div>
     );
   }
-
-  // Si no es admin
   if (!isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -171,7 +214,6 @@ export default function NavigationTab() {
     );
   }
 
-  // DASHBOARD ADMIN
   return (
     <div className="min-h-screen bg-gray-100">
       {/* ⬅️ AGREGAR PESTAÑAS AQUÍ */}
@@ -244,7 +286,6 @@ export default function NavigationTab() {
         </div>
       </div>
       {/* Main Content */}
-
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === "overview" && (
           <>
@@ -273,17 +314,12 @@ export default function NavigationTab() {
                         Total Usuarios
                       </dt>
                       <dd className="text-3xl font-semibold text-gray-900">
-                        {loadingStats ? (
-                          <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
-                        ) : (
-                          dashboardStats.totalUsers
-                        )}
+                        {stats.users.total}
                       </dd>
                     </dl>
                   </div>
                 </div>
               </div>
-
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center">
                   <div className="flex-shrink-0 bg-green-500 rounded-md p-3">
@@ -307,17 +343,12 @@ export default function NavigationTab() {
                         Usuarios Activos
                       </dt>
                       <dd className="text-3xl font-semibold text-gray-900">
-                        {loadingStats ? (
-                          <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
-                        ) : (
-                          dashboardStats.activeUsers
-                        )}
+                        {stats.users.active}
                       </dd>
                     </dl>
                   </div>
                 </div>
               </div>
-
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center">
                   <div className="flex-shrink-0 bg-red-500 rounded-md p-3">
@@ -341,21 +372,19 @@ export default function NavigationTab() {
                         Ingresos del Mes
                       </dt>
                       <dd className="text-3xl font-semibold text-gray-900">
-                        {loadingStats ? (
-                          <div className="animate-pulse bg-gray-200 h-8 w-24 rounded"></div>
-                        ) : (
-                          `$${dashboardStats.monthlyRevenue.toLocaleString('es-AR')}`
-                        )}
+                        ${stats.revenue.total.toLocaleString("es-AR")}
                       </dd>
                     </dl>
                   </div>
                 </div>
               </div>
             </div>
-
             {/* Quick Actions */}
             <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-              <button className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition text-left">
+              <button
+                onClick={() => setActiveTab("users")}
+                className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition text-left"
+              >
                 <div className="flex items-center">
                   <div className="flex-shrink-0 bg-purple-500 rounded-md p-3">
                     <svg
@@ -382,8 +411,11 @@ export default function NavigationTab() {
                   </div>
                 </div>
               </button>
-
-              <button className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition text-left">
+              <button
+                onClick={handleOpenReports}
+                disabled={loadingReports}
+                className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition text-left"
+              >
                 <div className="flex items-center">
                   <div className="flex-shrink-0 bg-indigo-500 rounded-md p-3">
                     <svg
@@ -402,41 +434,39 @@ export default function NavigationTab() {
                   </div>
                   <div className="ml-4">
                     <h3 className="text-lg font-medium text-gray-900">
-                      Reportes
+                      {loadingReports ? "Cargando..." : "Reportes"}
                     </h3>
                     <p className="text-sm text-gray-500">Ver estadísticas</p>
                   </div>
                 </div>
               </button>
-
               <button className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition text-left">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 bg-yellow-500 rounded-md p-3">
-                    <svg
-                      className="h-6 w-6 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    </svg>
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-lg font-medium text-gray-900">
-                      Configuración
-                    </h3>
-                    <p className="text-sm text-gray-500">Ajustes del sistema</p>
+                <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 bg-yellow-500 rounded-md p-3">
+                      <svg
+                        className="h-6 w-6 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    </div>
+                    <div className="ml-4">
+                      <h3 className="text-lg font-medium text-gray-900">
+                        ⏰ Horario Pico
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        {stats.peakHour.hour} - {stats.peakHour.reservations}{" "}
+                        reservas
+                      </p>
+                    </div>
                   </div>
                 </div>
               </button>
@@ -449,6 +479,226 @@ export default function NavigationTab() {
         {activeTab === "reservations" && <ReservationsTab />}
         {activeTab === "AdminCreationForm" && <AdminCreationFormTab />}
       </main>
+      {/* MODAL DE REPORTES */}
+      {showReportsModal && reportData && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header del Modal */}
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-900">
+                📊 Reportes y Estadísticas
+              </h2>
+              <button
+                onClick={() => setShowReportsModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Contenido del Modal */}
+            <div className="p-6 space-y-6">
+              {/* Sección 1: Estadísticas de Suscripciones */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-4">
+                  💳 Estadísticas de Suscripciones
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-white rounded-lg p-4 shadow">
+                    <p className="text-sm text-gray-600">Total</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {reportData.subscriptionStats.total}
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-lg p-4 shadow">
+                    <p className="text-sm text-gray-600">Activas</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {reportData.subscriptionStats.active}
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-lg p-4 shadow">
+                    <p className="text-sm text-gray-600">Expiradas</p>
+                    <p className="text-2xl font-bold text-yellow-600">
+                      {reportData.subscriptionStats.expired}
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-lg p-4 shadow">
+                    <p className="text-sm text-gray-600">Canceladas</p>
+                    <p className="text-2xl font-bold text-red-600">
+                      {reportData.subscriptionStats.cancelled}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sección 2: Tasas de Cancelación */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Tasa de Cancelación de Reservas */}
+                <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">
+                    📅 Reservas - Tasa de Cancelación
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Total Reservas:</span>
+                      <span className="font-bold text-gray-900">
+                        {reportData.reservationCancellation.total}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Canceladas:</span>
+                      <span className="font-bold text-red-600">
+                        {reportData.reservationCancellation.cancelled}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Completadas:</span>
+                      <span className="font-bold text-green-600">
+                        {reportData.reservationCancellation.completed}
+                      </span>
+                    </div>
+                    <div className="pt-3 border-t">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-semibold">
+                          Tasa de Cancelación:
+                        </span>
+                        <span className="text-2xl font-bold text-red-600">
+                          {reportData.reservationCancellation.cancellationRate}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold">
+                          Tasa de Completitud:
+                        </span>
+                        <span className="text-2xl font-bold text-green-600">
+                          {reportData.reservationCancellation.completionRate}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Métricas de Suscripciones */}
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">
+                    💳 Métricas de Suscripciones
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Total:</span>
+                      <span className="font-bold text-gray-900">
+                        {reportData.subscriptionMetrics.total}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Activas:</span>
+                      <span className="font-bold text-green-600">
+                        {reportData.subscriptionMetrics.active}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">
+                        ⚠️ Por vencer (7 días):
+                      </span>
+                      <span className="font-bold text-yellow-600">
+                        {reportData.subscriptionMetrics.expiringSoon}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">
+                        Expiradas (último mes):
+                      </span>
+                      <span className="font-bold text-red-600">
+                        {reportData.subscriptionMetrics.expiredRecently}
+                      </span>
+                    </div>
+                    <div className="pt-3 border-t">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-semibold">
+                          Tasa de Retención:
+                        </span>
+                        <span className="text-2xl font-bold text-green-600">
+                          {reportData.subscriptionMetrics.retentionRate}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold">
+                          Tasa de Expiración:
+                        </span>
+                        <span className="text-2xl font-bold text-orange-600">
+                          {reportData.subscriptionMetrics.expirationRate}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Sección 3: Promedio de Asistencia por Actividad */}
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-4">
+                  🎯 Promedio de Asistencia por Actividad
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-white">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                          Actividad
+                        </th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">
+                          Total Reservas
+                        </th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">
+                          Completadas
+                        </th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">
+                          Canceladas
+                        </th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">
+                          Tasa de Asistencia
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {reportData.attendanceStats.map(
+                        (activity: any, index: number) => (
+                          <tr key={index} className="hover:bg-white/50">
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                              {activity.activityName}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-center text-gray-600">
+                              {activity.totalReservations}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-center text-green-600 font-semibold">
+                              {activity.completed}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-center text-red-600 font-semibold">
+                              {activity.cancelled}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span
+                                className={`px-3 py-1 rounded-full text-sm font-bold ${
+                                  activity.attendanceRate >= 80
+                                    ? "bg-green-100 text-green-800"
+                                    : activity.attendanceRate >= 60
+                                      ? "bg-yellow-100 text-yellow-800"
+                                      : "bg-red-100 text-red-800"
+                                }`}
+                              >
+                                {activity.attendanceRate}%
+                              </span>
+                            </td>
+                          </tr>
+                        ),
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

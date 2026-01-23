@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from 'src/app/lib/apiClient';
@@ -45,13 +45,13 @@ export default function ManualReservationForm({
     userId: '',
     activityId: '',
   });
-
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
 
   const filteredUsers = searchTerm
-    ? users.filter(user =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    ? users.filter(
+        (user) =>
+          user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.email.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     : users;
 
@@ -130,7 +130,6 @@ export default function ManualReservationForm({
     }
 
     setLoading(true);
-
     try {
       // Usar el endpoint de admin para crear la reserva
       await apiClient.post("/api/reservations/admin", {
@@ -161,7 +160,9 @@ export default function ManualReservationForm({
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-2xl font-bold text-gray-900">Crear Reserva Manual</h3>
+            <h3 className="text-2xl font-bold text-gray-900">
+              Crear Reserva Manual
+            </h3>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 text-2xl"
@@ -169,7 +170,6 @@ export default function ManualReservationForm({
               ×
             </button>
           </div>
-
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Selección de usuario con buscador */}
             <div>
@@ -185,7 +185,9 @@ export default function ManualReservationForm({
               />
               <select
                 value={formData.userId}
-                onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, userId: e.target.value })
+                }
                 className="w-full px-3 py-2 border rounded-lg"
                 required
                 size={5}
@@ -198,7 +200,6 @@ export default function ManualReservationForm({
                 ))}
               </select>
             </div>
-
             {/* Selección de actividad */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -216,7 +217,7 @@ export default function ManualReservationForm({
                 <option value="">Seleccionar actividad...</option>
                 {activities.map((activity) => (
                   <option key={activity.id} value={activity.id}>
-                    {activity.name} (Max: {activity.capacity ?? '-'} personas)
+                    {activity.name} (Max: {activity.capacity ?? "-"} personas)
                   </option>
                 ))}
               </select>
@@ -323,7 +324,6 @@ export default function ManualReservationForm({
                 </div>
               </div>
             )}
-
             {/* Botones */}
             <div className="flex gap-3 pt-4">
               <button
@@ -331,7 +331,7 @@ export default function ManualReservationForm({
                 disabled={loading || !selectedTurnId || !formData.userId}
                 className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
               >
-                {loading ? 'Creando...' : 'Crear Reserva'}
+                {loading ? "Creando..." : "Crear Reserva"}
               </button>
               <button
                 type="button"

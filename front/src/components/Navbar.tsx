@@ -11,8 +11,6 @@ export const Navbar: React.FC = () => {
     useAppContext();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // Si está cargando, mostrar skeleton
   if (authLoading) {
     return (
       <nav className="bg-black text-white py-4 px-6 sticky top-0 z-50 w-full">
@@ -28,9 +26,7 @@ export const Navbar: React.FC = () => {
     );
   }
 
-  // Determinar QUÉ links mostrar según rol
   const renderDesktopLinks = () => {
-    // ==================== USUARIO NO AUTENTICADO ====================
     if (!isAuthenticated) {
       return (
         <>
@@ -81,7 +77,6 @@ export const Navbar: React.FC = () => {
       );
     }
 
-    // ==================== SUPER ADMIN ====================
     if (isSuperAdmin) {
       return (
         <>
@@ -113,11 +108,10 @@ export const Navbar: React.FC = () => {
       );
     }
 
-    // ==================== ADMIN (no super) ====================
     if (isAdmin) {
       return (
         <>
-           <Link
+          <Link
             href="/admin-dashboard"
             className={`px-4 py-2 rounded uppercase text-sm font-bold tracking-wider ${pathname === "/admin-dashboard" ? "bg-red-700" : "bg-red-600 hover:bg-red-700"}`}
           >
@@ -349,7 +343,6 @@ export const Navbar: React.FC = () => {
       );
     }
 
-    // Usuario normal
     return (
       <div className="flex flex-col gap-4">
         <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">
@@ -405,11 +398,7 @@ export const Navbar: React.FC = () => {
       <div className="container mx-auto flex justify-between items-center">
         {/* Logo - SIEMPRE lleva a la página principal según rol */}
         <div className="text-2xl font-bold tracking-[0.2em]">
-          <Link
-            href= "/"
-            
-            className="flex flex-col hover:no-underline"
-          >
+          <Link href="/" className="flex flex-col hover:no-underline">
             <Image
               src="/logo.png"
               alt="Providence Fitness Logo"
@@ -419,7 +408,6 @@ export const Navbar: React.FC = () => {
             />
           </Link>
         </div>
-
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-8">
           {renderDesktopLinks()}
@@ -462,7 +450,6 @@ export const Navbar: React.FC = () => {
           )}
         </button>
       </div>
-
       {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-gray-900 px-6 py-4 animate-fadeIn">

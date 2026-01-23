@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useCalendar } from 'src/contexts/CalendarContext';
-import { Reservation } from 'src/interfaces/Reservation';
+import { useState } from "react";
+import { useCalendar } from "src/contexts/CalendarContext";
+import { Reservation } from "src/interfaces/Reservation";
 
 interface CancelReservationModalProps {
   reservation: Reservation;
@@ -15,7 +15,7 @@ export default function CancelReservationModal({
 }: CancelReservationModalProps) {
   const { cancelReservation } = useCalendar();
   const [loading, setLoading] = useState(false);
-  const [reason, setReason] = useState('');
+  const [reason, setReason] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,11 +23,10 @@ export default function CancelReservationModal({
 
     try {
       await cancelReservation(reservation.id, reason || undefined);
-      alert('Reserva cancelada exitosamente. Se envió un email al usuario.');
+      alert("Reserva cancelada exitosamente. Se envió un email al usuario.");
       onClose();
     } catch (error) {
-      alert('Error al cancelar la reserva');
-      console.error(error);
+      alert("Error al cancelar la reserva");
     } finally {
       setLoading(false);
     }
@@ -38,7 +37,9 @@ export default function CancelReservationModal({
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold text-gray-900">Cancelar Reserva</h3>
+            <h3 className="text-xl font-bold text-gray-900">
+              Cancelar Reserva
+            </h3>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 text-2xl"
@@ -48,11 +49,24 @@ export default function CancelReservationModal({
           </div>
 
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="text-red-800 font-medium mb-2">⚠️ ¿Estás seguro de cancelar esta reserva?</div>
+            <div className="text-red-800 font-medium mb-2">
+              ⚠️ ¿Estás seguro de cancelar esta reserva?
+            </div>
             <div className="text-gray-700">
-              <div><strong>Usuario:</strong> {(reservation as any).userName ?? (reservation as any).user?.name ?? '—'}</div>
-              <div><strong>Fecha:</strong> {new Date(reservation.activityDate).toLocaleDateString('es-ES')}</div>
-              <div><strong>Horario:</strong> {reservation.startTime} - {reservation.endTime}</div>
+              <div>
+                <strong>Usuario:</strong>{" "}
+                {(reservation as any).userName ??
+                  (reservation as any).user?.name ??
+                  "—"}
+              </div>
+              <div>
+                <strong>Fecha:</strong>{" "}
+                {new Date(reservation.activityDate).toLocaleDateString("es-ES")}
+              </div>
+              <div>
+                <strong>Horario:</strong> {reservation.startTime} -{" "}
+                {reservation.endTime}
+              </div>
             </div>
           </div>
 
@@ -79,7 +93,7 @@ export default function CancelReservationModal({
                 disabled={loading}
                 className="flex-1 bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
               >
-                {loading ? 'Cancelando...' : 'Confirmar Cancelación'}
+                {loading ? "Cancelando..." : "Confirmar Cancelación"}
               </button>
               <button
                 type="button"

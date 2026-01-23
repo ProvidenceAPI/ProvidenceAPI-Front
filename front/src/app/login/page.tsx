@@ -1,25 +1,24 @@
 // app/login/page.tsx - VERSIÓN SIMPLIFICADA Y CORRECTA
-'use client';
+"use client";
 
-import { Suspense, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useAppContext } from 'src/contexts/AppContext';
-import LoginForm from 'src/components/LoginForm';
+import { Suspense, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useAppContext } from "src/contexts/AppContext";
+import LoginForm from "src/components/LoginForm";
 
 function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, authLoading } = useAppContext();
 
-  // Redirigir si ya está autenticado
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      const redirect = searchParams.get('redirect');
+      const redirect = searchParams.get("redirect");
 
       if (redirect) {
         router.push(redirect);
       } else {
-        router.push('/dashboard');
+        router.push("/dashboard");
       }
     }
   }, [isAuthenticated, authLoading, router, searchParams]);
@@ -34,11 +33,9 @@ function LoginPageContent() {
       </div>
     );
   }
-
   if (isAuthenticated) {
     return null;
   }
-
   return <LoginForm />;
 }
 
