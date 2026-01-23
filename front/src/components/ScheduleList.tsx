@@ -12,6 +12,7 @@ export default function ScheduleList({
   isAuthenticated,
   onReserve,
   userHasFreeReservation,
+  hasActiveSubscription,
 }: ScheduleListProps) {
   const router = useRouter();
   const [reservingTurnId, setReservingTurnId] = useState<string | null>(null);
@@ -229,26 +230,40 @@ export default function ScheduleList({
                           </p>
                         </div>
                         {isAvailable ? (
-                          !userHasFreeReservation ? (
-                            <button
-                              onClick={() => router.push("/mis-pagos")}
-                              className="px-6 py-2 rounded-md font-medium bg-amber-600 hover:bg-amber-700 text-white transition-colors"
-                            >
-                              Pagar para reservar
-                            </button>
-                          ) : (
+                          hasActiveSubscription ? (
                             <button
                               onClick={() => handleReserve(turn.id)}
                               disabled={reservingTurnId === turn.id}
                               className={`px-6 py-2 rounded-md font-medium transition-colors ${
                                 reservingTurnId === turn.id
                                   ? "bg-gray-400 cursor-not-allowed text-white"
-                                  : "bg-[#DC2626] hover:bg-[#B01C1C] text-white"
+                                  : "bg-green-600 hover:bg-green-700 text-white"
                               }`}
                             >
                               {reservingTurnId === turn.id
                                 ? "Reservando..."
                                 : "Reservar"}
+                            </button>
+                          ) : userHasFreeReservation ? (
+                            <button
+                              onClick={() => handleReserve(turn.id)}
+                              disabled={reservingTurnId === turn.id}
+                              className={`px-6 py-2 rounded-md font-medium transition-colors ${
+                                reservingTurnId === turn.id
+                                  ? "bg-gray-400 cursor-not-allowed text-white"
+                                  : "bg-purple-600 hover:bg-purple-700 text-white"
+                              }`}
+                            >
+                              {reservingTurnId === turn.id
+                                ? "Reservando..."
+                                : "Reservar Gratis"}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => router.push("/mis-pagos")}
+                              className="px-6 py-2 rounded-md font-medium bg-amber-600 hover:bg-amber-700 text-white transition-colors"
+                            >
+                              Pagar para reservar
                             </button>
                           )
                         ) : (

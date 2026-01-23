@@ -8,4 +8,5 @@ export interface ScheduleListProps {
   userId?: string;
   onReserve: (turnId: string) => Promise<void>;
   userHasFreeReservation: boolean;
+  hasActiveSubscription: boolean;
 }
