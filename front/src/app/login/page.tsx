@@ -1,4 +1,3 @@
-// app/login/page.tsx - VERSIÓN SIMPLIFICADA Y CORRECTA
 "use client";
 
 import { Suspense, useEffect } from "react";
@@ -14,7 +13,6 @@ function LoginPageContent() {
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
       const redirect = searchParams.get("redirect");
-
       if (redirect) {
         router.push(redirect);
       } else {

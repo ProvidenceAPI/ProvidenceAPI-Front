@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Rutas públicas que NO requieren autenticación
 const publicRoutes = [
   "/",
   "/home",
@@ -11,11 +10,9 @@ const publicRoutes = [
   "/nosotros",
   "/ubicacion",
   "/testimonios",
-  "/auth/callback", // ¡IMPORTANTE! Mantener como pública
- 
+  "/auth/callback",
 ];
 
-// Rutas que requieren autenticación como USUARIO
 const protectedRoutes = [
   "/dashboard",
   "/mis-pagos",
@@ -23,17 +20,14 @@ const protectedRoutes = [
   "/contexts",
 ];
 
-// Rutas que requieren ROL ADMIN
 const adminRoutes = [
   "/dashboard",
   "/activitiesDashboard",
   "/admin-dashboard",
   "/users",
   "/turns",
- 
 ];
 
-// Rutas que requieren ROL SUPER ADMIN
 const superAdminRoutes = [
   "/dashboard",
   "/admin-dashboard",

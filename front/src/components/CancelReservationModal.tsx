@@ -16,7 +16,6 @@ export default function CancelReservationModal({
   const { cancelReservation } = useCalendar();
   const [loading, setLoading] = useState(false);
   const [reason, setReason] = useState("");
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -47,7 +46,6 @@ export default function CancelReservationModal({
               ×
             </button>
           </div>
-
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="text-red-800 font-medium mb-2">
               ⚠️ ¿Estás seguro de cancelar esta reserva?
@@ -69,7 +67,6 @@ export default function CancelReservationModal({
               </div>
             </div>
           </div>
-
           <form onSubmit={handleSubmit}>
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -86,7 +83,6 @@ export default function CancelReservationModal({
                 {reason.length}/500 caracteres
               </div>
             </div>
-
             <div className="flex gap-3">
               <button
                 type="submit"

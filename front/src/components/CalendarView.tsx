@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import {
   format,
   startOfMonth,
@@ -76,7 +76,6 @@ export default function CalendarView({
     startDate.setDate(1);
     const endDate = new Date(newMonth);
     endDate.setMonth(endDate.getMonth() + 1, 0);
-
     await fetchTurns({
       startDate: startDate.toISOString().split("T")[0],
       endDate: endDate.toISOString().split("T")[0],
@@ -90,7 +89,6 @@ export default function CalendarView({
     startDate.setDate(1);
     const endDate = new Date(today);
     endDate.setMonth(endDate.getMonth() + 1, 0);
-
     await fetchTurns({
       startDate: startDate.toISOString().split("T")[0],
       endDate: endDate.toISOString().split("T")[0],

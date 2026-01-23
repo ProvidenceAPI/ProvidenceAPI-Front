@@ -16,7 +16,6 @@ export default function MisReservasPage() {
   const [reservas, setReservas] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const [showReservaModal, setShowReservaModal] = useState(false);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<string>("");
@@ -91,11 +90,7 @@ export default function MisReservasPage() {
     try {
       setLoadingTurns(true);
       const allTurns = await reservationService.getAvailableTurns(activityId);
-
-      // Filtrar turnos del día seleccionado
       const turnsForDate = allTurns.filter((turn) => turn.date === date);
-
-      // 🔥 Filtrar turnos que tengan al menos 1 hora de anticipación
       const now = new Date();
       const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
 
@@ -103,16 +98,12 @@ export default function MisReservasPage() {
         const turnDateTime = new Date(`${turn.date}T${turn.startTime}`);
         return turnDateTime > oneHourFromNow && turn.availableSpots > 0;
       });
-
       setAvailableTurns(availableTurnsForDate);
-
-      // Mostrar mensaje apropiado si no hay turnos disponibles
       if (turnsForDate.length > 0 && availableTurnsForDate.length === 0) {
         const hasPastTurns = turnsForDate.some((turn) => {
           const turnDateTime = new Date(`${turn.date}T${turn.startTime}`);
           return turnDateTime < oneHourFromNow;
         });
-
         if (hasPastTurns) {
           Swal.fire({
             icon: "info",
@@ -147,7 +138,6 @@ export default function MisReservasPage() {
     setSelectedDate("");
     setAvailableDates([]);
     setAvailableTurns([]);
-
     if (activityId) {
       fetchDatesForActivity(activityId);
     }
@@ -159,15 +149,11 @@ export default function MisReservasPage() {
       fetchTurnsForDate(selectedActivity, date);
     }
   };
-
   const handleReservarTurno = async (turnId: string) => {
-    // 🔥 VALIDACIÓN: Verificar que el turno no sea en el pasado y que haya al menos 1 hora de anticipación
     const turn = availableTurns.find((t) => t.id === turnId);
     if (turn) {
       const turnDateTime = new Date(`${turn.date}T${turn.startTime}`);
       const now = new Date();
-
-      // Verificar si ya pasó
       if (turnDateTime < now) {
         Swal.fire({
           icon: "warning",
@@ -177,16 +163,12 @@ export default function MisReservasPage() {
         });
         return;
       }
-
-      // 🔥 NUEVA VALIDACIÓN: Verificar que haya al menos 1 hora de anticipación
-      const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000); // Suma 1 hora
+      const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
 
       if (turnDateTime < oneHourFromNow) {
-        // Calcular cuántos minutos faltan
         const minutesRemaining = Math.floor(
           (turnDateTime.getTime() - now.getTime()) / (60 * 1000),
         );
-
         Swal.fire({
           icon: "warning",
           title: "Reserva muy próxima",
@@ -201,8 +183,6 @@ export default function MisReservasPage() {
         });
         return;
       }
-
-      // 🔥 Verificar que haya cupos disponibles
       if (turn.availableSpots <= 0) {
         Swal.fire({
           icon: "info",
@@ -213,7 +193,6 @@ export default function MisReservasPage() {
         return;
       }
     }
-
     try {
       await reservationService.createReservation({ turnId });
       Swal.fire({
@@ -236,7 +215,6 @@ export default function MisReservasPage() {
         isErrorType(error, "past") || isErrorType(error, "pasado");
       const isTooCloseError =
         isErrorType(error, "anticipación") || isErrorType(error, "advance");
-
       if (isTooCloseError) {
         Swal.fire({
           icon: "warning",
@@ -657,7 +635,6 @@ export default function MisReservasPage() {
           </div>
         </div>
       </div>
-
       {showReservaModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -737,7 +714,6 @@ export default function MisReservasPage() {
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {availableTurns.map((turn) => {
-                        // Calcular tiempo restante
                         const turnDateTime = new Date(
                           `${turn.date}T${turn.startTime}`,
                         );
@@ -747,7 +723,6 @@ export default function MisReservasPage() {
                             (60 * 60 * 1000),
                         );
                         const isSoonToStart = hoursRemaining < 3; // Menos de 3 horas
-
                         return (
                           <div
                             key={turn.id}

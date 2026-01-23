@@ -1,4 +1,3 @@
-// app/superadmin-setup/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -33,7 +32,6 @@ export default function SuperAdminSetupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
     try {
       const res = await apiClient.post("/api/auth/signup", {
         name: formData.name,
