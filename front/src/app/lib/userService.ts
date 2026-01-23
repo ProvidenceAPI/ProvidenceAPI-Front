@@ -8,11 +8,12 @@ export interface User {
   dni?: string;
   birthdate?: string;
   genre?: string;
-  role: 'user' | 'admin' | 'superAdmin';
-  status: 'active' | 'inactive' | 'suspended' | 'cancelled' | 'banned' | 'Cancelled' | 'Active' | 'Inactive' | 'Banned';
+  role: 'user' | 'admin' | 'superadmin';
+  status: 'active' | 'inactive' | 'suspended' | 'cancelled' | 'banned';
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  rol: 'user' | 'admin' | 'superadmin';
 }
 
 export interface UsersResponse {
@@ -32,6 +33,16 @@ export const userService = {
       };
       if (search) params.search = search;
       const { data } = await apiClient.get('/api/users', { params });
+      
+      console.log("📊 Estructura de datos recibida:", {
+        hasUsers: !!data?.users,
+        usersLength: data?.users?.length,
+        hasData: !!data?.data,
+        dataLength: data?.data?.length,
+        dataKeys: Object.keys(data || {}),
+        firstUser: data?.users?.[0] || data?.data?.[0]
+      });
+      
       return data;
     } catch (error: any) {
       const msg = error.response?.data?.message ?? error.response?.data ?? error.message;
@@ -41,25 +52,73 @@ export const userService = {
 
   async updateUserStatus(userId: string, status: User['status']): Promise<void> {
     try {
-      await apiClient.put(`/api/users/${userId}/status`, { status });
+      const formattedStatus = status.toLowerCase() as User['status'];
+      
+      console.log("📤 Enviando status al backend:", { 
+        userId, 
+        status,
+        formattedStatus 
+      });
+      
+      await apiClient.put(`/api/users/${userId}/status`, { 
+        status: formattedStatus 
+      });
     } catch (error: any) {
-      const msg = error.response?.data?.message ?? error.response?.data ?? error.message;
+      const msg = error.response?.data?.message ?? error.response?.data?.error ?? error.response?.data?.details?.[0]?.message ?? error.message;
       throw new Error(typeof msg === 'string' ? msg : 'Error al actualizar estado');
     }
   },
 
-  async updateUser(userId: string, data: Partial<User>): Promise<User> {
+  async updateUserRole(userId: string, role: User['role']): Promise<User> {
     try {
-      const { data: updatedUser } = await apiClient.put(`/api/users/${userId}`, data);
+      console.log("📤 Enviando rol al backend:", { userId, role });
+      
+     
+      const formattedRole = role.toLowerCase() as User['role'];
+      
+      const payload = { role: formattedRole };
+      
+      const { data: updatedUser } = await apiClient.put(`/api/users/${userId}/role`, payload);
       return updatedUser;
     } catch (error: any) {
-      const msg = error.response?.data?.message ?? error.response?.data ?? error.message;
-      throw new Error(typeof msg === 'string' ? msg : 'Error al actualizar usuario');
+      const msg = error.response?.data?.message ?? error.response?.data?.error ?? error.response?.data?.details?.[0]?.message ?? error.message;
+      throw new Error(typeof msg === 'string' ? msg : 'Error al actualizar rol');
+    }
+  },
+
+  async updateUser(userId: string, userData: Partial<User>): Promise<User> {
+    try {
+      console.log("📤 Enviando datos de usuario:", { userId, userData });
+      
+      const filteredData = Object.fromEntries(
+        Object.entries(userData).filter(([_, value]) => value !== undefined && value !== null)
+      );
+      
+      
+      if (filteredData.status && typeof filteredData.status === 'string') {
+        filteredData.status = filteredData.status.toLowerCase() as User['status'];
+      }
+      
+      if (filteredData.role && typeof filteredData.role === 'string') {
+        filteredData.role = filteredData.role.toLowerCase() as User['role'];
+      }
+      
+      const { data: updatedUser } = await apiClient.put(`/api/users/${userId}`, filteredData);
+      return updatedUser;
+    } catch (error: any) {
+      const msg = error.response?.data?.message ?? error.response?.data?.error ?? error.response?.data?.details?.[0]?.message ?? error.message;
+      
     }
   },
 
   async deleteUser(userId: string): Promise<void> {
-    await userService.updateUserStatus(userId, 'Cancelled');
+    try {
+     
+      await this.updateUserStatus(userId, 'cancelled');
+    } catch (error: any) {
+      const msg = error.response?.data?.message ?? error.response?.data?.error ?? error.message;
+     
+    }
   },
 
   async getUserById(userId: string): Promise<User> {
@@ -67,8 +126,8 @@ export const userService = {
       const { data: user } = await apiClient.get(`/api/users/${userId}`);
       return user;
     } catch (error: any) {
-      const msg = error.response?.data?.message ?? error.response?.data ?? error.message;
-      throw new Error(typeof msg === 'string' ? msg : 'Error al obtener usuario');
+      const msg = error.response?.data?.message ?? error.response?.data?.error ?? error.message;
+     
     }
   },
 };
