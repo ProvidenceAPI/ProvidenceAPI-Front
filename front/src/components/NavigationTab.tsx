@@ -498,39 +498,6 @@ export default function NavigationTab() {
 
             {/* Contenido del Modal */}
             <div className="p-6 space-y-6">
-              {/* Sección 1: Estadísticas de Suscripciones */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">
-                  💳 Estadísticas de Suscripciones
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-white rounded-lg p-4 shadow">
-                    <p className="text-sm text-gray-600">Total</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {reportData.subscriptionStats.total}
-                    </p>
-                  </div>
-                  <div className="bg-white rounded-lg p-4 shadow">
-                    <p className="text-sm text-gray-600">Activas</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {reportData.subscriptionStats.active}
-                    </p>
-                  </div>
-                  <div className="bg-white rounded-lg p-4 shadow">
-                    <p className="text-sm text-gray-600">Expiradas</p>
-                    <p className="text-2xl font-bold text-yellow-600">
-                      {reportData.subscriptionStats.expired}
-                    </p>
-                  </div>
-                  <div className="bg-white rounded-lg p-4 shadow">
-                    <p className="text-sm text-gray-600">Canceladas</p>
-                    <p className="text-2xl font-bold text-red-600">
-                      {reportData.subscriptionStats.cancelled}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
               {/* Sección 2: Tasas de Cancelación */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Tasa de Cancelación de Reservas */}
