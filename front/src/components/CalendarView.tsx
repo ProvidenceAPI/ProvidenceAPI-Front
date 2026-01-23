@@ -45,14 +45,12 @@ export default function CalendarView({
 
   const getReservationsForDay = (day: Date) => {
     if (!Array.isArray(reservations)) {
-      console.warn("⚠️ Reservations no es un array:", reservations);
       return [];
     }
     return reservations.filter((reservation) => {
       try {
         return reservation && isSameDay(new Date(reservation.date), day);
       } catch (error) {
-        console.error("❌ Error comparando fechas:", error, reservation);
         return false;
       }
     });
@@ -65,11 +63,6 @@ export default function CalendarView({
     startDate.setDate(1);
     const endDate = new Date(newMonth);
     endDate.setMonth(endDate.getMonth() + 1, 0);
-    console.log("⬅️ Cargando mes anterior:", {
-      startDate: startDate.toISOString().split("T")[0],
-      endDate: endDate.toISOString().split("T")[0],
-    });
-
     await fetchTurns({
       startDate: startDate.toISOString().split("T")[0],
       endDate: endDate.toISOString().split("T")[0],

@@ -11,4 +11,5 @@ export interface IUser {
   dni?: number;
   birthdate?: string;
   updatedAt?: string | Date;
+  createdAt?: string | Date;
 }

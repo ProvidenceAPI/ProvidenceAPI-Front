@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useCalendar } from 'src/contexts/CalendarContext';
-import { reservationService } from 'src/app/lib';
-import { Reservation } from 'src/interfaces/Reservation';
-import { Activity } from 'src/interfaces/Activity';
+import { useState, useEffect, useCallback } from "react";
+import { useCalendar } from "src/contexts/CalendarContext";
+import { reservationService } from "src/app/lib";
+import { Reservation } from "src/interfaces/Reservation";
+import { Activity } from "src/interfaces/Activity";
 
 interface ModifyReservationFormProps {
   reservation: Reservation;
   activities: Activity[];
-  onClose: () => void
+  onClose: () => void;
 }
 
 export default function ModifyReservationForm({
@@ -32,7 +32,7 @@ export default function ModifyReservationForm({
     activityId: reservation.activityId,
   });
 
-  const selectedActivity = activities.find(a => a.id === formData.activityId);
+  const selectedActivity = activities.find((a) => a.id === formData.activityId);
 
   const checkAvailability = useCallback(async () => {
     try {
@@ -44,9 +44,14 @@ export default function ModifyReservationForm({
       });
       setAvailability(availability);
     } catch (error) {
-      console.error('Error checking availability:', error);
+      setAvailability(null);
     }
-  }, [formData.activityId, formData.date, formData.startTime, formData.endTime]);
+  }, [
+    formData.activityId,
+    formData.date,
+    formData.startTime,
+    formData.endTime,
+  ]);
 
   useEffect(() => {
     checkAvailability();
@@ -58,11 +63,14 @@ export default function ModifyReservationForm({
 
     try {
       await modifyReservation(reservation.id, formData);
-      alert('Reserva modificada exitosamente. Se envió un email al usuario.');
+      alert("Reserva modificada exitosamente. Se envió un email al usuario.");
       onClose();
-    } catch (error) {
-      alert('Error al modificar la reserva');
-      console.error(error);
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Error al modificar la reserva";
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -73,7 +81,9 @@ export default function ModifyReservationForm({
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold text-gray-900">Modificar Reserva</h3>
+            <h3 className="text-xl font-bold text-gray-900">
+              Modificar Reserva
+            </h3>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 text-2xl"
@@ -84,9 +94,13 @@ export default function ModifyReservationForm({
 
           <div className="mb-6 p-4 bg-gray-50 rounded-lg">
             <div className="text-sm text-gray-600 mb-1">Reserva actual</div>
-            <div className="font-medium">{(reservation as any).userName ?? (reservation as any).user?.name ?? '—'}</div>
+            <div className="font-medium">
+              {(reservation as any).userName ??
+                (reservation as any).user?.name ??
+                "—"}
+            </div>
             <div className="text-sm text-gray-700">
-              {new Date(reservation.activityDate).toLocaleDateString('es-ES')} • 
+              {new Date(reservation.activityDate).toLocaleDateString("es-ES")} •
               {reservation.startTime} - {reservation.endTime}
             </div>
           </div>
@@ -99,7 +113,9 @@ export default function ModifyReservationForm({
               </label>
               <select
                 value={formData.activityId}
-                onChange={(e) => setFormData({ ...formData, activityId: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, activityId: e.target.value })
+                }
                 className="w-full px-3 py-2 border rounded-lg"
               >
                 {activities.map((activity) => (
@@ -119,7 +135,9 @@ export default function ModifyReservationForm({
                 <input
                   type="date"
                   value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, date: e.target.value })
+                  }
                   className="w-full px-3 py-2 border rounded-lg"
                 />
               </div>
@@ -132,7 +150,9 @@ export default function ModifyReservationForm({
                 <input
                   type="time"
                   value={formData.startTime}
-                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, startTime: e.target.value })
+                  }
                   className="w-full px-3 py-2 border rounded-lg"
                 />
               </div>
@@ -145,7 +165,9 @@ export default function ModifyReservationForm({
                 <input
                   type="time"
                   value={formData.endTime}
-                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, endTime: e.target.value })
+                  }
                   className="w-full px-3 py-2 border rounded-lg"
                 />
               </div>
@@ -153,14 +175,16 @@ export default function ModifyReservationForm({
 
             {/* Validación de cupos */}
             {availability && (
-              <div className={`p-3 rounded-lg text-sm ${
-                availability.available
-                  ? 'bg-green-50 text-green-700'
-                  : 'bg-red-50 text-red-700'
-              }`}>
+              <div
+                className={`p-3 rounded-lg text-sm ${
+                  availability.available
+                    ? "bg-green-50 text-green-700"
+                    : "bg-red-50 text-red-700"
+                }`}
+              >
                 {availability.available
                   ? `✅ ${availability.availableSlots} cupos disponibles`
-                  : '❌ No hay cupos disponibles en el nuevo horario'}
+                  : "❌ No hay cupos disponibles en el nuevo horario"}
               </div>
             )}
 
@@ -171,7 +195,7 @@ export default function ModifyReservationForm({
                 disabled={loading || (availability && !availability.available)}
                 className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Guardando...' : 'Guardar Cambios'}
+                {loading ? "Guardando..." : "Guardar Cambios"}
               </button>
               <button
                 type="button"

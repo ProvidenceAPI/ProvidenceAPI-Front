@@ -9,18 +9,18 @@ export default function DashboardStats() {
   const { user } = useAppContext();
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
-
   const loadUserReservations = useCallback(async () => {
     if (!user?.id) return;
-
     setLoading(true);
     try {
       const userReservations = await reservationService.getUserReservations();
-      console.log("Reservations loaded:", userReservations);
       setReservations(userReservations);
+      setError(null);
     } catch (error) {
-      console.error("Error loading reservations:", error);
+      setError("No se pudieron cargar las reservas. Intenta nuevamente.");
+      setReservations([]);
     } finally {
       setLoading(false);
     }
@@ -34,18 +34,16 @@ export default function DashboardStats() {
 
   const handleCancelReservation = async (reservationId: string) => {
     const confirmed = window.confirm(
-      "¿Estás seguro de que deseas cancelar esta reserva?"
+      "¿Estás seguro de que deseas cancelar esta reserva?",
     );
 
     if (!confirmed) return;
-
     setCancellingId(reservationId);
     try {
       await reservationService.cancelReservation(reservationId);
       alert("Reserva cancelada exitosamente");
       await loadUserReservations();
     } catch (error: any) {
-      console.error("Error cancelling reservation:", error);
       alert(error.message || "Error al cancelar la reserva");
     } finally {
       setCancellingId(null);
@@ -111,7 +109,6 @@ export default function DashboardStats() {
         label: "Cancelada",
       },
     };
-
     const badge = badges[status as keyof typeof badges] || badges.pending;
 
     return (
@@ -123,17 +120,18 @@ export default function DashboardStats() {
     );
   };
 
-
   const activeReservations = reservations.filter(
-    (r) => r.status === "active" || r.status === "confirmed" || r.status === "pending"
+    (r) =>
+      r.status === "active" ||
+      r.status === "confirmed" ||
+      r.status === "pending",
   );
   const completedReservations = reservations.filter(
-    (r) => r.status === "completed"
+    (r) => r.status === "completed",
   );
   const cancelledReservations = reservations.filter(
-    (r) => r.status === "cancelled"
+    (r) => r.status === "cancelled",
   );
-
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -144,7 +142,6 @@ export default function DashboardStats() {
 
   return (
     <div className="space-y-6">
-   
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between">
@@ -173,7 +170,6 @@ export default function DashboardStats() {
             </div>
           </div>
         </div>
-
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -201,11 +197,12 @@ export default function DashboardStats() {
             </div>
           </div>
         </div>
-
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Reservas</p>
+              <p className="text-sm font-medium text-gray-600">
+                Total Reservas
+              </p>
               <p className="text-3xl font-bold text-gray-900 mt-2">
                 {reservations.length}
               </p>
@@ -228,13 +225,10 @@ export default function DashboardStats() {
           </div>
         </div>
       </div>
-
- 
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-xl font-bold text-gray-900">Mis Reservas</h2>
         </div>
-
         {reservations.length === 0 ? (
           <div className="p-12 text-center">
             <svg
@@ -292,7 +286,7 @@ export default function DashboardStats() {
                   <tr key={reservation.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
-                        {reservation.activity.name || 'Actividad'}
+                        {reservation.activity.name || "Actividad"}
                       </div>
                       {(reservation || reservation) && (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-1">
@@ -302,10 +296,12 @@ export default function DashboardStats() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {reservation.activityDate ? formatDate(reservation.activityDate) : 'Sin fecha'}
+                        {reservation.activityDate
+                          ? formatDate(reservation.activityDate)
+                          : "Sin fecha"}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {reservation.startTime || 'Sin hora'}
+                        {reservation.startTime || "Sin hora"}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -316,7 +312,7 @@ export default function DashboardStats() {
                         <span className="text-green-600 text-sm font-medium">
                           ✓ Pagado
                         </span>
-                      ) : reservation? (
+                      ) : reservation ? (
                         <span className="text-blue-600 text-sm font-medium">
                           Gratis
                         </span>
@@ -327,11 +323,13 @@ export default function DashboardStats() {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      {(reservation.status === "active" || 
-                        reservation.status === "pending" || 
+                      {(reservation.status === "active" ||
+                        reservation.status === "pending" ||
                         reservation.status === "confirmed") && (
                         <button
-                          onClick={() => handleCancelReservation(reservation.id)}
+                          onClick={() =>
+                            handleCancelReservation(reservation.id)
+                          }
                           disabled={cancellingId === reservation.id}
                           className={`text-red-600 hover:text-red-900 ${
                             cancellingId === reservation.id

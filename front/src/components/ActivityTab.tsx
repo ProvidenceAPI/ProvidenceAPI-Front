@@ -100,11 +100,9 @@ export default function ActivityTab() {
       } else if (data?.data && Array.isArray(data.data)) {
         setActivities(data.data);
       } else {
-        console.error("❌ Estructura no reconocida:", data);
         setActivities([]);
       }
     } catch (error: any) {
-      console.error("❌ Error:", error);
       setActivities([]);
       Swal.fire("Error", error.message, "error");
     } finally {
@@ -137,7 +135,6 @@ export default function ActivityTab() {
           schedule: schedule,
           hasFreeTrial: formData.hasFreeTrial,
         };
-
         if (formData.trainer) {
           updateData.trainer = formData.trainer;
         }
@@ -236,52 +233,35 @@ export default function ActivityTab() {
   };
 
   const convertScheduleToSlots = (schedule: any): ScheduleSlot[] => {
-    console.log("🔄 Convirtiendo schedule:", schedule);
     const slots: ScheduleSlot[] = [];
-
     if (!schedule || !Array.isArray(schedule)) {
-      console.warn("⚠️ Schedule inválido:", schedule);
       return [{ day: "Lunes", time: "10:00" }];
     }
-
     try {
       schedule.forEach((item, idx) => {
-        console.log(`  Item ${idx}:`, item);
-
         if (typeof item === "string") {
-          // Formato: "Monday 07:00" o "Lunes 09:00"
           const parts = item.trim().split(" ");
           if (parts.length >= 2) {
             const dayInEnglish = parts[0];
             const dayInSpanish = DAY_MAP[dayInEnglish] || dayInEnglish;
             const time = parts[1];
-
             slots.push({ day: dayInSpanish, time: time });
-            console.log(`    ✅ String slot: ${dayInSpanish} ${time}`);
           }
         } else if (item?.day && Array.isArray(item.hours)) {
-          // Formato: {day: "Monday", hours: ["09:00", "18:00"]}
           const dayInSpanish = DAY_MAP[item.day] || item.day;
           item.hours.forEach((hour: string) => {
             if (hour && typeof hour === "string") {
               slots.push({ day: dayInSpanish, time: hour });
-              console.log(`    ✅ Object slot: ${dayInSpanish} ${hour}`);
             }
           });
         }
       });
     } catch (error) {
-      console.error("❌ Error convirtiendo schedule:", error);
       return [{ day: "Lunes", time: "10:00" }];
     }
-
-    console.log("📊 Total slots convertidos:", slots.length, slots);
     return slots.length > 0 ? slots : [{ day: "Lunes", time: "10:00" }];
   };
   const openEditModal = (activity: Activity) => {
-    console.log("🔎 Editando actividad:", activity);
-    console.log("🔎 Schedule original:", activity.schedule);
-
     setEditingActivity(activity);
     setFormData({
       name: activity.name,
@@ -296,9 +276,7 @@ export default function ActivityTab() {
       hasFreeTrial: activity.hasFreeTrial || false,
     });
     const slots = convertScheduleToSlots(activity.schedule);
-    console.log("📅 Slots convertidos:", slots);
     setScheduleSlots(slots);
-
     setImageUrl(activity.image || activity.imageUrl || "");
     setImageFile(null);
     setShowModal(true);
@@ -383,7 +361,6 @@ export default function ActivityTab() {
               Total: {activities.length} actividades
             </p>
           </div>
-
           {(isAdmin || isSuperAdmin) && (
             <button
               onClick={openCreateModal}
@@ -394,7 +371,6 @@ export default function ActivityTab() {
           )}
         </div>
       </div>
-
       {/* Lista de actividades */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-8 max-w-8xl mx-auto">
         {loading ? (
@@ -425,10 +401,6 @@ export default function ActivityTab() {
                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     unoptimized
                     onError={(e) => {
-                      console.error(
-                        "Error cargando imagen:",
-                        activity.image || activity.imageUrl,
-                      );
                       const target = e.currentTarget as HTMLImageElement;
                       target.style.display = "none";
                     }}
@@ -439,7 +411,6 @@ export default function ActivityTab() {
                   <span className="text-white text-6xl">🏋️</span>
                 </div>
               )}
-
               <div className="p-6">
                 <div className="flex justify-between items-start mb-3">
                   <h3 className="text-xl font-bold text-gray-900">
@@ -455,11 +426,9 @@ export default function ActivityTab() {
                     {activity.status === "Active" ? "✅ Activa" : "⏸️ Inactiva"}
                   </span>
                 </div>
-
                 <p className="text-gray-600 text-sm mb-4 line-clamp-2">
                   {activity.description}
                 </p>
-
                 <div className="space-y-2 text-sm mb-3">
                   <div className="flex justify-between">
                     <span className="text-gray-600">💰 Precio:</span>
@@ -474,7 +443,6 @@ export default function ActivityTab() {
                     <span className="font-medium">{activity.capacity}</span>
                   </div>
                 </div>
-
                 <div className="mb-4 pb-4 border-t pt-3">
                   <div className="text-sm font-medium text-gray-700 mb-2">
                     📅 Horarios:
@@ -485,7 +453,6 @@ export default function ActivityTab() {
                     </div>
                   </div>
                 </div>
-
                 {(isAdmin || isSuperAdmin) && (
                   <div className="pt-4 border-t flex gap-2">
                     <button
@@ -515,7 +482,6 @@ export default function ActivityTab() {
           ))
         )}
       </div>
-
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto">
           <div className="min-h-screen flex items-center justify-center p-4">
@@ -535,7 +501,6 @@ export default function ActivityTab() {
                   </p>
                 )}
               </div>
-
               <form onSubmit={handleSubmit} className="p-6 space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -551,7 +516,6 @@ export default function ActivityTab() {
                     required
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Descripción *
@@ -566,7 +530,6 @@ export default function ActivityTab() {
                     required
                   />
                 </div>
-
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -585,7 +548,6 @@ export default function ActivityTab() {
                       required
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Duración (min) *
@@ -603,7 +565,6 @@ export default function ActivityTab() {
                       required
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Precio *
@@ -622,7 +583,6 @@ export default function ActivityTab() {
                     />
                   </div>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -638,7 +598,6 @@ export default function ActivityTab() {
                     />
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Clase Gratis
@@ -660,7 +619,6 @@ export default function ActivityTab() {
                     </span>
                   </label>
                 </div>
-
                 <div>
                   <div className="flex justify-between items-center mb-3">
                     <label className="block text-sm font-medium text-gray-700">
@@ -674,7 +632,6 @@ export default function ActivityTab() {
                       ➕ Agregar
                     </button>
                   </div>
-
                   <div className="space-y-2">
                     {scheduleSlots.map((slot, index) => (
                       <div key={index} className="flex gap-2">
@@ -691,7 +648,6 @@ export default function ActivityTab() {
                             </option>
                           ))}
                         </select>
-
                         <select
                           value={slot.time}
                           onChange={(e) =>
@@ -705,7 +661,6 @@ export default function ActivityTab() {
                             </option>
                           ))}
                         </select>
-
                         {scheduleSlots.length > 1 && (
                           <button
                             type="button"
@@ -719,7 +674,6 @@ export default function ActivityTab() {
                     ))}
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Imagen
@@ -736,9 +690,7 @@ export default function ActivityTab() {
                       }}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                     />
-
                     <div className="text-center text-sm text-gray-500">O</div>
-
                     <input
                       type="url"
                       placeholder="URL de imagen"
@@ -751,7 +703,6 @@ export default function ActivityTab() {
                     />
                   </div>
                 </div>
-
                 <div className="flex gap-3 pt-4">
                   <button
                     type="submit"

@@ -1,13 +1,3 @@
-
-
-
-
-
-
-
-
-
-
 import { MapPin, Phone, Mail, Clock, Navigation, Star } from "lucide-react";
 
 export default function Ubicacion() {
@@ -18,10 +8,10 @@ export default function Ubicacion() {
           UBICACION
         </h1>
         <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-          Visítanos en nuestro gimnasio principal en Cipoletti 
+          Visítanos en nuestro gimnasio principal en Cipoletti
         </p>
       </section>
-      
+
       {/* Contenedor principal */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-8 items-start">
@@ -36,9 +26,12 @@ export default function Ubicacion() {
                   </div>
                 </div>
                 <div className="flex-grow">
-                  <h3 className="font-semibold text-gray-900 mb-2">Dirección</h3>
+                  <h3 className="font-semibold text-gray-900 mb-2">
+                    Dirección
+                  </h3>
                   <p className="text-gray-800 mb-3 leading-relaxed">
-                    Provincia de Buenos Aires 760,<br />
+                    Provincia de Buenos Aires 760,
+                    <br />
                     Cipoletti, Argentina
                   </p>
                   <a
@@ -73,10 +66,14 @@ export default function Ubicacion() {
                     </a>
                     <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 rounded-full">
                       <Star className="h-3 w-3 text-green-600" />
-                      <span className="text-xs font-medium text-green-700">Disponible</span>
+                      <span className="text-xs font-medium text-green-700">
+                        Disponible
+                      </span>
                     </span>
                   </div>
-                  <p className="text-gray-500 text-sm">Atendemos de Lunes a Sábado</p>
+                  <p className="text-gray-500 text-sm">
+                    Atendemos de Lunes a Sábado
+                  </p>
                 </div>
               </div>
             </div>
@@ -97,7 +94,9 @@ export default function Ubicacion() {
                   >
                     info@providencefitness.com
                   </a>
-                  <p className="text-gray-500 text-sm">Respondemos en menos de 24 horas</p>
+                  <p className="text-gray-500 text-sm">
+                    Respondemos en menos de 24 horas
+                  </p>
                 </div>
               </div>
             </div>
@@ -114,12 +113,18 @@ export default function Ubicacion() {
                   <h3 className="font-semibold text-gray-900 mb-2">Horarios</h3>
                   <div className="space-y-2 mb-4">
                     <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded">
-                      <span className="text-gray-700 font-medium">Lunes a Viernes</span>
-                      <span className="font-semibold text-red-600">07:00 - 22:00</span>
+                      <span className="text-gray-700 font-medium">
+                        Lunes a Viernes
+                      </span>
+                      <span className="font-semibold text-red-600">
+                        07:00 - 22:00
+                      </span>
                     </div>
                     <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded">
                       <span className="text-gray-700 font-medium">Sábados</span>
-                      <span className="font-semibold text-red-600">09:00 - 14:00</span>
+                      <span className="font-semibold text-red-600">
+                        09:00 - 14:00
+                      </span>
                     </div>
                   </div>
                   <div className="bg-gray-100 rounded px-3 py-2">
@@ -157,7 +162,9 @@ export default function Ubicacion() {
                   <div className="bg-white p-1.5 rounded">
                     <span className="text-gray-700 text-sm">🚗</span>
                   </div>
-                  <h4 className="font-medium text-gray-900 text-sm">Estacionamiento</h4>
+                  <h4 className="font-medium text-gray-900 text-sm">
+                    Estacionamiento
+                  </h4>
                 </div>
                 <p className="text-gray-600 text-xs">Gratuito para miembros</p>
               </div>
@@ -167,7 +174,9 @@ export default function Ubicacion() {
                   <div className="bg-white p-1.5 rounded">
                     <span className="text-gray-700 text-sm">🚌</span>
                   </div>
-                  <h4 className="font-medium text-gray-900 text-sm">Transporte</h4>
+                  <h4 className="font-medium text-gray-900 text-sm">
+                    Transporte
+                  </h4>
                 </div>
                 <p className="text-gray-600 text-xs">Acceso por bus</p>
               </div>
@@ -191,6 +200,3 @@ export default function Ubicacion() {
     </main>
   );
 }
-
-
-

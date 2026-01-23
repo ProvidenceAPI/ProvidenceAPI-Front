@@ -1,12 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import ClientLayout from "../components/ClientLayout";
 import "./globals.css";
-
 import AppProvider from "src/contexts/AppContext";
 import { CalendarProvider } from "src/contexts/CalendarContext";
-
-
 import { Footer } from "src/components/Footer";
 import { Navbar } from "src/components/Navbar";
 
@@ -24,22 +20,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className={`${inter.className} bg-gray-50`} suppressHydrationWarning>
-        {/* APP PROVIDER (Auth + Admin + Cart) */}
+      <body
+        className={`${inter.className} bg-gray-50`}
+        suppressHydrationWarning
+      >
         <AppProvider>
-          {/* CALENDAR PROVIDER (Reservations + Turns) */}
           <CalendarProvider>
             <div className="min-h-screen flex flex-col">
-              {/* NAVBAR - SIEMPRE VISIBLE */}
-              <Navbar/>
-              
-              {/* CONTENIDO PRINCIPAL */}
-              <main className="flex-grow">
-                {children}
-              </main>
-              
-              {/* CTA Y FOOTER - SIEMPRE VISIBLES */}
-             
+              <Navbar />
+              <main className="flex-grow">{children}</main>
               <Footer />
             </div>
           </CalendarProvider>

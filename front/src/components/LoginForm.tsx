@@ -27,7 +27,6 @@ export default function LoginForm() {
   const [apiError, setApiError] = useState<string>("");
   const changeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-
     setLoginForm((prev) => ({
       ...prev,
       [name]: value,
@@ -83,7 +82,6 @@ export default function LoginForm() {
         });
         router.push("/dashboard");
       } else {
-        // Manejar error cuando login retorna success: false
         const errorMessage = result.message || "Email o contraseña incorrectos";
         setApiError(errorMessage);
         await Swal.fire({
@@ -94,11 +92,9 @@ export default function LoginForm() {
         });
       }
     } catch (error: any) {
-      // No loggear errores 401 de autenticación (son esperados)
       if (error.response?.status !== 401 && !error.isAuthError) {
         console.error("Login error:", error);
       }
-      
       let errorMessage = "Error al iniciar sesión";
       if (error.response?.status === 401 || error.isAuthError) {
         errorMessage = "Email o contraseña incorrectos";

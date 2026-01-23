@@ -6,6 +6,7 @@ export interface Reservation {
   status: string;
   activityId: string;
   turnId: string;
+  isFreeTrial?: boolean;
 
   activity?: {
     id: string;
