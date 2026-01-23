@@ -72,6 +72,30 @@ function AuthCallbackContent() {
         document.cookie =
           "providence_user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
         setStatus("error");
+        const backendMessage = (
+          error.response?.data?.message || ""
+        ).toLowerCase();
+        if (
+          backendMessage.includes("banned") ||
+          backendMessage.includes("baneado") ||
+          backendMessage.includes("baneada") ||
+          backendMessage.includes("suspendida") ||
+          backendMessage.includes("suspendido")
+        ) {
+          setMessage(
+            "Tu cuenta ha sido suspendida. Contacta al administrador.",
+          );
+          return;
+        }
+        if (
+          backendMessage.includes("cancelled") ||
+          backendMessage.includes("canceled") ||
+          backendMessage.includes("cancelada") ||
+          backendMessage.includes("cancelado")
+        ) {
+          setMessage("Tu cuenta ha sido cancelada.");
+          return;
+        }
         if (error.response?.status === 401) {
           setMessage("Token inválido o expirado");
           setTimeout(() => {
