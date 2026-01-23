@@ -457,7 +457,6 @@ export default function AdminCreationFormTab() {
               </h4>
               <ol className="text-sm text-blue-700 space-y-1 list-decimal pl-5">
                 <li>Se crea un usuario normal en el sistema</li>
-                <li>Se actualiza su rol a Administrador/SuperAdmin</li>
                 <li>El nuevo admin puede iniciar sesión inmediatamente</li>
                 <li>Se recomienda cambiar la contraseña en el primer login</li>
               </ol>
@@ -473,7 +472,7 @@ export default function AdminCreationFormTab() {
                 {loading ? (
                   <>
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    Creando administrador...
+                    Creando Usuario...
                   </>
                 ) : (
                   "Crear Usuario"
