@@ -136,8 +136,13 @@ export default function AppProvider({
             "providence_user",
             JSON.stringify(freshUserData),
           );
-        } catch (err) {
-          logout();
+        } catch (err: any) {
+          if (err.isBannedError || err.isCancelledError) {
+            setUser(null);
+            setToken(null);
+          } else {
+            logout();
+          }
         }
       }
 
@@ -182,6 +187,14 @@ export default function AppProvider({
           data: userData,
         };
       } catch (meError: any) {
+        if (meError.isBannedError || meError.isCancelledError) {
+          localStorage.removeItem("providence_token");
+          localStorage.removeItem("providence_user");
+          return {
+            success: false,
+            message: meError.response?.data?.message || "Cuenta no disponible",
+          };
+        }
         localStorage.removeItem("providence_token");
         localStorage.removeItem("providence_user");
         setToken(null);
@@ -191,6 +204,15 @@ export default function AppProvider({
       }
     } catch (err: any) {
       let message = "Error en login";
+      if (err.isBannedError || err.isCancelledError) {
+        message = err.response?.data?.message || "Cuenta no disponible";
+        setError(message);
+        return {
+          success: false,
+          message: message,
+        };
+      }
+
       if (err.response?.data?.message) {
         message = err.response.data.message;
       } else if (err.response?.data?.error) {
