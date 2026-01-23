@@ -44,26 +44,6 @@ const TIMES = [
   "21:00",
 ];
 
-const DAY_MAP: Record<string, string> = {
-  Monday: "Lunes",
-  Tuesday: "Martes",
-  Wednesday: "Miércoles",
-  Thursday: "Jueves",
-  Friday: "Viernes",
-  Saturday: "Sábado",
-  Sunday: "Domingo",
-};
-
-const DAY_MAP_REVERSE: Record<string, string> = {
-  Lunes: "Monday",
-  Martes: "Tuesday",
-  Miércoles: "Wednesday",
-  Jueves: "Thursday",
-  Viernes: "Friday",
-  Sábado: "Saturday",
-  Domingo: "Sunday",
-};
-
 export default function ActivityTab() {
   const { isSuperAdmin, isAdmin } = useAppContext();
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -80,7 +60,7 @@ export default function ActivityTab() {
     hasFreeTrial: false,
   });
   const [scheduleSlots, setScheduleSlots] = useState<ScheduleSlot[]>([
-    { day: "Monday", time: "08:00" },
+    { day: "Lunes", time: "08:00" },
   ]);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState("");
@@ -126,8 +106,7 @@ export default function ActivityTab() {
     try {
       setIsSubmitting(true);
       const schedule = scheduleSlots.map((slot) => {
-        const dayInEnglish = DAY_MAP_REVERSE[slot.day] || slot.day;
-        return `${dayInEnglish} ${slot.time}`;
+        return `${slot.day} ${slot.time}`;
       });
       if (editingActivity) {
         const updateData: UpdateActivityDTO = {
@@ -154,7 +133,16 @@ export default function ActivityTab() {
             imageUrl,
           );
         }
-        Swal.fire("✅ Éxito", "Actividad actualizada correctamente", "success");
+        await fetchActivities();
+        closeModal();
+        Swal.fire({
+          icon: "success",
+          title: "✅ Éxito",
+          text: "Actividad actualizada correctamente",
+          confirmButtonColor: "#10b981",
+          timer: 1500,
+          showConfirmButton: false,
+        });
       } else {
         const createData: CreateActivityDTO = {
           name: formData.name,
@@ -273,20 +261,19 @@ export default function ActivityTab() {
       return [{ day: "Lunes", time: "10:00" }];
     }
     try {
-      schedule.forEach((item, idx) => {
+      schedule.forEach((item) => {
         if (typeof item === "string") {
           const parts = item.trim().split(" ");
           if (parts.length >= 2) {
-            const dayInEnglish = parts[0];
-            const dayInSpanish = DAY_MAP[dayInEnglish] || dayInEnglish;
+            const day = parts[0]; // Ya viene en español
             const time = parts[1];
-            slots.push({ day: dayInSpanish, time: time });
+            slots.push({ day, time });
           }
         } else if (item?.day && Array.isArray(item.hours)) {
-          const dayInSpanish = DAY_MAP[item.day] || item.day;
+          const day = item.day; // Ya viene en español
           item.hours.forEach((hour: string) => {
             if (hour && typeof hour === "string") {
-              slots.push({ day: dayInSpanish, time: hour });
+              slots.push({ day, time: hour });
             }
           });
         }
