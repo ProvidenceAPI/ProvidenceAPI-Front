@@ -84,6 +84,7 @@ export default function ActivityTab() {
   ]);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchActivities();
@@ -93,6 +94,7 @@ export default function ActivityTab() {
     setLoading(true);
     try {
       const data: any = await activityService.getAllActivities();
+      console.log("✅ Actividades recargadas:", data);
       if (Array.isArray(data)) {
         setActivities(data);
       } else if (data?.activities && Array.isArray(data.activities)) {
@@ -103,8 +105,8 @@ export default function ActivityTab() {
         setActivities([]);
       }
     } catch (error: any) {
+      console.error("Error cargando actividades:", error);
       setActivities([]);
-      Swal.fire("Error", error.message, "error");
     } finally {
       setLoading(false);
     }
@@ -112,6 +114,7 @@ export default function ActivityTab() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!formData.name || !formData.description) {
       Swal.fire("Error", "Nombre y descripción son obligatorios", "error");
       return;
@@ -121,6 +124,7 @@ export default function ActivityTab() {
       return;
     }
     try {
+      setIsSubmitting(true);
       const schedule = scheduleSlots.map((slot) => {
         const dayInEnglish = DAY_MAP_REVERSE[slot.day] || slot.day;
         return `${dayInEnglish} ${slot.time}`;
@@ -162,35 +166,66 @@ export default function ActivityTab() {
           trainer: formData.trainer,
           hasFreeTrial: formData.hasFreeTrial,
         };
-        if (formData.trainer) {
-          createData.trainer = formData.trainer;
-        }
         const createdActivity =
           await activityService.createActivity(createData);
         if (imageFile) {
-          await activityService.uploadActivityImage(
-            createdActivity.id,
-            imageFile,
-          );
+          try {
+            await activityService.uploadActivityImage(
+              createdActivity.id,
+              imageFile,
+            );
+          } catch (imgError) {
+            console.warn("Error subiendo imagen:", imgError);
+          }
         } else if (imageUrl) {
-          await activityService.updateActivityImageUrl(
-            createdActivity.id,
-            imageUrl,
-          );
+          try {
+            await activityService.updateActivityImageUrl(
+              createdActivity.id,
+              imageUrl,
+            );
+          } catch (imgError) {
+            console.warn("Error actualizando URL de imagen:", imgError);
+          }
         }
-        Swal.fire("✅ Éxito", "Actividad creada correctamente", "success");
+        await fetchActivities();
+        closeModal();
+        Swal.fire({
+          icon: "success",
+          title: "✅ Éxito",
+          text: "Actividad creada correctamente",
+          confirmButtonColor: "#10b981",
+          timer: 1500,
+          showConfirmButton: false,
+        });
       }
-
-      await fetchActivities();
-      closeModal();
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
         "Error al procesar la solicitud";
-      Swal.fire("❌ Error", errorMessage, "error");
+      if (
+        errorMessage.includes("already exist") ||
+        errorMessage.includes("ya existe")
+      ) {
+        Swal.fire({
+          icon: "warning",
+          title: "⚠️ Actividad duplicada",
+          text: "Ya existe una actividad con este nombre. Por favor elige otro nombre.",
+          confirmButtonColor: "#f59e0b",
+        });
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "❌ Error",
+          text: errorMessage,
+          confirmButtonColor: "#dc2626",
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
   const handleDelete = async (activity: Activity) => {
     const result = await Swal.fire({
       title: "¿Eliminar actividad?",
@@ -706,11 +741,16 @@ export default function ActivityTab() {
                 <div className="flex gap-3 pt-4">
                   <button
                     type="submit"
+                    disabled={isSubmitting}
                     className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-lg font-medium hover:from-red-700 hover:to-orange-700 transition"
                   >
-                    {editingActivity
-                      ? "💾 Guardar Cambios"
-                      : "➕ Crear Actividad"}
+                    {isSubmitting ? (
+                      <>🔄 Procesando...</>
+                    ) : editingActivity ? (
+                      "💾 Guardar Cambios"
+                    ) : (
+                      "➕ Crear Actividad"
+                    )}
                   </button>
                   <button
                     type="button"
