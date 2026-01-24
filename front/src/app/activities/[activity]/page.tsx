@@ -10,7 +10,7 @@ import ScheduleList from "src/components/ScheduleList";
 import { Turn } from "src/interfaces/Turn";
 import { ReservationRequest } from "src/interfaces/ReservationRequest";
 import { Activity } from "src/interfaces/Activity";
-import { reservationService, activityService } from "src/app/lib";
+import { reservationService, activityService, apiClient } from "src/app/lib";
 
 const ACTIVITY_SLUG_MAP: Record<string, string> = {
   crossfit: "CrossFit",
@@ -112,33 +112,23 @@ export default function ActivityPage() {
   }, [user?.id]);
 
   const checkActiveSubscription = useCallback(async () => {
-    if (!user?.id || !activity?.id) return;
+    if (!activity?.id) return;
 
     setCheckingSubscription(true);
+
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/subscriptions/user/${user.id}/activity/${activity.id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("providence_token")}`,
-          },
-        },
+      const res = await apiClient.get(
+        `/api/subscriptions/activity/${activity.id}/check`,
       );
-      if (response.ok) {
-        const data = await response.json();
-        setHasActiveSubscription(
-          data?.status === "Active" || data?.status === "active",
-        );
-      } else {
-        setHasActiveSubscription(false);
-      }
+
+      setHasActiveSubscription(res.data.hasActiveSubscription);
     } catch (error) {
       console.error("Error checking subscription:", error);
       setHasActiveSubscription(false);
     } finally {
       setCheckingSubscription(false);
     }
-  }, [user?.id, activity?.id]);
+  }, [activity?.id]);
 
   useEffect(() => {
     loadActivity();
@@ -389,7 +379,6 @@ export default function ActivityPage() {
                         if (spaceIndex > 0) {
                           const day = trimmed.substring(0, spaceIndex);
                           const time = trimmed.substring(spaceIndex + 1).trim();
-
                           const timeOnly = time.split("-")[0].trim();
                           if (!scheduleByDay[day]) {
                             scheduleByDay[day] = [];

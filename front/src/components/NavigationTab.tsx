@@ -9,6 +9,7 @@ import AdminCreationFormTab from "./AdminCreationFormTab";
 import UsersTab from "./UsersTab";
 import Swal from "sweetalert2";
 import ReservationsTab from "./ReservationsTab";
+import { apiClient } from "src/app/lib";
 
 export default function NavigationTab() {
   const { user, isAuthenticated, isAdmin, isSuperAdmin, loading, logout } =
@@ -42,49 +43,30 @@ export default function NavigationTab() {
     const fetchDashboardStats = async () => {
       if (activeTab !== "overview") return;
       try {
-        const token = localStorage.getItem("providence_token");
-        const headers = { Authorization: `Bearer ${token}` };
         const [
-          userStats,
-          revenue,
-          peakHours,
-          resCancellation,
-          subCancellation,
-          attendance,
+          userStatsRes,
+          revenueRes,
+          peakHoursRes,
+          resCancellationRes,
+          subMetricsRes,
+          attendanceRes,
         ] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/stats`, {
-            headers,
-          }).then((r) => r.json()),
-          fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/payments/stats/monthly-revenue`,
-            { headers },
-          ).then((r) => r.json()),
-          fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/reservations/stats/peak-hours`,
-            { headers },
-          ).then((r) => r.json()),
-          fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/reservations/stats/cancellation-rate`,
-            { headers },
-          ).then((r) => r.json()),
-          fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/subscriptions/admin/metrics`,
-            { headers },
-          ).then((r) => r.json()),
-          fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/reservations/stats/attendance`,
-            { headers },
-          ).then((r) => r.json()),
+          apiClient.get("/api/users/stats"),
+          apiClient.get("/api/payments/stats/monthly-revenue"),
+          apiClient.get("/api/reservations/stats/peak-hours"),
+          apiClient.get("/api/reservations/stats/cancellation-rate"),
+          apiClient.get("/api/subscriptions/admin/metrics"),
+          apiClient.get("/api/reservations/stats/attendance"),
         ]);
         setStats({
-          users: userStats,
-          revenue: revenue,
-          peakHour: peakHours[0] || { hour: "N/A", reservations: 0 },
+          users: userStatsRes.data,
+          revenue: revenueRes.data,
+          peakHour: peakHoursRes.data?.[0] ?? { hour: "N/A", reservations: 0 },
           cancellationRates: {
-            reservations: resCancellation.cancellationRate,
-            subscriptions: subCancellation.cancellationRate,
+            reservations: resCancellationRes.data.cancellationRate,
+            subscriptions: subMetricsRes.data.cancellationRate ?? 0,
           },
-          attendance: attendance,
+          attendance: attendanceRes.data,
         });
       } catch (error) {
         console.error("Error fetching stats:", error);
@@ -112,38 +94,27 @@ export default function NavigationTab() {
 
   const handleOpenReports = async () => {
     setLoadingReports(true);
+
     try {
-      const token = localStorage.getItem("providence_token");
-      const headers = { Authorization: `Bearer ${token}` };
       const [
-        subscriptionStats,
-        reservationCancellation,
-        subscriptionMetrics,
-        attendanceStats,
+        subscriptionStatsRes,
+        reservationCancellationRes,
+        subscriptionMetricsRes,
+        attendanceStatsRes,
       ] = await Promise.all([
-        fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/subscriptions/admin/stats`,
-          { headers },
-        ).then((r) => r.json()),
-        fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/reservations/stats/cancellation-rate`,
-          { headers },
-        ).then((r) => r.json()),
-        fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/subscriptions/admin/metrics`,
-          { headers },
-        ).then((r) => r.json()),
-        fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/reservations/stats/attendance`,
-          { headers },
-        ).then((r) => r.json()),
+        apiClient.get("/api/subscriptions/admin/stats"),
+        apiClient.get("/api/reservations/stats/cancellation-rate"),
+        apiClient.get("/api/subscriptions/admin/metrics"),
+        apiClient.get("/api/reservations/stats/attendance"),
       ]);
+
       setReportData({
-        subscriptionStats,
-        reservationCancellation,
-        subscriptionMetrics,
-        attendanceStats,
+        subscriptionStats: subscriptionStatsRes.data,
+        reservationCancellation: reservationCancellationRes.data,
+        subscriptionMetrics: subscriptionMetricsRes.data,
+        attendanceStats: attendanceStatsRes.data,
       });
+
       setShowReportsModal(true);
     } catch (error: any) {
       Swal.fire({
@@ -160,16 +131,9 @@ export default function NavigationTab() {
   const loadUsers = async () => {
     setLoadingData(true);
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/users`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("providence_token")}`,
-          },
-        },
-      );
-      const data = await response.json();
-      setUsers(Array.isArray(data) ? data : data.users || []);
+      const res = await apiClient.get("/api/users");
+      const data = res.data;
+      setUsers(Array.isArray(data) ? data : (data.users ?? []));
     } catch (error) {
       setUsers([]);
       Swal.fire({
