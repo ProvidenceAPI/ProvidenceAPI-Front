@@ -68,7 +68,7 @@ export default function NavigationTab() {
             { headers },
           ).then((r) => r.json()),
           fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/subscriptions/admin/cancellation-rate`,
+            `${process.env.NEXT_PUBLIC_API_URL}/api/subscriptions/admin/metrics`,
             { headers },
           ).then((r) => r.json()),
           fetch(
