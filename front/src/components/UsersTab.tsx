@@ -81,7 +81,7 @@ export default function UsersTab() {
           name: user.name || "",
           email: user.email || "",
           phone: user.phone || "",
-          role: normalizedRole,
+          rol: normalizedRole,
           status: normalizedStatus,
         };
       });
@@ -339,10 +339,10 @@ export default function UsersTab() {
     try {
       await userService.updateUserRole(userId, newRole);
       setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)),
+        prev.map((u) => (u.id === userId ? { ...u, rol: newRole } : u)),
       );
       setAllUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)),
+        prev.map((u) => (u.id === userId ? { ...u, rol: newRole } : u)),
       );
       Swal.fire({
         icon: "success",
@@ -351,7 +351,7 @@ export default function UsersTab() {
         showConfirmButton: false,
       });
     } catch (error: any) {
-      console.error("Error updating role:", error);
+      console.error("Error updating rol:", error);
       Swal.fire({
         icon: "error",
         title: "Error",
@@ -478,9 +478,9 @@ export default function UsersTab() {
     }
   };
 
-  const getRoleBadge = (role: string) => {
+  const getRoleBadge = (rol: string) => {
     const baseClasses = "px-2.5 py-1 rounded-full text-xs font-medium";
-    const safeRole = (role || "user").toLowerCase();
+    const safeRole = (rol || "user").toLowerCase();
 
     if (safeRole === "superadmin") {
       return (
