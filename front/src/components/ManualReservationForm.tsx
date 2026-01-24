@@ -24,6 +24,7 @@ interface ManualReservationFormProps {
   users: IUser[];
   activities: Activity[];
   onClose: () => void;
+  onSuccess?: () => void;
   defaultDate?: Date;
 }
 
@@ -31,6 +32,7 @@ export default function ManualReservationForm({
   users,
   activities,
   onClose,
+  onSuccess,
   defaultDate,
 }: ManualReservationFormProps) {
   const [loading, setLoading] = useState(false);
@@ -46,13 +48,20 @@ export default function ManualReservationForm({
     activityId: "",
   });
   const [searchTerm, setSearchTerm] = useState("");
+  const sortedUsers = [...users].sort((a, b) => {
+    const nameA = `${a.name} ${a.lastname || ""}`.toLowerCase();
+    const nameB = `${b.name} ${b.lastname || ""}`.toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
+
   const filteredUsers = searchTerm
-    ? users.filter(
+    ? sortedUsers.filter(
         (user) =>
           user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.lastname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           user.email.toLowerCase().includes(searchTerm.toLowerCase()),
       )
-    : users;
+    : sortedUsers;
 
   const selectedActivity = activities.find((a) => a.id === formData.activityId);
   const selectedTurn = availableTurns.find((t) => t.id === selectedTurnId);
@@ -128,6 +137,7 @@ export default function ManualReservationForm({
         title: "¡Éxito!",
         text: "Reserva creada exitosamente. Se envió un email de confirmación al usuario.",
       });
+      onSuccess?.();
       onClose();
     } catch (error: any) {
       console.error("Error creating reservation:", error);
@@ -153,7 +163,12 @@ export default function ManualReservationForm({
               Crear Reserva Manual
             </h3>
             <button
-              onClick={onClose}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onClose();
+              }}
               className="text-gray-400 hover:text-gray-600 text-2xl"
             >
               ×
@@ -184,7 +199,7 @@ export default function ManualReservationForm({
                 <option value="">Seleccionar usuario...</option>
                 {filteredUsers.map((user) => (
                   <option key={user.id} value={user.id}>
-                    {user.name} ({user.email})
+                    {user.name} {user.lastname || ""} ({user.email})
                   </option>
                 ))}
               </select>
@@ -227,6 +242,47 @@ export default function ManualReservationForm({
                   className="w-full px-3 py-2 border rounded-lg"
                   min={new Date().toISOString().split("T")[0]}
                 />
+                {filterDate && !loadingTurns && (
+                  <div className="mt-2">
+                    {availableTurns.length > 0 ? (
+                      <p className="text-sm text-green-600 flex items-center gap-2">
+                        <svg
+                          className="w-4 h-4"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        <span className="font-medium">
+                          ✓ {availableTurns.length} turno
+                          {availableTurns.length !== 1 ? "s" : ""} disponible
+                          {availableTurns.length !== 1 ? "s" : ""} en esta fecha
+                        </span>
+                      </p>
+                    ) : (
+                      <p className="text-sm text-amber-600 flex items-center gap-2">
+                        <svg
+                          className="w-4 h-4"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        <span className="font-medium">
+                          No hay turnos disponibles en esta fecha
+                        </span>
+                      </p>
+                    )}
+                  </div>
+                )}
                 {filterDate && (
                   <button
                     type="button"
@@ -236,6 +292,19 @@ export default function ManualReservationForm({
                     }}
                     className="mt-2 text-sm text-red-600 hover:text-red-700"
                   >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
                     Limpiar filtro de fecha
                   </button>
                 )}
@@ -273,15 +342,17 @@ export default function ManualReservationForm({
                     >
                       <option value="">Seleccionar un turno...</option>
                       {availableTurns.map((turn) => {
-                        const turnDate = new Date(turn.date).toLocaleDateString(
-                          "es-ES",
-                          {
-                            weekday: "short",
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          },
-                        );
+                        const [year, month, day] = turn.date.split("-");
+                        const turnDate = new Date(
+                          parseInt(year),
+                          parseInt(month) - 1,
+                          parseInt(day),
+                        ).toLocaleDateString("es-ES", {
+                          weekday: "short",
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        });
                         return (
                           <option key={turn.id} value={turn.id}>
                             {turnDate} - {turn.startTime} a {turn.endTime} (
@@ -339,7 +410,11 @@ export default function ManualReservationForm({
               </button>
               <button
                 type="button"
-                onClick={onClose}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onClose();
+                }}
                 className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg hover:bg-gray-300 transition-colors font-medium"
               >
                 Cancelar
