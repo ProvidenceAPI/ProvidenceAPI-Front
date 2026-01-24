@@ -40,14 +40,12 @@ const isTokenValid = (token: string | undefined): boolean => {
     if (payload.exp) {
       const expirationTime = payload.exp * 1000;
       if (Date.now() > expirationTime) {
-        console.log("Token expirado");
         return false;
       }
     }
 
     return true;
   } catch (error) {
-    console.log("Token inválido:", error);
     return false;
   }
 };

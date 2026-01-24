@@ -228,14 +228,6 @@ export default function ReservationsTab() {
       reservation.activity?.name || reservation.turn?.activity?.name || "";
     const reservationDate = reservation.activityDate.split("T")[0];
     const reservationTime = reservation.startTime.substring(0, 5);
-    if (filterDate) {
-      console.log("🔍 Comparando:");
-      console.log("  activityDate original:", reservation.activityDate);
-      console.log("  reservationDate extraído:", reservationDate);
-      console.log("  filterDate seleccionado:", filterDate);
-      console.log("  ¿Coinciden?:", reservationDate === filterDate);
-      console.log("---");
-    }
 
     if (
       filterActivity &&

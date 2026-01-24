@@ -88,8 +88,6 @@ export default function UsersTab() {
       setTotalUsers(safeUsers.length);
       setTotalPages(Math.ceil(safeUsers.length / 10));
       setDataLoaded(true);
-
-      console.log("✅ Usuarios cargados:", safeUsers.length);
     } catch (error: any) {
       console.error("Error cargando usuarios:", error);
       Swal.fire({

@@ -9,10 +9,6 @@ export default function TurnsPage() {
   const { isLoading } = useRequireAuth("admin");
   const { user, role, isAdmin } = useAuth();
 
-  console.log("User:", user);
-  console.log("Role:", role);
-  console.log("isAdmin:", isAdmin);
-
   if (isLoading) return <div>Cargando...</div>;
 
   return (
