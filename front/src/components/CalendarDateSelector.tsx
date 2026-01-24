@@ -12,7 +12,6 @@ export default function CalendarDatePicker({
   onDateSelect,
 }: CalendarDatePickerProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
     const month = date.getMonth();

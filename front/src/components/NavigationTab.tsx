@@ -1,4 +1,3 @@
-// app/admin-dashboard/page.tsx - PÁGINA DE PRUEBA
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -607,7 +606,6 @@ export default function NavigationTab() {
                   </div>
                 </div>
               )}
-
               {/* TODOS (Admin y SuperAdmin): Promedio de Asistencia por Actividad */}
               <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-6">
                 <h3 className="text-xl font-bold text-gray-900 mb-4">

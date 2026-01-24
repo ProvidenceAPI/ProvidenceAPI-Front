@@ -17,7 +17,6 @@ export const Footer: React.FC = () => {
     <footer className="bg-black text-white">
       {/* Línea roja decorativa */}
       <div className="h-1 bg-gradient-to-r from-red-600 via-red-500 to-red-600"></div>
-
       <div className="max-w-7xl mx-auto px-6 py-12 md:py-16">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 lg:gap-16">
           {/* Columna 1: Logo y Redes */}
@@ -32,14 +31,12 @@ export const Footer: React.FC = () => {
                 priority
               />
             </div>
-
             <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
               Transformá tu cuerpo, elevá tu vida.
               <span className="block mt-1">
                 Unite a la revolución Providence hoy mismo.
               </span>
             </p>
-
             {/* Redes Sociales */}
             <div className="space-y-4">
               <h4 className="text-white font-semibold text-sm uppercase tracking-wider">
@@ -118,7 +115,6 @@ export const Footer: React.FC = () => {
                   </p>
                 </div>
               </li>
-
               <li className="group flex items-start gap-3 hover:text-white transition-colors duration-200">
                 <div className="mt-0.5">
                   <MailIcon className="w-4 h-4 text-red-500 group-hover:scale-110 transition-transform duration-200" />
@@ -132,7 +128,6 @@ export const Footer: React.FC = () => {
                   </p>
                 </div>
               </li>
-
               <li className="group flex items-start gap-3 hover:text-white transition-colors duration-200">
                 <div className="mt-0.5">
                   <LocationIcon className="w-4 h-4 text-red-500 group-hover:scale-110 transition-transform duration-200" />
@@ -147,7 +142,6 @@ export const Footer: React.FC = () => {
                 </div>
               </li>
             </ul>
-
             {/* Botón de acción */}
             <div className="mt-8">
               <Link
