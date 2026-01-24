@@ -3,6 +3,8 @@
 import { useAppContext } from "src/contexts/AppContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useRequireAuth } from "src/hooks/useRequireAuth";
+
 import Swal from "sweetalert2";
 import { paymentService, isValidUUID, activityService } from "src/app/lib";
 import { Payment } from "src/interfaces/Payments";
@@ -11,6 +13,8 @@ import { Activity } from "src/interfaces/Activity";
 export default function MisPagosPage() {
   const { isAuthenticated, loading } = useAppContext();
   const router = useRouter();
+  const { isLoading: isAuthLoading } = useRequireAuth("onlyUser");
+
   const [pagos, setPagos] = useState<Payment[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<string>("");
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -101,6 +105,10 @@ export default function MisPagosPage() {
     fetchReservations();
   }, []);
 
+  
+  if (isAuthLoading) return <div>Cargando...</div>;
+
+  
   const iniciarPagoMercadoPago = async () => {
     if (!selectedActivity) {
       setError("Por favor selecciona una actividad");
@@ -142,20 +150,6 @@ export default function MisPagosPage() {
     }
   };
 
-  const getEstadoColor = (estado: string) => {
-    switch (estado) {
-      case "approved":
-        return "bg-green-100 text-green-800";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800";
-      case "rejected":
-      case "cancelled":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
   const getEstadoTexto = (estado: string) => {
     const estados: Record<string, string> = {
       approved: "Aprobado",
@@ -185,6 +179,7 @@ export default function MisPagosPage() {
       </div>
     );
   }
+
   const actividadSeleccionada = activities.find(
     (a) => a.id === selectedActivity,
   );
