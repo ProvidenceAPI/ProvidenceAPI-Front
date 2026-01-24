@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { apiClient } from "src/app/lib/apiClient";
-import type { User } from "src/app/lib";
+import { IUser } from "src/interfaces/IUser";
 import { Activity } from "src/interfaces/Activity";
 import Swal from "sweetalert2";
 
@@ -21,7 +21,7 @@ interface Turn {
 }
 
 interface ManualReservationFormProps {
-  users: User[];
+  users: IUser[];
   activities: Activity[];
   onClose: () => void;
   defaultDate?: Date;
@@ -211,7 +211,6 @@ export default function ManualReservationForm({
                 ))}
               </select>
             </div>
-
             {/* Filtro de fecha (opcional) */}
             {formData.activityId && (
               <div>
@@ -242,7 +241,6 @@ export default function ManualReservationForm({
                 )}
               </div>
             )}
-
             {/* Lista de turnos disponibles */}
             {formData.activityId && (
               <div>
@@ -296,7 +294,6 @@ export default function ManualReservationForm({
                 )}
               </div>
             )}
-
             {/* Información del turno seleccionado */}
             {selectedTurn && (
               <div className="p-4 bg-green-50 border border-green-200 rounded-lg">

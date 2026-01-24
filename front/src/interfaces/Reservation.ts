@@ -1,3 +1,5 @@
+import { Turn } from "./Turn";
+
 export interface Reservation {
   id: string;
   activityDate: string;
@@ -14,9 +16,11 @@ export interface Reservation {
     capacity: number;
   };
 
-  turn?: {
+  turn?: Turn;
+
+  user: {
     id: string;
-    availableSpots: number;
-    isFreeTrial: boolean;
+    name: string;
+    email: string;
   };
 }

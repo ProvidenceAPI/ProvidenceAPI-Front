@@ -7,9 +7,9 @@ import ActivityTab from "./ActivityTab";
 import TurnsTab from "./TurnsTab";
 import AdminCreationFormTab from "./AdminCreationFormTab";
 import UsersTab from "./UsersTab";
-import Swal from "sweetalert2";
 import ReservationsTab from "./ReservationsTab";
 import { apiClient } from "src/app/lib";
+import Swal from "sweetalert2";
 
 export default function NavigationTab() {
   const { user, isAuthenticated, isAdmin, isSuperAdmin, loading, logout } =
