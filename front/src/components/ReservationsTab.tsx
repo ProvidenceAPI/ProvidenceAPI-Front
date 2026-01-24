@@ -9,13 +9,13 @@ import { IUser } from "src/interfaces/IUser";
 import { Turn } from "src/interfaces/Turn";
 import { Activity } from "src/interfaces/Activity";
 import { StatusMap } from "src/interfaces/StatusBadge";
+import CalendarDatePicker from "./CalendarDateSelector";
 
 export default function ReservationsTab() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [users, setUsers] = useState<IUser[]>([]);
   const [turns, setTurns] = useState<Turn[]>([]);
-
   const [loading, setLoading] = useState(true);
   const [loadingTurns, setLoadingTurns] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -23,11 +23,14 @@ export default function ReservationsTab() {
   const [selectedReservation, setSelectedReservation] =
     useState<Reservation | null>(null);
   const [selectedActivityId, setSelectedActivityId] = useState<string>("");
-
   const [filterActivity, setFilterActivity] = useState<string>("");
   const [filterDate, setFilterDate] = useState<string>("");
   const [filterTime, setFilterTime] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [availableDatesForActivity, setAvailableDatesForActivity] = useState<
+    string[]
+  >([]);
 
   useEffect(() => {
     loadData();
@@ -78,6 +81,7 @@ export default function ReservationsTab() {
   const loadTurnsForActivity = async (activityId: string, date?: string) => {
     if (!activityId) {
       setTurns([]);
+      setAvailableDatesForActivity([]);
       return;
     }
 
@@ -90,7 +94,7 @@ export default function ReservationsTab() {
       } else {
         const startDate = new Date();
         const endDate = new Date();
-        endDate.setDate(endDate.getDate() + 30);
+        endDate.setDate(endDate.getDate() + 90);
         params.startDate = startDate.toISOString().split("T")[0];
         params.endDate = endDate.toISOString().split("T")[0];
       }
@@ -106,10 +110,18 @@ export default function ReservationsTab() {
           turn.status !== "completed" &&
           turn.availableSpots > 0,
       );
-
-      setTurns(availableTurns);
+      const uniqueDates = Array.from(
+        new Set(availableTurns.map((turn: Turn) => turn.date)),
+      ) as string[];
+      setAvailableDatesForActivity(uniqueDates);
+      if (date) {
+        setTurns(availableTurns.filter((turn: Turn) => turn.date === date));
+      } else {
+        setTurns(availableTurns);
+      }
     } catch (error: any) {
       console.error("Error loading turns:", error);
+      setAvailableDatesForActivity([]);
       setTurns([]);
     } finally {
       setLoadingTurns(false);
@@ -186,6 +198,8 @@ export default function ReservationsTab() {
     setShowAssignModal(false);
     setSelectedReservation(null);
     setSelectedActivityId("");
+    setSelectedDate("");
+    setAvailableDatesForActivity([]);
     setTurns([]);
   };
 
@@ -212,10 +226,16 @@ export default function ReservationsTab() {
   const filteredReservations = reservations.filter((reservation) => {
     const activityName =
       reservation.activity?.name || reservation.turn?.activity?.name || "";
-    const reservationDate = new Date(reservation.activityDate)
-      .toISOString()
-      .split("T")[0];
-    const reservationTime = reservation.startTime.substring(0, 5); // HH:MM
+    const reservationDate = reservation.activityDate.split("T")[0];
+    const reservationTime = reservation.startTime.substring(0, 5);
+    if (filterDate) {
+      console.log("🔍 Comparando:");
+      console.log("  activityDate original:", reservation.activityDate);
+      console.log("  reservationDate extraído:", reservationDate);
+      console.log("  filterDate seleccionado:", filterDate);
+      console.log("  ¿Coinciden?:", reservationDate === filterDate);
+      console.log("---");
+    }
 
     if (
       filterActivity &&
@@ -234,13 +254,6 @@ export default function ReservationsTab() {
     }
     return true;
   });
-
-  const filteredActivitiesForReassign = activities.filter(
-    (a) =>
-      a.id !==
-      (selectedReservation?.activity?.id ||
-        selectedReservation?.turn?.activityId),
-  );
 
   const hasActiveFilters =
     filterActivity || filterDate || filterTime || filterStatus;
@@ -266,7 +279,13 @@ export default function ReservationsTab() {
     );
   };
   const formatReservationDate = (date: string): string => {
-    return new Date(date).toLocaleDateString("es-ES", {
+    const [year, month, day] = date.split("T")[0].split("-");
+    const dateObj = new Date(
+      parseInt(year),
+      parseInt(month) - 1,
+      parseInt(day),
+    );
+    return dateObj.toLocaleDateString("es-ES", {
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -305,7 +324,7 @@ export default function ReservationsTab() {
         </h2>
         <button
           onClick={() => setShowCreateForm(true)}
-          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium"
+          className="bg-red-600 text-white text-lg px-12 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium"
         >
           + Crear Reserva
         </button>
@@ -476,12 +495,12 @@ export default function ReservationsTab() {
       {/* ========== MODAL DE REASIGNACIÓN ========== */}
       {showAssignModal && selectedReservation && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               {/* Header del modal */}
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-2xl font-bold text-gray-900">
-                  Reasignar a Otra Actividad
+                  Reasignar Reserva
                 </h3>
                 <button
                   onClick={closeAssignModal}
@@ -490,86 +509,212 @@ export default function ReservationsTab() {
                   ×
                 </button>
               </div>
+
               {/* Información actual */}
-              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">
-                  <strong>Usuario:</strong> {selectedReservation.user.name} (
-                  {selectedReservation.user.email})
-                </p>
-                <p className="text-sm text-gray-600 mb-1">
-                  <strong>Actividad actual:</strong>{" "}
-                  {getActivityName(selectedReservation)}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <strong>Fecha y hora actual:</strong>{" "}
-                  {formatReservationDate(selectedReservation.activityDate)}{" "}
-                  {selectedReservation.startTime}
-                </p>
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="font-semibold text-blue-900 mb-2">
+                  📋 Reserva Actual
+                </h4>
+                <div className="space-y-1 text-sm text-blue-800">
+                  <p>
+                    <strong>Usuario:</strong> {selectedReservation.user.name} (
+                    {selectedReservation.user.email})
+                  </p>
+                  <p>
+                    <strong>Actividad:</strong>{" "}
+                    {getActivityName(selectedReservation)}
+                  </p>
+                  <p>
+                    <strong>Fecha:</strong>{" "}
+                    {formatReservationDate(selectedReservation.activityDate)}
+                  </p>
+                  <p>
+                    <strong>Horario:</strong> {selectedReservation.startTime}
+                    {selectedReservation.endTime &&
+                      ` - ${selectedReservation.endTime}`}
+                  </p>
+                </div>
               </div>
-              {/* Select nueva actividad */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Seleccionar nueva actividad
-                </label>
-                <select
-                  value={selectedActivityId}
-                  onChange={(e) => {
-                    setSelectedActivityId(e.target.value);
-                    loadTurnsForActivity(e.target.value);
-                  }}
-                  className="w-full px-3 py-2 border rounded-lg"
-                >
-                  <option value="">Seleccionar actividad...</option>
-                  {filteredActivitiesForReassign.map((activity) => (
-                    <option key={activity.id} value={activity.id}>
-                      {activity.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {/* Select turno */}
-              {selectedActivityId && (
-                <div className="mb-6">
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Columna izquierda: Selección de actividad */}
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Seleccionar turno disponible
+                    1️⃣ Seleccionar actividad
+                  </label>
+                  <select
+                    value={selectedActivityId}
+                    onChange={(e) => {
+                      setSelectedActivityId(e.target.value);
+                      setSelectedDate("");
+                      setTurns([]);
+                      loadTurnsForActivity(e.target.value);
+                    }}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  >
+                    <option value="">Seleccionar actividad...</option>
+                    {activities.map((activity) => {
+                      const isCurrent =
+                        activity.id ===
+                        (selectedReservation?.activity?.id ||
+                          selectedReservation?.turn?.activityId);
+                      return (
+                        <option key={activity.id} value={activity.id}>
+                          {activity.name} {isCurrent && "(Actual)"}
+                        </option>
+                      );
+                    })}
+                  </select>
+
+                  {selectedActivityId && !loadingTurns && (
+                    <div className="mt-2 p-3 bg-gray-50 rounded-lg">
+                      <p className="text-xs text-gray-600">
+                        <strong>Capacidad:</strong>{" "}
+                        {activities.find((a) => a.id === selectedActivityId)
+                          ?.capacity || "N/A"}{" "}
+                        personas
+                      </p>
+                      <p className="text-xs text-gray-600 mt-1">
+                        <strong>Fechas disponibles:</strong>{" "}
+                        {availableDatesForActivity.length}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Columna derecha: Calendario */}
+                <div>
+                  {selectedActivityId && (
+                    <>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        2️⃣ Seleccionar fecha
+                      </label>
+                      {loadingTurns ? (
+                        <div className="flex items-center justify-center py-12 bg-gray-50 rounded-lg">
+                          <div className="text-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                            <p className="text-sm text-gray-500">
+                              Cargando fechas disponibles...
+                            </p>
+                          </div>
+                        </div>
+                      ) : availableDatesForActivity.length === 0 ? (
+                        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <p className="text-sm text-yellow-800">
+                            ⚠️ No hay fechas disponibles para esta actividad en
+                            los próximos 90 días.
+                          </p>
+                        </div>
+                      ) : (
+                        <CalendarDatePicker
+                          availableDates={availableDatesForActivity}
+                          selectedDate={selectedDate}
+                          onDateSelect={(date) => {
+                            setSelectedDate(date);
+                            loadTurnsForActivity(selectedActivityId, date);
+                          }}
+                        />
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Lista de turnos del día seleccionado */}
+              {selectedDate && (
+                <div className="mt-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    3️⃣ Seleccionar horario
                   </label>
                   {loadingTurns ? (
                     <div className="text-center py-4">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-600 mx-auto"></div>
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
                       <p className="text-sm text-gray-500 mt-2">
-                        Cargando turnos...
+                        Cargando horarios...
                       </p>
                     </div>
                   ) : turns.length === 0 ? (
-                    <p className="text-sm text-gray-500 py-2">
-                      No hay turnos disponibles para esta actividad
-                    </p>
+                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-sm text-yellow-800">
+                        No hay turnos disponibles para esta fecha.
+                      </p>
+                    </div>
                   ) : (
-                    <select
-                      id="turn-select"
-                      className="w-full px-3 py-2 border rounded-lg"
-                      defaultValue=""
-                    >
-                      <option value="">Seleccionar turno...</option>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto p-2">
                       {turns.map((turn) => (
-                        <option key={turn.id} value={turn.id}>
-                          {formatTurnDate(turn.date)} - {turn.startTime} a{" "}
-                          {turn.endTime} ({turn.availableSpots} cupos
-                          disponibles)
-                        </option>
+                        <button
+                          key={turn.id}
+                          type="button"
+                          onClick={() => {
+                            const turnSelect = document.getElementById(
+                              "turn-select",
+                            ) as HTMLInputElement;
+                            if (turnSelect) turnSelect.value = turn.id;
+                            // Marcar visualmente el seleccionado
+                            document
+                              .querySelectorAll(".turn-option")
+                              .forEach((el) =>
+                                el.classList.remove(
+                                  "ring-2",
+                                  "ring-blue-500",
+                                  "bg-blue-50",
+                                ),
+                              );
+                            (
+                              document.activeElement as HTMLElement
+                            )?.classList.add(
+                              "ring-2",
+                              "ring-blue-500",
+                              "bg-blue-50",
+                            );
+                          }}
+                          className="turn-option p-4 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all text-left"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="font-semibold text-gray-900">
+                                {turn.startTime} - {turn.endTime}
+                              </div>
+                              <div className="text-xs text-gray-600 mt-1">
+                                {formatTurnDate(turn.date)}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div
+                                className={`text-sm font-medium ${
+                                  turn.availableSpots > 3
+                                    ? "text-green-600"
+                                    : turn.availableSpots > 0
+                                      ? "text-orange-600"
+                                      : "text-red-600"
+                                }`}
+                              >
+                                {turn.availableSpots} cupos
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                disponibles
+                              </div>
+                            </div>
+                          </div>
+                        </button>
                       ))}
-                    </select>
+                    </div>
                   )}
+                  {/* Input hidden para guardar el turnId seleccionado */}
+                  <input type="hidden" id="turn-select" />
                 </div>
               )}
+
               {/* Botones de acción */}
-              <div className="flex gap-3">
+              <div className="flex gap-3 mt-6 pt-6 border-t">
                 <button
                   onClick={handleAssignSubmit}
-                  disabled={!selectedActivityId || turns.length === 0}
+                  disabled={
+                    !selectedActivityId || !selectedDate || turns.length === 0
+                  }
                   className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Reasignar
+                  ✅ Confirmar Reasignación
                 </button>
                 <button
                   onClick={closeAssignModal}
@@ -589,6 +734,8 @@ export default function ReservationsTab() {
           activities={activities}
           onClose={() => {
             setShowCreateForm(false);
+          }}
+          onSuccess={() => {
             loadData();
           }}
         />
