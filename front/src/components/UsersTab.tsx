@@ -3,12 +3,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAppContext } from "src/contexts/AppContext";
 import { userService } from "src/app/lib";
-import type { User } from "src/app/lib";
 import Swal from "sweetalert2";
 
 interface UserData {
   id: string;
   name: string;
+  lastname: string;
   email: string;
   phone?: string;
   role: "user" | "admin" | "superadmin";
@@ -88,8 +88,6 @@ export default function UsersTab() {
       setTotalUsers(safeUsers.length);
       setTotalPages(Math.ceil(safeUsers.length / 10));
       setDataLoaded(true);
-
-      console.log("✅ Usuarios cargados:", safeUsers.length);
     } catch (error: any) {
       console.error("Error cargando usuarios:", error);
       Swal.fire({
@@ -139,7 +137,6 @@ export default function UsersTab() {
             normalizedRole = "user";
           }
         }
-
         let normalizedStatus: UserData["status"] = "active";
         if (user.status) {
           const statusStr = String(user.status).toLowerCase();
@@ -197,14 +194,12 @@ export default function UsersTab() {
       }
 
       const searchLower = searchValue.toLowerCase();
-
       const filtered = allUsers.filter((user) => {
         const userName = user.name || "";
         const userEmail = user.email || "";
         const userPhone = user.phone || "";
         const userRole = user.role || "user";
         const userStatus = user.status || "active";
-
         const matchesName = userName.toLowerCase().includes(searchLower);
         const matchesEmail = userEmail.toLowerCase().includes(searchLower);
         const matchesPhone = userPhone.toLowerCase().includes(searchLower);
@@ -292,7 +287,6 @@ export default function UsersTab() {
 
     try {
       await userService.updateUserStatus(userId, newStatus);
-
       setUsers((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, status: newStatus } : u)),
       );
@@ -352,14 +346,12 @@ export default function UsersTab() {
 
     try {
       await userService.updateUserRole(userId, newRole);
-
       setUsers((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)),
       );
       setAllUsers((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)),
       );
-
       Swal.fire({
         icon: "success",
         title: "Rol actualizado",
@@ -378,7 +370,6 @@ export default function UsersTab() {
 
   const handleSaveUser = async () => {
     if (!editingUser) return;
-
     if (!isSuperAdmin) {
       Swal.fire({
         icon: "warning",
@@ -390,7 +381,6 @@ export default function UsersTab() {
 
     try {
       const originalUser = users.find((u) => u.id === editingUser.id);
-
       if (originalUser) {
         if (originalUser.status !== editingUser.status) {
           await userService.updateUserStatus(
@@ -616,7 +606,6 @@ export default function UsersTab() {
     if (!isSuperAdmin) return null;
     const roleLower = currentRole.toLowerCase();
     if (roleLower === "superadmin") return null;
-
     return (
       <div className="mt-2 space-x-2">
         {roleLower === "admin" && (
@@ -668,7 +657,6 @@ export default function UsersTab() {
               )}
             </p>
           </div>
-
           <div className="flex items-center space-x-3">
             <div className="relative">
               <div className="relative">
@@ -753,7 +741,6 @@ export default function UsersTab() {
           </div>
         </div>
       </div>
-
       {/* MODAL  */}
       {editingUser && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -787,7 +774,6 @@ export default function UsersTab() {
                 </svg>
               </button>
             </div>
-
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -803,7 +789,6 @@ export default function UsersTab() {
                   required
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Teléfono
@@ -817,7 +802,6 @@ export default function UsersTab() {
                   }
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Estado
@@ -840,7 +824,6 @@ export default function UsersTab() {
                   <option value="cancelled">Cancelado</option>
                 </select>
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Rol
@@ -863,7 +846,6 @@ export default function UsersTab() {
                   )}
                 </select>
               </div>
-
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={handleSaveUser}
@@ -882,7 +864,6 @@ export default function UsersTab() {
           </div>
         </div>
       )}
-
       {/* TABLA */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         {loading && !dataLoaded ? (
@@ -899,6 +880,9 @@ export default function UsersTab() {
                     Nombre
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Apellido
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Email
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -912,7 +896,6 @@ export default function UsersTab() {
                   </th>
                 </tr>
               </thead>
-
               <tbody className="divide-y divide-gray-200">
                 {users && users.length > 0 ? (
                   users.map((user) => (
@@ -929,6 +912,11 @@ export default function UsersTab() {
                             {user.phone}
                           </div>
                         )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="font-medium text-gray-900">
+                          {user.lastname || "Sin nombre"}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
@@ -988,7 +976,6 @@ export default function UsersTab() {
           </div>
         )}
       </div>
-
       {/* PAGINACIÓN */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center space-x-4 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -999,11 +986,9 @@ export default function UsersTab() {
           >
             Anterior
           </button>
-
           <span className="text-gray-700">
             Página {currentPage} de {totalPages}
           </span>
-
           <button
             onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
             disabled={currentPage === totalPages}

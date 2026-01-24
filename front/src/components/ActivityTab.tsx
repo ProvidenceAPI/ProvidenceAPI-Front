@@ -74,7 +74,6 @@ export default function ActivityTab() {
     setLoading(true);
     try {
       const data: any = await activityService.getAllActivities();
-      console.log("✅ Actividades recargadas:", data);
       if (Array.isArray(data)) {
         setActivities(data);
       } else if (data?.activities && Array.isArray(data.activities)) {

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-
 import { useRouter, usePathname } from "next/navigation";
 import { useAppContext } from "src/contexts/AppContext";
 
@@ -112,6 +111,5 @@ export default function ClientLayout({
       </div>
     );
   }
-
   return <>{children}</>;
 }

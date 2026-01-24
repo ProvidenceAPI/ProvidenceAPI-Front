@@ -35,16 +35,11 @@ export const userService = {
       const { data } = await apiClient.get("/api/users", { params });
       return data;
     } catch (error: any) {
-<<<<<<< Updated upstream
       const msg =
         error.response?.data?.message ?? error.response?.data ?? error.message;
       throw new Error(
         typeof msg === "string" ? msg : "Error al obtener usuarios",
       );
-=======
-      const msg = error.response?.data?.message ?? error.response?.data ?? error.message;
-    
->>>>>>> Stashed changes
     }
   },
 

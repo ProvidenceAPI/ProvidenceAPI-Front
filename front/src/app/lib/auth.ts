@@ -8,7 +8,6 @@ export interface User {
   role?: string;
 }
 
-// Obtener token (primero localStorage, luego cookies)
 export const getToken = (): string | undefined => {
   if (typeof window !== "undefined") {
     const tokenLS = localStorage.getItem("providence_token");
@@ -17,16 +16,13 @@ export const getToken = (): string | undefined => {
   return Cookies.get("providence_token");
 };
 
-// Obtener usuario (primero localStorage, luego cookies)
 export const getUser = (): User | null => {
   if (typeof window !== "undefined") {
     const userLS = localStorage.getItem("providence_user");
     if (userLS) {
       try {
         return JSON.parse(userLS);
-      } catch {
-        // Continúa con cookies
-      }
+      } catch {}
     }
   }
 

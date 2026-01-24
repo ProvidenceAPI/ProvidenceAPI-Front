@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect } from "react";
@@ -14,21 +13,17 @@ export function useRequireAuth(requiredRole?: RequiredRole) {
 
   useEffect(() => {
     if (isLoading) return;
-
-    // Si no está logueado
     if (!isAuthenticated) {
       router.push(`/login?redirect=${pathname}`);
       return;
     }
-
-    // Validar rol
     if (requiredRole) {
       const hasPermission =
-        (requiredRole === "user") ||
-         (requiredRole === "onlyUser" && role === "user") ||
-        (requiredRole === "admin" && (role === "admin" || role === "superadmin")) ||
+        requiredRole === "user" ||
+        (requiredRole === "onlyUser" && role === "user") ||
+        (requiredRole === "admin" &&
+          (role === "admin" || role === "superadmin")) ||
         (requiredRole === "superadmin" && role === "superadmin");
-
       if (!hasPermission) {
         router.push("/dashboard");
       }
@@ -37,4 +32,3 @@ export function useRequireAuth(requiredRole?: RequiredRole) {
 
   return { isLoading };
 }
-

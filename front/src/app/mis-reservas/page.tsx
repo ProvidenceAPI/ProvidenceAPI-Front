@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useAppContext } from "src/contexts/AppContext";
@@ -370,7 +369,6 @@ export default function MisReservasPage() {
       hoy.setHours(0, 0, 0, 0);
       const fechaReserva = new Date(reserva.activityDate);
       fechaReserva.setHours(0, 0, 0, 0);
-
       switch (filtroFecha) {
         case "hoy":
           if (fechaReserva.getTime() !== hoy.getTime()) return false;
@@ -418,7 +416,6 @@ export default function MisReservasPage() {
     };
     return estados[estado] || estado;
   };
-
   if (loading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -445,13 +442,11 @@ export default function MisReservasPage() {
             ➕ Nueva Reserva
           </button>
         </div>
-
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
             {error}
           </div>
         )}
-
         <div className="bg-white rounded-lg shadow p-4 mb-6">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-sm font-medium text-gray-700">
@@ -472,7 +467,6 @@ export default function MisReservasPage() {
               </button>
             )}
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -491,7 +485,6 @@ export default function MisReservasPage() {
                 ))}
               </select>
             </div>
-
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
                 Fecha
@@ -509,7 +502,6 @@ export default function MisReservasPage() {
                 <option value="pasadas">Pasadas</option>
               </select>
             </div>
-
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
                 Estado
@@ -526,14 +518,12 @@ export default function MisReservasPage() {
               </select>
             </div>
           </div>
-
           <div className="mt-3 text-sm text-gray-600">
             Mostrando{" "}
             <span className="font-semibold">{reservasFiltradas.length}</span> de{" "}
             <span className="font-semibold">{reservas.length}</span> reservas
           </div>
         </div>
-
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -653,7 +643,6 @@ export default function MisReservasPage() {
                 ✕
               </button>
             </div>
-
             <div className="p-6 space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -722,7 +711,7 @@ export default function MisReservasPage() {
                           (turnDateTime.getTime() - now.getTime()) /
                             (60 * 60 * 1000),
                         );
-                        const isSoonToStart = hoursRemaining < 3; // Menos de 3 horas
+                        const isSoonToStart = hoursRemaining < 3;
                         return (
                           <div
                             key={turn.id}

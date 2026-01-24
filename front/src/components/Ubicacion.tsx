@@ -11,7 +11,6 @@ export default function Ubicacion() {
           Visítanos en nuestro gimnasio principal en Cipoletti
         </p>
       </section>
-
       {/* Contenedor principal */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-8 items-start">
@@ -100,7 +99,6 @@ export default function Ubicacion() {
                 </div>
               </div>
             </div>
-
             {/* Horarios */}
             <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200 hover:border-red-300 transition-colors">
               <div className="flex items-start gap-4">
@@ -136,7 +134,6 @@ export default function Ubicacion() {
               </div>
             </div>
           </div>
-
           {/* Columna derecha - Mapa limpio */}
           <div className="h-auto">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden h-full">
@@ -154,7 +151,6 @@ export default function Ubicacion() {
                 />
               </div>
             </div>
-
             {/* Información adicional pequeña */}
             <div className="mt-6 grid grid-cols-2 gap-4">
               <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
@@ -168,7 +164,6 @@ export default function Ubicacion() {
                 </div>
                 <p className="text-gray-600 text-xs">Gratuito para miembros</p>
               </div>
-
               <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="bg-white p-1.5 rounded">
@@ -181,7 +176,6 @@ export default function Ubicacion() {
                 <p className="text-gray-600 text-xs">Acceso por bus</p>
               </div>
             </div>
-
             {/* Botón pequeño */}
             <div className="mt-6">
               <a

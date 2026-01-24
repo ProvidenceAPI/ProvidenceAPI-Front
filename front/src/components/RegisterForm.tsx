@@ -66,10 +66,8 @@ export default function RegisterForm() {
 
   const validateRealTime = useCallback(() => {
     const newValidations = { ...initialValidations };
-
     newValidations.name =
       registerForm.name.length >= 3 && registerForm.name.length <= 80;
-
     newValidations.lastname =
       registerForm.lastname.length >= 3 && registerForm.lastname.length <= 80;
 
@@ -116,7 +114,6 @@ export default function RegisterForm() {
       const age = today.getFullYear() - birthDate.getFullYear();
       newValidations.birthdate = age >= 16;
     }
-
     setValidations(newValidations);
   }, [registerForm]);
 
