@@ -6,7 +6,6 @@ import { userService } from "src/app/lib";
 import type { User } from "src/app/lib";
 import Swal from "sweetalert2";
 
-
 interface UserData {
   id: string;
   name: string;
@@ -35,15 +34,13 @@ export default function UsersTab() {
   const [searchTerm, setSearchTerm] = useState("");
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [dataLoaded, setDataLoaded] = useState(false);
-  
+
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const loadAllUsersOnce = useCallback(async () => {
     if (dataLoaded) return;
-
     try {
       const data: any = await userService.getUsers(1, 1000, "");
       let fetchedUsers: UserData[] = [];
-
       if (data?.users && Array.isArray(data.users)) {
         fetchedUsers = data.users;
       } else if (data?.data && Array.isArray(data.data)) {
@@ -52,48 +49,46 @@ export default function UsersTab() {
         fetchedUsers = data;
       }
 
-      const safeUsers: UserData[] = fetchedUsers.map(user => {
-        let normalizedRole: UserData['role'] = "user";
+      const safeUsers: UserData[] = fetchedUsers.map((user) => {
+        let normalizedRole: UserData["role"] = "user";
         if (user.role) {
           const roleStr = String(user.role).toLowerCase();
-          if (roleStr === 'superadmin' || roleStr === 'super-admin') {
-            normalizedRole = 'superadmin';
-          } else if (roleStr === 'admin' || roleStr === 'administrator') {
-            normalizedRole = 'admin';
+          if (roleStr === "superadmin" || roleStr === "super-admin") {
+            normalizedRole = "superadmin";
+          } else if (roleStr === "admin" || roleStr === "administrator") {
+            normalizedRole = "admin";
           } else {
-            normalizedRole = 'user';
-          }
-        }
-        
-        let normalizedStatus: UserData['status'] = "active";
-        if (user.status) {
-          const statusStr = String(user.status).toLowerCase();
-          
-          if (statusStr === 'active' || statusStr === 'activo') {
-            normalizedStatus = 'active';
-          } else if (statusStr === 'banned' || statusStr === 'baneado') {
-            normalizedStatus = 'banned';
-          } else if (statusStr === 'cancelled' || statusStr === 'cancelado') {
-            normalizedStatus = 'cancelled';
+            normalizedRole = "user";
           }
         }
 
+        let normalizedStatus: UserData["status"] = "active";
+        if (user.status) {
+          const statusStr = String(user.status).toLowerCase();
+          if (statusStr === "active" || statusStr === "activo") {
+            normalizedStatus = "active";
+          } else if (statusStr === "banned" || statusStr === "baneado") {
+            normalizedStatus = "banned";
+          } else if (statusStr === "cancelled" || statusStr === "cancelado") {
+            normalizedStatus = "cancelled";
+          }
+        }
         return {
           ...user,
           name: user.name || "",
           email: user.email || "",
           phone: user.phone || "",
           role: normalizedRole,
-          status: normalizedStatus
+          status: normalizedStatus,
         };
       });
-      
+
       setAllUsers(safeUsers);
       setUsers(safeUsers);
       setTotalUsers(safeUsers.length);
       setTotalPages(Math.ceil(safeUsers.length / 10));
       setDataLoaded(true);
-      
+
       console.log("✅ Usuarios cargados:", safeUsers.length);
     } catch (error: any) {
       console.error("Error cargando usuarios:", error);
@@ -108,10 +103,12 @@ export default function UsersTab() {
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const data: ApiResponse = await userService.getUsers(currentPage, 10, searchTerm);
-
+      const data: ApiResponse = await userService.getUsers(
+        currentPage,
+        10,
+        searchTerm,
+      );
       let fetchedUsers: UserData[] = [];
-      
       if (data?.users && Array.isArray(data.users)) {
         fetchedUsers = data.users;
         setTotalPages(data.pages || 1);
@@ -129,44 +126,41 @@ export default function UsersTab() {
         setTotalPages(1);
         setTotalUsers(0);
       }
-      
-      const safeUsers: UserData[] = fetchedUsers.map(user => {
-        let normalizedRole: UserData['role'] = "user";
+
+      const safeUsers: UserData[] = fetchedUsers.map((user) => {
+        let normalizedRole: UserData["role"] = "user";
         if (user.role) {
           const roleStr = String(user.role).toLowerCase();
-          if (roleStr === 'superadmin' || roleStr === 'super-admin') {
-            normalizedRole = 'superadmin';
-          } else if (roleStr === 'admin' || roleStr === 'administrator') {
-            normalizedRole = 'admin';
+          if (roleStr === "superadmin" || roleStr === "super-admin") {
+            normalizedRole = "superadmin";
+          } else if (roleStr === "admin" || roleStr === "administrator") {
+            normalizedRole = "admin";
           } else {
-            normalizedRole = 'user';
-          }
-        }
-        
-        
-        let normalizedStatus: UserData['status'] = "active";
-        if (user.status) {
-          const statusStr = String(user.status).toLowerCase();
-          
-          if (statusStr === 'active' || statusStr === 'activo') {
-            normalizedStatus = 'active';
-          } else if (statusStr === 'banned' || statusStr === 'baneado') {
-            normalizedStatus = 'banned';
-          } else if (statusStr === 'cancelled' || statusStr === 'cancelado') {
-            normalizedStatus = 'cancelled';
+            normalizedRole = "user";
           }
         }
 
+        let normalizedStatus: UserData["status"] = "active";
+        if (user.status) {
+          const statusStr = String(user.status).toLowerCase();
+          if (statusStr === "active" || statusStr === "activo") {
+            normalizedStatus = "active";
+          } else if (statusStr === "banned" || statusStr === "baneado") {
+            normalizedStatus = "banned";
+          } else if (statusStr === "cancelled" || statusStr === "cancelado") {
+            normalizedStatus = "cancelled";
+          }
+        }
         return {
           ...user,
           name: user.name || "",
           email: user.email || "",
           phone: user.phone || "",
           role: normalizedRole,
-          status: normalizedStatus
+          status: normalizedStatus,
         };
       });
-      
+
       setUsers(safeUsers);
     } catch (error: any) {
       console.error("Error fetching users:", error);
@@ -190,60 +184,74 @@ export default function UsersTab() {
     if (searchTerm) {
       performFrontendSearch(searchTerm);
     } else {
-      
       fetchUsers();
     }
   }, [dataLoaded, currentPage, searchTerm]);
 
-  const performFrontendSearch = useCallback((searchValue: string) => {
-    if (!searchValue.trim()) {
+  const performFrontendSearch = useCallback(
+    (searchValue: string) => {
+      if (!searchValue.trim()) {
+        setCurrentPage(1);
+        fetchUsers();
+        return;
+      }
+
+      const searchLower = searchValue.toLowerCase();
+
+      const filtered = allUsers.filter((user) => {
+        const userName = user.name || "";
+        const userEmail = user.email || "";
+        const userPhone = user.phone || "";
+        const userRole = user.role || "user";
+        const userStatus = user.status || "active";
+
+        const matchesName = userName.toLowerCase().includes(searchLower);
+        const matchesEmail = userEmail.toLowerCase().includes(searchLower);
+        const matchesPhone = userPhone.toLowerCase().includes(searchLower);
+        const matchesRole = userRole.toLowerCase().includes(searchLower);
+        const matchesStatus = userStatus.toLowerCase().includes(searchLower);
+
+        return (
+          matchesName ||
+          matchesEmail ||
+          matchesPhone ||
+          matchesRole ||
+          matchesStatus
+        );
+      });
+
+      setUsers(filtered);
+      setTotalUsers(filtered.length);
+      setTotalPages(Math.ceil(filtered.length / 10) || 1);
       setCurrentPage(1);
-      fetchUsers();
-      return;
-    }
-    
-    const searchLower = searchValue.toLowerCase();
-    
-    const filtered = allUsers.filter(user => {
-      const userName = user.name || "";
-      const userEmail = user.email || "";
-      const userPhone = user.phone || "";
-      const userRole = user.role || "user";
-      const userStatus = user.status || "active";
-      
-      const matchesName = userName.toLowerCase().includes(searchLower);
-      const matchesEmail = userEmail.toLowerCase().includes(searchLower);
-      const matchesPhone = userPhone.toLowerCase().includes(searchLower);
-      const matchesRole = userRole.toLowerCase().includes(searchLower);
-      const matchesStatus = userStatus.toLowerCase().includes(searchLower);
-      
-      return matchesName || matchesEmail || matchesPhone || matchesRole || matchesStatus;
-    });
-    
-    setUsers(filtered);
-    setTotalUsers(filtered.length);
-    setTotalPages(Math.ceil(filtered.length / 10) || 1);
-    setCurrentPage(1);
-  }, [allUsers]);
+    },
+    [allUsers],
+  );
 
-  const handleSearchChange = useCallback((value: string) => {
-    setSearchTerm(value);
-    
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    
-    if (!value.trim()) {
-      performFrontendSearch("");
-      return;
-    }
-    
-    searchTimeoutRef.current = setTimeout(() => {
-      performFrontendSearch(value);
-    }, 400);
-  }, [performFrontendSearch]);
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearchTerm(value);
 
-  const handleStatusChange = async (userId: string, newStatus: UserData["status"]) => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+
+      if (!value.trim()) {
+        performFrontendSearch("");
+        return;
+      }
+
+      searchTimeoutRef.current = setTimeout(() => {
+        performFrontendSearch(value);
+      }, 400);
+    },
+    [performFrontendSearch],
+  );
+
+  const handleStatusChange = async (
+    userId: string,
+    newStatus: UserData["status"],
+  ) => {
     if (!isSuperAdmin) {
       Swal.fire({
         icon: "warning",
@@ -253,7 +261,6 @@ export default function UsersTab() {
       return;
     }
 
-    
     const allowedStatuses = ["active", "banned", "cancelled"];
     if (!allowedStatuses.includes(newStatus)) {
       Swal.fire({
@@ -265,9 +272,9 @@ export default function UsersTab() {
     }
 
     const statusNames: Record<string, string> = {
-      "active": "Activo",
-      "banned": "Baneado", 
-      "cancelled": "Cancelado"
+      active: "Activo",
+      banned: "Baneado",
+      cancelled: "Cancelado",
     };
 
     const result = await Swal.fire({
@@ -286,14 +293,13 @@ export default function UsersTab() {
     try {
       await userService.updateUserStatus(userId, newStatus);
 
-      
-      setUsers(prev => prev.map(u => 
-        u.id === userId ? { ...u, status: newStatus } : u
-      ));
-      
-      setAllUsers(prev => prev.map(u => 
-        u.id === userId ? { ...u, status: newStatus } : u
-      ));
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, status: newStatus } : u)),
+      );
+
+      setAllUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, status: newStatus } : u)),
+      );
 
       Swal.fire({
         icon: "success",
@@ -312,7 +318,10 @@ export default function UsersTab() {
     }
   };
 
-  const handleRoleChange = async (userId: string, newRole: UserData["role"]) => {
+  const handleRoleChange = async (
+    userId: string,
+    newRole: UserData["role"],
+  ) => {
     if (!isSuperAdmin) {
       Swal.fire({
         icon: "warning",
@@ -323,9 +332,9 @@ export default function UsersTab() {
     }
 
     const roleNames: Record<string, string> = {
-      "user": "Usuario",
-      "admin": "Administrador",
-      "superadmin": "SuperAdmin"
+      user: "Usuario",
+      admin: "Administrador",
+      superadmin: "SuperAdmin",
     };
 
     const result = await Swal.fire({
@@ -344,8 +353,12 @@ export default function UsersTab() {
     try {
       await userService.updateUserRole(userId, newRole);
 
-      setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
-      setAllUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)),
+      );
+      setAllUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)),
+      );
 
       Swal.fire({
         icon: "success",
@@ -376,34 +389,35 @@ export default function UsersTab() {
     }
 
     try {
-      const updateData: any = {};
-      const originalUser = users.find(u => u.id === editingUser.id);
-      
+      const originalUser = users.find((u) => u.id === editingUser.id);
+
       if (originalUser) {
+        if (originalUser.status !== editingUser.status) {
+          await userService.updateUserStatus(
+            editingUser.id,
+            editingUser.status,
+          );
+        }
+        if (originalUser.role !== editingUser.role) {
+          await userService.updateUserRole(editingUser.id, editingUser.role);
+        }
+        const updateData: any = {};
         if (originalUser.email !== editingUser.email) {
           updateData.email = editingUser.email;
         }
-        
         if (originalUser.phone !== editingUser.phone) {
           updateData.phone = editingUser.phone || "";
         }
-        
-        if (originalUser.status !== editingUser.status) {
-          updateData.status = editingUser.status;
-        }
-        
-        if (originalUser.role !== editingUser.role) {
-          updateData.role = editingUser.role;
+        if (Object.keys(updateData).length > 0) {
+          await userService.updateUser(editingUser.id, updateData);
         }
       }
-
-      if (Object.keys(updateData).length > 0) {
-        await userService.updateUser(editingUser.id, updateData);
-      }
-
-      setUsers(prev => prev.map(u => u.id === editingUser.id ? editingUser : u));
-      setAllUsers(prev => prev.map(u => u.id === editingUser.id ? editingUser : u));
-
+      setUsers((prev) =>
+        prev.map((u) => (u.id === editingUser.id ? editingUser : u)),
+      );
+      setAllUsers((prev) =>
+        prev.map((u) => (u.id === editingUser.id ? editingUser : u)),
+      );
       setEditingUser(null);
 
       Swal.fire({
@@ -416,7 +430,8 @@ export default function UsersTab() {
       console.error("Error saving user:", error);
       let errorMessage = "Error al actualizar usuario.";
       if (error.message && error.message.includes("400")) {
-        errorMessage = "Error de validación. Verifica que los datos sean correctos.";
+        errorMessage =
+          "Error de validación. Verifica que los datos sean correctos.";
       } else if (error.message && error.message.includes("401")) {
         errorMessage = "Sesión expirada. Por favor, inicia sesión nuevamente.";
       } else if (error.message && error.message.includes("403")) {
@@ -424,7 +439,7 @@ export default function UsersTab() {
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       Swal.fire({
         icon: "error",
         title: "Error",
@@ -457,10 +472,13 @@ export default function UsersTab() {
     if (!result.isConfirmed) return;
 
     try {
-      await userService.deleteUser(userId);
-      
-      setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: 'cancelled' } : u));
-      setAllUsers(prev => prev.map(u => u.id === userId ? { ...u, status: 'cancelled' } : u));
+      await userService.updateUserStatus(userId, "cancelled");
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, status: "cancelled" } : u)),
+      );
+      setAllUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, status: "cancelled" } : u)),
+      );
 
       Swal.fire({
         icon: "success",
@@ -481,22 +499,28 @@ export default function UsersTab() {
   const getRoleBadge = (role: string) => {
     const baseClasses = "px-2.5 py-1 rounded-full text-xs font-medium";
     const safeRole = (role || "user").toLowerCase();
-    
+
     if (safeRole === "superadmin") {
       return (
-        <span className={`${baseClasses} bg-red-50 text-red-700 border border-red-200`}>
+        <span
+          className={`${baseClasses} bg-red-50 text-red-700 border border-red-200`}
+        >
           SuperAdmin
         </span>
       );
     } else if (safeRole === "admin") {
       return (
-        <span className={`${baseClasses} bg-blue-50 text-blue-700 border border-blue-200`}>
+        <span
+          className={`${baseClasses} bg-blue-50 text-blue-700 border border-blue-200`}
+        >
           Admin
         </span>
       );
     } else {
       return (
-        <span className={`${baseClasses} bg-gray-100 text-gray-700 border border-gray-300`}>
+        <span
+          className={`${baseClasses} bg-gray-100 text-gray-700 border border-gray-300`}
+        >
           Usuario
         </span>
       );
@@ -506,29 +530,37 @@ export default function UsersTab() {
   const getStatusBadge = (status: string) => {
     const baseClasses = "px-2.5 py-1 rounded-full text-xs font-medium";
     const statusLower = (status || "active").toLowerCase();
-    
-    if (statusLower === 'active') {
+
+    if (statusLower === "active") {
       return (
-        <span className={`${baseClasses} bg-green-50 text-green-700 border border-green-200`}>
+        <span
+          className={`${baseClasses} bg-green-50 text-green-700 border border-green-200`}
+        >
           Activo
         </span>
       );
-    } else if (statusLower === 'banned') {
+    } else if (statusLower === "banned") {
       return (
-        <span className={`${baseClasses} bg-red-50 text-red-700 border border-red-200`}>
+        <span
+          className={`${baseClasses} bg-red-50 text-red-700 border border-red-200`}
+        >
           Baneado
         </span>
       );
-    } else if (statusLower === 'cancelled') {
+    } else if (statusLower === "cancelled") {
       return (
-        <span className={`${baseClasses} bg-gray-50 text-gray-700 border border-gray-200`}>
+        <span
+          className={`${baseClasses} bg-gray-50 text-gray-700 border border-gray-200`}
+        >
           Cancelado
         </span>
       );
     }
-    
+
     return (
-      <span className={`${baseClasses} bg-gray-100 text-gray-700 border border-gray-300`}>
+      <span
+        className={`${baseClasses} bg-gray-100 text-gray-700 border border-gray-300`}
+      >
         {status}
       </span>
     );
@@ -563,7 +595,7 @@ export default function UsersTab() {
           Editar
         </button>
       )}
-      {isSuperAdmin && user.role !== 'superadmin' && (
+      {isSuperAdmin && user.role !== "superadmin" && (
         <button
           onClick={() => handleDeleteUser(user.id)}
           className="px-3 py-1.5 text-sm bg-red-50 text-red-700 hover:bg-red-100 rounded border border-red-200 transition-colors"
@@ -583,7 +615,7 @@ export default function UsersTab() {
   const QuickRoleButtons = ({ userId, currentRole }: QuickRoleButtonsProps) => {
     if (!isSuperAdmin) return null;
     const roleLower = currentRole.toLowerCase();
-    if (roleLower === 'superadmin') return null;
+    if (roleLower === "superadmin") return null;
 
     return (
       <div className="mt-2 space-x-2">
@@ -609,7 +641,7 @@ export default function UsersTab() {
     );
   };
 
-  if (typeof userService === 'undefined') {
+  if (typeof userService === "undefined") {
     return (
       <div className="p-8 text-center">
         <div className="text-red-600 text-xl mb-4">⚠️ Error de Importación</div>
@@ -647,15 +679,26 @@ export default function UsersTab() {
                   value={searchTerm}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === "Enter") {
                       e.preventDefault();
                       performFrontendSearch(searchTerm);
                     }
                   }}
                 />
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
                   </svg>
                 </div>
                 {searchTerm && (
@@ -664,8 +707,19 @@ export default function UsersTab() {
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     title="Limpiar búsqueda"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
                     </svg>
                   </button>
                 )}
@@ -680,8 +734,19 @@ export default function UsersTab() {
               className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg border border-gray-300 transition-colors flex items-center space-x-2"
               title="Refrescar"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
               </svg>
               <span>Refrescar</span>
             </button>
@@ -695,15 +760,30 @@ export default function UsersTab() {
           <div className="bg-white rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-xl">
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h3 className="text-xl font-semibold text-gray-900">Editar Usuario</h3>
-                <p className="text-gray-600 mt-1">{editingUser.name || "Sin nombre"}</p>
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Editar Usuario
+                </h3>
+                <p className="text-gray-600 mt-1">
+                  {editingUser.name || "Sin nombre"}
+                </p>
               </div>
               <button
                 onClick={() => setEditingUser(null)}
                 className="text-gray-500 hover:text-gray-700"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -748,7 +828,10 @@ export default function UsersTab() {
                   onChange={(e) =>
                     setEditingUser({
                       ...editingUser,
-                      status: e.target.value as "active" | "banned" | "cancelled",
+                      status: e.target.value as
+                        | "active"
+                        | "banned"
+                        | "cancelled",
                     })
                   }
                 >
@@ -771,11 +854,11 @@ export default function UsersTab() {
                       role: e.target.value as "user" | "admin" | "superadmin",
                     })
                   }
-                  disabled={!isSuperAdmin || editingUser.role === 'superadmin'}
+                  disabled={!isSuperAdmin || editingUser.role === "superadmin"}
                 >
                   <option value="user">Usuario</option>
                   <option value="admin">Admin</option>
-                  {editingUser.role === 'superadmin' && (
+                  {editingUser.role === "superadmin" && (
                     <option value="superadmin">SuperAdmin</option>
                   )}
                 </select>
@@ -833,7 +916,10 @@ export default function UsersTab() {
               <tbody className="divide-y divide-gray-200">
                 {users && users.length > 0 ? (
                   users.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                    <tr
+                      key={user.id}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="font-medium text-gray-900">
                           {user.name || "Sin nombre"}
@@ -855,7 +941,10 @@ export default function UsersTab() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-col">
                           {getRoleBadge(user.role)}
-                          <QuickRoleButtons userId={user.id} currentRole={user.role} />
+                          <QuickRoleButtons
+                            userId={user.id}
+                            currentRole={user.role}
+                          />
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -874,8 +963,12 @@ export default function UsersTab() {
                       <div className="text-gray-500">
                         {searchTerm ? (
                           <>
-                            <p className="text-lg">No se encontraron usuarios</p>
-                            <p className="text-sm mt-2">Buscando: "{searchTerm}"</p>
+                            <p className="text-lg">
+                              No se encontraron usuarios
+                            </p>
+                            <p className="text-sm mt-2">
+                              Buscando: "{searchTerm}"
+                            </p>
                             <button
                               onClick={clearSearch}
                               className="mt-4 text-red-600 hover:text-red-700 text-sm font-medium"
