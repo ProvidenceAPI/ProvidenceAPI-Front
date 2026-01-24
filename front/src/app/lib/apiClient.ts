@@ -39,13 +39,6 @@ apiClient.interceptors.response.use(
               "/auth/callback",
               "/forgot-password",
             ].includes(currentPath);
-
-            if (!isAuthPage) {
-              window.location.href = "/login";
-            }
-            setTimeout(() => {
-              alert("Tu cuenta ha sido suspendida. Contacta al administrador.");
-            }, 100);
           }
           (error as any).isHandled = true;
           (error as any).isBannedError = true;
@@ -64,13 +57,6 @@ apiClient.interceptors.response.use(
               "/auth/callback",
               "/forgot-password",
             ].includes(currentPath);
-
-            if (!isAuthPage) {
-              window.location.href = "/login";
-            }
-            setTimeout(() => {
-              alert("Tu cuenta ha sido cancelada.");
-            }, 100);
           }
           (error as any).isHandled = true;
           (error as any).isCancelledError = true;

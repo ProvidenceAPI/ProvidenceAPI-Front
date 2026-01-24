@@ -84,11 +84,23 @@ export default function LoginForm() {
       } else {
         const errorMessage = result.message || "Email o contraseña incorrectos";
         setApiError(errorMessage);
+        let icon: "error" | "warning" = "error";
+        if (
+          errorMessage.includes("suspendida") ||
+          errorMessage.includes("cancelada") ||
+          errorMessage.includes("baneada")
+        ) {
+          icon = "warning";
+        }
         await Swal.fire({
-          title: "Error",
+          title:
+            errorMessage.includes("suspendida") ||
+            errorMessage.includes("cancelada")
+              ? "Cuenta no disponible. Contacte al administrador."
+              : "Error",
           text: errorMessage,
-          icon: "error",
-          confirmButtonText: "Reintentar",
+          icon: icon,
+          confirmButtonText: "Entendido",
         });
       }
     } catch (error: any) {
@@ -96,6 +108,24 @@ export default function LoginForm() {
         console.error("Login error:", error);
       }
       let errorMessage = "Error al iniciar sesión";
+      const backendMessage = (
+        error.response?.data?.message || ""
+      ).toLowerCase();
+      if (
+        backendMessage.includes("banned") ||
+        backendMessage.includes("suspendida") ||
+        backendMessage.includes("suspendido")
+      ) {
+        errorMessage =
+          "Tu cuenta ha sido suspendida. Contacta al administrador.";
+      } else if (
+        backendMessage.includes("cancelled") ||
+        backendMessage.includes("canceled") ||
+        backendMessage.includes("cancelada")
+      ) {
+        errorMessage =
+          "Tu cuenta ha sido cancelada. Contacta al administrador.";
+      }
       if (error.response?.status === 401 || error.isAuthError) {
         errorMessage = "Email o contraseña incorrectos";
       } else if (error.message?.includes("Credenciales")) {
@@ -111,11 +141,23 @@ export default function LoginForm() {
         errorMessage = error.message;
       }
       setApiError(errorMessage);
+      let icon: "error" | "warning" = "error";
+      if (
+        errorMessage.includes("suspendida") ||
+        errorMessage.includes("cancelada") ||
+        errorMessage.includes("baneada")
+      ) {
+        icon = "warning";
+      }
       await Swal.fire({
-        title: "Error",
+        title:
+          errorMessage.includes("suspendida") ||
+          errorMessage.includes("cancelada")
+            ? "Cuenta no disponible"
+            : "Error",
         text: errorMessage,
-        icon: "error",
-        confirmButtonText: "Reintentar",
+        icon: icon,
+        confirmButtonText: "Entendido",
       });
     }
   };

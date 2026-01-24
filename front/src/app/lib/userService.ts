@@ -53,9 +53,16 @@ export const userService = {
     status: User["status"],
   ): Promise<void> {
     try {
-      const formattedStatus = status.toLowerCase() as User["status"];
+      const statusMap: Record<string, string> = {
+        active: "Active",
+        banned: "Banned",
+        cancelled: "Cancelled",
+        inactive: "Inactive",
+        suspended: "Suspended",
+      };
+      const backendStatus = statusMap[status.toLowerCase()] || status;
       await apiClient.put(`/api/users/${userId}/status`, {
-        status: formattedStatus,
+        status: backendStatus,
       });
     } catch (error: any) {
       const msg =
@@ -71,11 +78,15 @@ export const userService = {
 
   async updateUserRole(userId: string, role: User["role"]): Promise<User> {
     try {
-      const formattedRole = role.toLowerCase() as User["role"];
-      const payload = { role: formattedRole };
+      const roleMap: Record<string, string> = {
+        user: "user",
+        admin: "admin",
+        superadmin: "superAdmin",
+      };
+      const backendRole = roleMap[role.toLowerCase()] || role;
       const { data: updatedUser } = await apiClient.put(
         `/api/users/${userId}/role`,
-        payload,
+        { role: backendRole },
       );
       return updatedUser;
     } catch (error: any) {
@@ -97,15 +108,6 @@ export const userService = {
           ([_, value]) => value !== undefined && value !== null,
         ),
       );
-      if (filteredData.status && typeof filteredData.status === "string") {
-        filteredData.status =
-          filteredData.status.toLowerCase() as User["status"];
-      }
-
-      if (filteredData.role && typeof filteredData.role === "string") {
-        filteredData.role = filteredData.role.toLowerCase() as User["role"];
-      }
-
       const { data: updatedUser } = await apiClient.put(
         `/api/users/${userId}`,
         filteredData,
@@ -117,6 +119,9 @@ export const userService = {
         error.response?.data?.error ??
         error.response?.data?.details?.[0]?.message ??
         error.message;
+      throw new Error(
+        typeof msg === "string" ? msg : "Error al actualizar usuario",
+      );
     }
   },
 
@@ -128,6 +133,9 @@ export const userService = {
         error.response?.data?.message ??
         error.response?.data?.error ??
         error.message;
+      throw new Error(
+        typeof msg === "string" ? msg : "Error al cancelar usuario",
+      );
     }
   },
 
@@ -140,6 +148,9 @@ export const userService = {
         error.response?.data?.message ??
         error.response?.data?.error ??
         error.message;
+      throw new Error(
+        typeof msg === "string" ? msg : "Error al obtener usuario",
+      );
     }
   },
 };

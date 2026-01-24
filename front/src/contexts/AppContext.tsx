@@ -187,6 +187,39 @@ export default function AppProvider({
           data: userData,
         };
       } catch (meError: any) {
+        const backendMessage = (
+          meError.response?.data?.message || ""
+        ).toLowerCase();
+
+        if (
+          backendMessage.includes("banned") ||
+          backendMessage.includes("suspendida") ||
+          backendMessage.includes("suspendido")
+        ) {
+          localStorage.removeItem("providence_token");
+          localStorage.removeItem("providence_user");
+          setToken(null);
+          setUser(null);
+          return {
+            success: false,
+            message: "Tu cuenta ha sido suspendida. Contacta al administrador.",
+          };
+        }
+
+        if (
+          backendMessage.includes("cancelled") ||
+          backendMessage.includes("cancelada")
+        ) {
+          localStorage.removeItem("providence_token");
+          localStorage.removeItem("providence_user");
+          setToken(null);
+          setUser(null);
+          return {
+            success: false,
+            message: "Tu cuenta ha sido cancelada.",
+          };
+        }
+
         if (meError.isBannedError || meError.isCancelledError) {
           localStorage.removeItem("providence_token");
           localStorage.removeItem("providence_user");
@@ -204,6 +237,34 @@ export default function AppProvider({
       }
     } catch (err: any) {
       let message = "Error en login";
+      const backendMessage = (err.response?.data?.message || "").toLowerCase();
+
+      if (
+        backendMessage.includes("banned") ||
+        backendMessage.includes("suspendida") ||
+        backendMessage.includes("suspendido")
+      ) {
+        message = "Tu cuenta ha sido suspendida. Contacta al administrador.";
+        setError(message);
+        return {
+          success: false,
+          message: message,
+        };
+      }
+
+      if (
+        backendMessage.includes("cancelled") ||
+        backendMessage.includes("canceled") ||
+        backendMessage.includes("cancelada")
+      ) {
+        message = "Tu cuenta ha sido cancelada. Contacta al administrador.";
+        setError(message);
+        return {
+          success: false,
+          message: message,
+        };
+      }
+
       if (err.isBannedError || err.isCancelledError) {
         message = err.response?.data?.message || "Cuenta no disponible";
         setError(message);
