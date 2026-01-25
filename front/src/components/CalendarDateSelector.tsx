@@ -23,11 +23,14 @@ export default function CalendarDatePicker({
   };
 
   const { daysInMonth, startingDayOfWeek } = getDaysInMonth(currentMonth);
+  const normalizedAvailableDates = availableDates.map((dateStr) => {
+    return dateStr.split("T")[0];
+  });
   const isDateAvailable = (day: number) => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    return availableDates.includes(dateStr);
+    return normalizedAvailableDates.includes(dateStr);
   };
 
   const handleDateClick = (day: number) => {

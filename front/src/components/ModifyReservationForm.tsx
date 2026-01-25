@@ -26,9 +26,9 @@ export default function ModifyReservationForm({
   } | null>(null);
 
   const [formData, setFormData] = useState({
-    date: reservation.activityDate,
-    startTime: reservation.startTime,
-    endTime: reservation.endTime,
+    date: reservation.activityDate.split("T")[0],
+    startTime: reservation.startTime.substring(0, 5),
+    endTime: reservation.endTime.substring(0, 5),
     activityId: reservation.activityId,
   });
 

@@ -93,6 +93,20 @@ interface CalendarContextType {
 const CalendarContext = createContext<CalendarContextType | undefined>(
   undefined,
 );
+const colors = [
+  "#ef4444",
+  "#f97316",
+  "#f59e0b",
+  "#84cc16",
+  "#10b981",
+  "#14b8a6",
+  "#06b6d4",
+  "#3b82f6",
+  "#6366f1",
+  "#8b5cf6",
+  "#a855f7",
+  "#ec4899",
+] as const;
 
 export function CalendarProvider({ children }: { children: ReactNode }) {
   const { token, isAuthenticated } = useAppContext();
@@ -103,25 +117,11 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<"day" | "week" | "month">("month");
+  const [actionLoading, setActionLoading] = useState(false);
+
   const fetchActivities = useCallback(async () => {
     try {
       const { data } = await apiClient.get("/api/activities/active");
-
-      const colors = [
-        "#ef4444",
-        "#f97316",
-        "#f59e0b",
-        "#84cc16",
-        "#10b981",
-        "#14b8a6",
-        "#06b6d4",
-        "#3b82f6",
-        "#6366f1",
-        "#8b5cf6",
-        "#a855f7",
-        "#ec4899",
-      ];
-
       const withColors = data.map((activity: Activity, index: number) => ({
         ...activity,
         color: colors[index % colors.length],
@@ -173,9 +173,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
 
   const fetchReservations = useCallback(async () => {
     if (!isAuthenticated || !token) {
+      setReservations([]);
       return;
     }
-
     try {
       const { data } = await apiClient.get("/api/reservations/me");
       const list = Array.isArray(data)
@@ -183,7 +183,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         : data?.data || data?.reservations || [];
       setReservations(list);
     } catch (err: any) {
-      setError(err.message);
+      console.error("Error fetching reservations:", err);
       setReservations([]);
     }
   }, [isAuthenticated, token]);
@@ -195,7 +195,6 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       await fetchReservations();
       return data;
     } catch (err: any) {
-      setError(err.message);
       throw err;
     }
   };
@@ -247,17 +246,32 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     const list = Array.isArray(data) ? data : data?.data || data?.turns || [];
     const turn = list.find(
       (t: any) =>
-        String(t.date).startsWith(formData.date) &&
-        t.startTime === formData.startTime &&
-        t.endTime === formData.endTime,
+        String(t.date).split("T")[0] === formData.date &&
+        t.startTime.substring(0, 5) === formData.startTime &&
+        t.endTime.substring(0, 5) === formData.endTime,
     );
     if (!turn)
       throw new Error(
         "No se encontró un turno para la fecha y horario seleccionados.",
       );
-    await cancelReservation(reservationId);
-    await createReservation(turn.id);
+    let newReservation;
+    try {
+      newReservation = await createReservation(turn.id);
+    } catch (err) {
+      throw new Error(
+        "No se pudo crear la nueva reserva. Tu reserva original se mantiene.",
+      );
+    }
+    try {
+      await cancelReservation(reservationId, "Modificación de reserva");
+    } catch (err) {
+      console.error(
+        "Advertencia: Nueva reserva creada pero no se pudo cancelar la original",
+      );
+    }
+    await fetchReservations();
   };
+
   const cancelReservation = async (reservationId: string, reason?: string) => {
     if (!token) throw new Error("No autenticado");
     try {
@@ -317,16 +331,35 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    refetchAll();
-  }, []);
+    const loadInitialData = async () => {
+      setLoading(true);
+      const startDate = new Date();
+      startDate.setDate(1);
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + 1, 0);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchReservations();
-    } else {
-      setReservations([]);
-    }
-  }, [isAuthenticated, token, fetchReservations]);
+      try {
+        await Promise.all([
+          fetchActivities(),
+          fetchTurns({
+            startDate: startDate.toISOString().split("T")[0],
+            endDate: endDate.toISOString().split("T")[0],
+          }),
+          isAuthenticated ? fetchReservations() : Promise.resolve(),
+        ]);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadInitialData();
+  }, [
+    fetchActivities,
+  fetchTurns,
+  fetchReservations,
+  isAuthenticated,
+  ]);
 
   return (
     <CalendarContext.Provider
