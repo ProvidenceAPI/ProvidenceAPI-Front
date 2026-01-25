@@ -295,7 +295,7 @@ export default function MisReservasPage() {
   };
 
   const formatearFecha = (fechaString: string) => {
-    const [year, month, day] = fechaString.split("-").map(Number);
+    const [year, month, day] = fechaString.split("T")[0].split("-").map(Number);
     const fecha = new Date(year, month - 1, day);
 
     const dias = [
