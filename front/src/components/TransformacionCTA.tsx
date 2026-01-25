@@ -1,19 +1,18 @@
-
 "use client";
 
 import React from "react";
 import Link from "next/link";
-import { useAuth } from "src/contexts/AuthContext";
-
+import { useAppContext } from "src/contexts/AppContext";
 
 const TransformacionCTA: React.FC = () => {
-  const { user } = useAuth();
+  const { user } = useAppContext();
 
   return (
     <section
       className="text-white py-20"
       style={{
-        background: "linear-gradient(90deg, #e11d1d 0%, #c51919 50%, #b91c1c 100%)",
+        background:
+          "linear-gradient(90deg, #e11d1d 0%, #c51919 50%, #b91c1c 100%)",
       }}
     >
       <div className="max-w-6xl mx-auto px-6 text-center">
@@ -33,8 +32,6 @@ const TransformacionCTA: React.FC = () => {
             {user ? "RESERVAR CLASE AHORA" : "RESERVA TU CLASE HOY"}
           </Link>
         </div>
-
-       
       </div>
     </section>
   );

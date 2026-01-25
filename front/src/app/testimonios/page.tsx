@@ -1,13 +1,10 @@
-import React from 'react';
-import { Navbar } from 'src/components/Navbar';
-import { Footer } from 'src/components/Footer';
-import TransformacionCTA from 'src/components/TransformacionCTA';
+import React from "react";
 
 interface Testimonial {
   id: number;
   quote: string;
   author: string;
-  role: string;
+  rol: string;
   rating: number;
   highlighted?: boolean;
 }
@@ -15,102 +12,113 @@ interface Testimonial {
 const testimonials: Testimonial[] = [
   {
     id: 1,
-    quote: "Providence Fitness transformed my life! Lost 30 pounds and gained incredible strength.",
-    author: "Sarah Johnson",
-    role: "Providence Fitness Member",
+    quote:
+      "Providence Fitness cambió mi vida! Bajé 14 kilos y gané una fuerza increíble. Nunca me sentí tan bien.",
+    author: "Martina López",
+    rol: "Miembro desde 2022",
     rating: 5,
   },
   {
     id: 2,
-    quote: "The trainers are amazing and the community is so supportive!",
-    author: "Mike Chen",
-    role: "Providence Fitness Member",
+    quote:
+      "Los entrenadores son unos cracks y la comunidad es re copada. Me siento como en casa.",
+    author: "Facundo Rodríguez",
+    rol: "Boxeador amateur",
     rating: 5,
   },
   {
     id: 3,
-    quote: "Best investment I've made! I'm stronger and more confident than ever before.",
-    author: "Jessica Rodriguez",
-    role: "Providence Fitness Member",
+    quote:
+      "La mejor inversión que hice en mi vida! Estoy más fuerte y seguro que nunca. Los resultados hablan por sí solos.",
+    author: "Valentina García",
+    rol: "Miembro VIP",
     rating: 5,
     highlighted: true,
   },
   {
     id: 4,
-    quote: "From couch potato to marathon runner in 8 months. Providence made it possible!",
-    author: "David Thompson",
-    role: "Providence Fitness Member",
+    quote:
+      "De estar en el sillón a correr 10k en 6 meses. Providence me dio las herramientas y la motivación.",
+    author: "Lautaro Fernández",
+    rol: "Corredor de maratón",
     rating: 5,
   },
   {
     id: 5,
-    quote: "The personal training sessions are incredible. I've never felt this strong!",
-    author: "Amanda Park",
-    role: "Providence Fitness Member",
+    quote:
+      "Las clases personalizadas son una locura. Con el seguimiento que hacen, es imposible no progresar.",
+    author: "Agustina Silva",
+    rol: "Crossfit enthusiast",
     rating: 5,
   },
   {
     id: 6,
-    quote: "Providence Fitness helped me get back in shape after my injury. Professional and caring staff.",
-    author: "Carlos Martinez",
-    role: "Providence Fitness Member",
+    quote:
+      "Después de mi lesión, Providence me ayudó a recuperarme. Los profes son unos genios y te cuidan posta.",
+    author: "Nicolás Pérez",
+    rol: "Futbolista recuperado",
     rating: 5,
   },
 ];
 
 export default function TestimoniosPage() {
   return (
-    <>
-      <Navbar />
-      <main className="min-h-screen bg-white">
-        
-        <section className="py-16 px-6 md:px-12 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-black mb-4">
+    <main className="min-h-screen bg-white">
+      {/* Sección Hero */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 text-center">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-4xl md:text-5xl font-bold text-black mb-6">
             HISTORIAS DE <span className="text-red-600">ÉXITO</span>
           </h1>
-          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            Transformaciones reales de personas reales. Mira lo que es posible cuando te comprometes con la excelencia.
+          <div className="w-20 h-1 bg-red-600 mx-auto mb-6"></div>
+          <p className="text-gray-700 text-lg max-w-3xl mx-auto">
+            Transformaciones reales de personas de nuestra comunidad. Mirá lo
+            que es posible cuando te comprometés con vos mismo.
           </p>
-        </section>
-
-      
-        <section className="py-12 px-6 md:px-12 max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {testimonials.map((testimonial) => (
-              <div
-                key={testimonial.id}
-                className={`p-8 rounded-lg transition-all duration-300 ${
-                  testimonial.highlighted
-                    ? 'border-2 border-red-600 bg-white'
-                    : 'bg-gray-50 border border-gray-200'
-                }`}
-              >
-              
-                <div className="flex gap-1 mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <span key={i} className="text-yellow-400 text-2xl">
-                      ★
-                    </span>
-                  ))}
-                </div>
-
-           
-                <p className="text-gray-700 italic mb-6 leading-relaxed">
-                  "{testimonial.quote}"
-                </p>
-
-              
-                <div>
-                  <p className="font-bold text-black text-lg">{testimonial.author}</p>
-                  <p className="text-blue-600 text-sm">{testimonial.role}</p>
-                </div>
+          <p className="text-gray-500 mt-6 text-sm">
+            ¿Querés ser parte?{" "}
+            <a
+              href="/login"
+              className="text-red-600 hover:text-red-700 font-medium"
+            >
+              Registrate ahora
+            </a>
+          </p>
+        </div>
+      </section>
+      {/* Sección de Testimonios */}
+      <section className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {testimonials.map((testimonial) => (
+            <div
+              key={testimonial.id}
+              className={`p-6 rounded-lg transition-all duration-300 hover:shadow-md border-2 hover:border-red-400 ${
+                testimonial.highlighted
+                  ? "border-red-500 bg-white"
+                  : "border-gray-200 bg-gray-50 hover:bg-white"
+              }`}
+            >
+              {/* Estrellas */}
+              <div className="flex gap-1 mb-4">
+                {[...Array(testimonial.rating)].map((_, i) => (
+                  <span key={i} className="text-yellow-400 text-lg">
+                    ★
+                  </span>
+                ))}
               </div>
-            ))}
-          </div>
-        </section>
-      </main>
-      <TransformacionCTA/>
-      <Footer />
-    </>
+              {/* Testimonio */}
+              <p className="text-gray-700 italic mb-6 leading-relaxed">
+                "{testimonial.quote}"
+              </p>
+              {/* Autor */}
+              <div>
+                <p className="font-bold text-black">{testimonial.author}</p>
+                <p className="text-red-600 text-sm mt-1">{testimonial.rol}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </main>
   );
 }
