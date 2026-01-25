@@ -249,7 +249,9 @@ export default function NavigationTab() {
         </div>
       </div>
       {/* Main Content */}
-      <main className="w-full mx-auto px-20 py-8">
+      <main
+        className={`w-full mx-auto py-8 ${activeTab === "users" ? "px-4" : "px-20"}`}
+      >
         {activeTab === "overview" && (
           <>
             {/* Stats Cards */}

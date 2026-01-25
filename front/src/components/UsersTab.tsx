@@ -178,6 +178,7 @@ export default function UsersTab() {
             normalizedStatus = "cancelled";
           }
         }
+
         return {
           ...user,
           name: user.name || "",
@@ -694,6 +695,12 @@ export default function UsersTab() {
     );
   }
 
+  const ITEMS_PER_PAGE = 10;
+  const paginatedUsers = users.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
+  );
+
   return (
     <div className="space-y-6">
       {/* Header  */}
@@ -933,45 +940,33 @@ export default function UsersTab() {
         </div>
       )}
       {/* TABLA */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         {loading && !dataLoaded ? (
           <div className="p-12 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Cargando usuarios...</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="w-full overflow-x-auto overflow-y-hidden">
             <table className="w-full table-fixed">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                 <tr>
-                  <th className="w-[150px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Nombre
-                  </th>
-                  <th className="w-[150px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Apellido
-                  </th>
-                  <th className="w-[250px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="w-[180px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Rol
-                  </th>
-                  <th className="w-[120px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Estado
-                  </th>
-                  <th className="w-[200px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Acciones
-                  </th>
+                  <th className="w-[15%] px-2 sm:px-3 xl:px-6">Nombre</th>
+                  <th className="w-[15%] px-2 sm:px-3 xl:px-6">Apellido</th>
+                  <th className="w-[25%] px-2 sm:px-3 xl:px-6">Email</th>
+                  <th className="w-[15%] px-2 sm:px-3 xl:px-6">Rol</th>
+                  <th className="w-[10%] px-2 sm:px-3 xl:px-6">Estado</th>
+                  <th className="w-[20%] px-2 sm:px-3 xl:px-6">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200 bg-white">
                 {users && users.length > 0 ? (
-                  users.map((user) => (
+                  paginatedUsers.map((user) => (
                     <tr
                       key={user.id}
                       className="hover:bg-gray-50 transition-colors"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 break-words">
                         <div className="font-medium text-gray-900">
                           {user.name || "Sin nombre"}
                         </div>
@@ -981,12 +976,12 @@ export default function UsersTab() {
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 break-words">
                         <div className="font-medium text-gray-900">
-                          {user.lastname || "Sin nombre"}
+                          {user.lastname || "Sin apellido"}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 break-words">
                         <div className="text-sm text-gray-900">
                           {user.email}
                         </div>
@@ -994,7 +989,7 @@ export default function UsersTab() {
                           Registro: {formatDate(user.createdAt)}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4">
                         <div className="flex flex-col">
                           {getRoleBadge(user.rol)}
                           <QuickRoleButtons
@@ -1003,11 +998,13 @@ export default function UsersTab() {
                           />
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 break-words">
                         {getStatusBadge(user.status)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <ActionButtons user={user} />
+                      <td className="px-2 sm:px-3 xl:px-6 py-4">
+                        <div className="px-2 sm:px-3 xl:px-6 py-4">
+                          <ActionButtons user={user} />
+                        </div>
                       </td>
                     </tr>
                   ))
