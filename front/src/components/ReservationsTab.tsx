@@ -122,11 +122,25 @@ export default function ReservationsTab() {
           turn.availableSpots > 0,
       );
       const uniqueDates = Array.from(
-        new Set(availableTurns.map((turn: Turn) => turn.date)),
+        new Set(
+          availableTurns.map((turn: Turn) => {
+            const dateStr =
+              typeof turn.date === "string"
+                ? turn.date.split("T")[0]
+                : turn.date;
+            return dateStr;
+          }),
+        ),
       ) as string[];
+
       setAvailableDatesForActivity(uniqueDates);
       if (date) {
-        setTurns(availableTurns.filter((turn: Turn) => turn.date === date));
+        const turnsForDate = availableTurns.filter((turn: Turn) => {
+          const turnDate =
+            typeof turn.date === "string" ? turn.date.split("T")[0] : turn.date;
+          return turnDate === date;
+        });
+        setTurns(turnsForDate);
       } else {
         setTurns(availableTurns);
       }
@@ -148,6 +162,10 @@ export default function ReservationsTab() {
           turnId,
         },
       );
+      closeAssignModal();
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      await loadData();
+
       await Swal.fire({
         icon: "success",
         title: "¡Éxito!",
@@ -155,7 +173,7 @@ export default function ReservationsTab() {
       });
 
       closeAssignModal();
-      loadData();
+      await loadData();
     } catch (error: any) {
       console.error("Error changing reservation turn:", error);
       Swal.fire({
@@ -295,7 +313,11 @@ export default function ReservationsTab() {
   };
 
   const formatTurnDate = (date: string): string => {
-    return new Date(date).toLocaleDateString("es-ES", {
+    const dateStr = typeof date === "string" ? date.split("T")[0] : date;
+    const [year, month, day] = dateStr.split("-").map(Number);
+    const dateObj = new Date(year, month - 1, day);
+
+    return dateObj.toLocaleDateString("es-ES", {
       weekday: "short",
       year: "numeric",
       month: "short",
