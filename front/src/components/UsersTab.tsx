@@ -39,6 +39,7 @@ export default function UsersTab() {
   >("all");
 
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const loadAllUsersOnce = useCallback(async () => {
     if (dataLoaded) return;
     try {
@@ -100,6 +101,32 @@ export default function UsersTab() {
       });
     }
   }, [dataLoaded]);
+
+  const performFrontendSearch = useCallback(
+    (searchValue: string) => {
+      const searchLower = searchValue.toLowerCase();
+      const filtered = allUsers.filter((user) => {
+        if (statusFilter !== "all" && user.status !== statusFilter) {
+          return false;
+        }
+        if (!searchLower) return true;
+
+        return (
+          user.name?.toLowerCase().includes(searchLower) ||
+          user.email?.toLowerCase().includes(searchLower) ||
+          user.phone?.toLowerCase().includes(searchLower) ||
+          user.rol?.toLowerCase().includes(searchLower) ||
+          user.status?.toLowerCase().includes(searchLower)
+        );
+      });
+
+      setUsers(filtered);
+      setTotalUsers(filtered.length);
+      setTotalPages(Math.ceil(filtered.length / 10) || 1);
+      setCurrentPage(1);
+    },
+    [allUsers, statusFilter],
+  );
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -181,42 +208,26 @@ export default function UsersTab() {
     if (!dataLoaded) {
       loadAllUsersOnce();
     }
-    if (searchTerm) {
+  }, [dataLoaded, loadAllUsersOnce]);
+  /*if (searchTerm) {
       performFrontendSearch(searchTerm);
     } else {
       fetchUsers();
     }
-  }, [dataLoaded, currentPage, searchTerm]);
-
-  const performFrontendSearch = useCallback(
-    (searchValue: string) => {
-      const searchLower = searchValue.toLowerCase();
-      const filtered = allUsers.filter((user) => {
-        if (statusFilter !== "all" && user.status !== statusFilter) {
-          return false;
-        }
-        if (!searchLower) return true;
-
-        return (
-          user.name?.toLowerCase().includes(searchLower) ||
-          user.email?.toLowerCase().includes(searchLower) ||
-          user.phone?.toLowerCase().includes(searchLower) ||
-          user.rol?.toLowerCase().includes(searchLower) ||
-          user.status?.toLowerCase().includes(searchLower)
-        );
-      });
-
-      setUsers(filtered);
-      setTotalUsers(filtered.length);
-      setTotalPages(Math.ceil(filtered.length / 10) || 1);
-      setCurrentPage(1);
-    },
-    [allUsers, statusFilter],
-  );
+  }, [
+    dataLoaded,
+    currentPage,
+    searchTerm,
+    loadAllUsersOnce,
+    performFrontendSearch,
+    fetchUsers,
+  ]);*/
 
   useEffect(() => {
-    performFrontendSearch(searchTerm);
-  }, [statusFilter]);
+    if (dataLoaded) {
+      performFrontendSearch(searchTerm);
+    }
+  }, [dataLoaded, searchTerm, statusFilter, performFrontendSearch]);
 
   const handleSearchChange = useCallback(
     (value: string) => {
@@ -280,6 +291,16 @@ export default function UsersTab() {
 
     if (!result.isConfirmed) return;
 
+    const previousUsers = [...users];
+    const previousAllUsers = [...allUsers];
+
+    setUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, status: newStatus } : u)),
+    );
+    setAllUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, status: newStatus } : u)),
+    );
+
     try {
       await userService.updateUserStatus(userId, newStatus);
       setUsers((prev) =>
@@ -298,6 +319,9 @@ export default function UsersTab() {
         showConfirmButton: false,
       });
     } catch (error: any) {
+      setUsers(previousUsers);
+      setAllUsers(previousAllUsers);
+
       console.error("Error updating status:", error);
       Swal.fire({
         icon: "error",
@@ -371,36 +395,71 @@ export default function UsersTab() {
       return;
     }
 
-    try {
-      const originalUser = users.find((u) => u.id === editingUser.id);
-      if (originalUser) {
-        if (originalUser.status !== editingUser.status) {
-          await userService.updateUserStatus(
-            editingUser.id,
-            editingUser.status,
-          );
-        }
-        if (originalUser.rol !== editingUser.rol) {
-          await userService.updateUserRole(editingUser.id, editingUser.rol);
-        }
-        const updateData: any = {};
-        if (originalUser.email !== editingUser.email) {
-          updateData.email = editingUser.email;
-        }
-        if (originalUser.phone !== editingUser.phone) {
-          updateData.phone = editingUser.phone || "";
-        }
-        if (Object.keys(updateData).length > 0) {
-          await userService.updateUser(editingUser.id, updateData);
-        }
-      }
-      setUsers((prev) =>
-        prev.map((u) => (u.id === editingUser.id ? editingUser : u)),
-      );
-      setAllUsers((prev) =>
-        prev.map((u) => (u.id === editingUser.id ? editingUser : u)),
-      );
+    const originalUser = allUsers.find((u) => u.id === editingUser.id);
+    if (!originalUser) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "No se encontró el usuario original",
+      });
+      return;
+    }
+
+    const hasStatusChanged = originalUser.status !== editingUser.status;
+    const hasRoleChanged = originalUser.rol !== editingUser.rol;
+    const hasEmailChanged = originalUser.email !== editingUser.email;
+    const hasPhoneChanged = originalUser.phone !== editingUser.phone;
+
+    if (
+      !hasStatusChanged &&
+      !hasRoleChanged &&
+      !hasEmailChanged &&
+      !hasPhoneChanged
+    ) {
       setEditingUser(null);
+      Swal.fire({
+        icon: "info",
+        title: "Sin cambios",
+        text: "No se detectaron cambios en el usuario",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+      return;
+    }
+
+    const previousUsers = [...users];
+    const previousAllUsers = [...allUsers];
+
+    setUsers((prev) =>
+      prev.map((u) => (u.id === editingUser.id ? editingUser : u)),
+    );
+    setAllUsers((prev) =>
+      prev.map((u) => (u.id === editingUser.id ? editingUser : u)),
+    );
+
+    const userToEdit = { ...editingUser };
+    setEditingUser(null);
+
+    try {
+      // ✅ SOLO ACTUALIZAR LO QUE CAMBIÓ
+      if (hasStatusChanged) {
+        await userService.updateUserStatus(userToEdit.id, userToEdit.status);
+      }
+
+      if (hasRoleChanged) {
+        await userService.updateUserRole(userToEdit.id, userToEdit.rol);
+      }
+
+      if (hasEmailChanged || hasPhoneChanged) {
+        const updateData: any = {};
+        if (hasEmailChanged) {
+          updateData.email = userToEdit.email;
+        }
+        if (hasPhoneChanged) {
+          updateData.phone = userToEdit.phone || "";
+        }
+        await userService.updateUser(userToEdit.id, updateData);
+      }
 
       Swal.fire({
         icon: "success",
@@ -409,6 +468,10 @@ export default function UsersTab() {
         showConfirmButton: false,
       });
     } catch (error: any) {
+      setUsers(previousUsers);
+      setAllUsers(previousAllUsers);
+      setEditingUser(userToEdit);
+
       console.error("Error saving user:", error);
       let errorMessage = "Error al actualizar usuario.";
       if (error.message && error.message.includes("400")) {
@@ -650,32 +713,55 @@ export default function UsersTab() {
             </p>
           </div>
           <div className="flex items-center space-x-3">
+            {/* ✅ SELECT CON ANCHO FIJO */}
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm"
+              className="w-[140px] px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-50 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors cursor-pointer flex-shrink-0"
             >
               <option value="all">Todos</option>
               <option value="active">Activos</option>
               <option value="banned">Baneados</option>
               <option value="cancelled">Cancelados</option>
             </select>
-            <div className="relative">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Buscar usuarios..."
-                  className="px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none w-64 transition-colors"
-                  value={searchTerm}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      performFrontendSearch(searchTerm);
-                    }
-                  }}
-                />
-                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+
+            {/* ✅ INPUT CON ANCHO FIJO - SIN DIV EXTRA */}
+            <div className="relative w-64 flex-shrink-0">
+              <input
+                type="text"
+                placeholder="Buscar usuarios..."
+                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
+                value={searchTerm}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    performFrontendSearch(searchTerm);
+                  }
+                }}
+              />
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
+              {searchTerm && (
+                <button
+                  onClick={clearSearch}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  title="Limpiar búsqueda"
+                >
                   <svg
                     className="w-4 h-4"
                     fill="none"
@@ -687,41 +773,21 @@ export default function UsersTab() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                      d="M6 18L18 6M6 6l12 12"
                     />
                   </svg>
-                </div>
-                {searchTerm && (
-                  <button
-                    onClick={clearSearch}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    title="Limpiar búsqueda"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
-                )}
-              </div>
+                </button>
+              )}
             </div>
+
+            {/* ✅ BOTÓN CON ANCHO FIJO */}
             <button
               onClick={() => {
                 setDataLoaded(false);
                 setCurrentPage(1);
                 setSearchTerm("");
               }}
-              className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg border border-gray-300 transition-colors flex items-center space-x-2"
+              className="w-[130px] px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg border border-gray-300 transition-colors flex items-center justify-center space-x-2 flex-shrink-0"
               title="Refrescar"
             >
               <svg
@@ -875,25 +941,25 @@ export default function UsersTab() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full table-fixed">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="w-[150px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Nombre
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="w-[150px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Apellido
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="w-[250px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Email
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="w-[180px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Rol
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="w-[120px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Estado
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="w-[200px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Acciones
                   </th>
                 </tr>
@@ -938,9 +1004,7 @@ export default function UsersTab() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex flex-col">
-                          {getStatusBadge(user.status)}
-                        </div>
+                        {getStatusBadge(user.status)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <ActionButtons user={user} />
@@ -949,7 +1013,7 @@ export default function UsersTab() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="text-center py-12">
+                    <td colSpan={6} className="text-center py-12">
                       <div className="text-gray-500">
                         {searchTerm ? (
                           <>
