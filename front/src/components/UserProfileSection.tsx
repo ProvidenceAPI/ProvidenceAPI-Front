@@ -184,7 +184,6 @@ export default function UserProfileSection({
                   </div>
                 )}
               </div>
-
               <div className="mt-6 text-center">
                 <button
                   onClick={() => fileInputRef.current?.click()}
@@ -228,7 +227,6 @@ export default function UserProfileSection({
               </div>
             </div>
           </div>
-
           <div className="lg:w-3/5">
             <div className="flex flex-col h-full">
               <div className="flex-1">
@@ -248,7 +246,6 @@ export default function UserProfileSection({
                         ¡Hola, {user?.name || "Usuario"}!
                       </h1>
                     )}
-
                     <div className="flex items-center mt-4 space-x-4">
                       <div className="flex items-center text-gray-600">
                         <svg
@@ -263,7 +260,6 @@ export default function UserProfileSection({
                       </div>
                     </div>
                   </div>
-
                   <div className="flex flex-col items-end space-y-4">
                     <div className="text-right">
                       <p className="text-sm text-gray-500 mb-1">Teléfono</p>

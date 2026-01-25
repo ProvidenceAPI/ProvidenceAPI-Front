@@ -139,7 +139,6 @@ export const Navbar: React.FC = () => {
       );
     }
 
-    // ==================== USUARIO NORMAL AUTENTICADO ====================
     return (
       <>
         <Link

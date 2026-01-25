@@ -4,7 +4,7 @@ export interface Turn {
   date: string;
   startTime: string;
   endTime: string;
-  capacity: number;
+  capacity?: number;
   availableSpots: number;
   status?: string;
   isFreeTrial?: boolean;

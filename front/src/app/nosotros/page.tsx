@@ -39,7 +39,6 @@ export default function NosotrosPage() {
                   QUIÉNES <span className="text-red-600">SOMOS</span>
                 </h2>
               </div>
-
               <div className="space-y-6">
                 <p className="text-gray-700 text-lg md:text-xl leading-relaxed">
                   <span className="text-gray-900 font-semibold">
@@ -196,7 +195,6 @@ export default function NosotrosPage() {
               <h3 className="text-3xl font-bold text-center mb-12 text-gray-900">
                 NUESTROS VALORES
               </h3>
-
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[
                   {

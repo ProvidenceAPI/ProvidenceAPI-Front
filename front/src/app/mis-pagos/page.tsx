@@ -4,7 +4,6 @@ import { useAppContext } from "src/contexts/AppContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useRequireAuth } from "src/hooks/useRequireAuth";
-
 import Swal from "sweetalert2";
 import { paymentService, isValidUUID, activityService } from "src/app/lib";
 import { Payment } from "src/interfaces/Payments";
@@ -14,7 +13,6 @@ export default function MisPagosPage() {
   const { isAuthenticated, loading } = useAppContext();
   const router = useRouter();
   const { isLoading: isAuthLoading } = useRequireAuth("onlyUser");
-
   const [pagos, setPagos] = useState<Payment[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<string>("");
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -105,10 +103,8 @@ export default function MisPagosPage() {
     fetchReservations();
   }, []);
 
-  
   if (isAuthLoading) return <div>Cargando...</div>;
 
-  
   const iniciarPagoMercadoPago = async () => {
     if (!selectedActivity) {
       setError("Por favor selecciona una actividad");

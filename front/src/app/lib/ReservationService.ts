@@ -1,5 +1,3 @@
-// src/lib/reservationService.ts - VERSIÓN UNIFICADA COMPLETA
-
 import { apiClient } from "./apiClient";
 import { Turn } from "src/interfaces/Turn";
 import { Reservation } from "src/interfaces/Reservation";

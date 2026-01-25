@@ -4,75 +4,36 @@ import { useState, useEffect } from "react";
 import { apiClient } from "src/app/lib/apiClient";
 import Swal from "sweetalert2";
 import ManualReservationForm from "./ManualReservationForm";
-
-interface Reservation {
-  id: string;
-  activityDate: string;
-  startTime: string;
-  endTime?: string;
-  status: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  activity?: {
-    id: string;
-    name: string;
-  };
-  turn?: {
-    id: string;
-    activityId: string;
-    activity?: {
-      id: string;
-      name: string;
-    };
-  };
-}
-
-interface Activity {
-  id: string;
-  name: string;
-}
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-}
-
-interface Turn {
-  id: string;
-  activityId: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  availableSpots: number;
-  status: string;
-  activity?: {
-    id: string;
-    name: string;
-  };
-}
+import { Reservation } from "src/interfaces/Reservation";
+import { IUser } from "src/interfaces/IUser";
+import { Turn } from "src/interfaces/Turn";
+import { Activity } from "src/interfaces/Activity";
+import { StatusMap } from "src/interfaces/StatusBadge";
+import CalendarDatePicker from "./CalendarDateSelector";
 
 export default function ReservationsTab() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<IUser[]>([]);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingTurns, setLoadingTurns] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedReservation, setSelectedReservation] =
     useState<Reservation | null>(null);
   const [selectedActivityId, setSelectedActivityId] = useState<string>("");
-  const [loadingTurns, setLoadingTurns] = useState(false);
-
-  // Filtros
   const [filterActivity, setFilterActivity] = useState<string>("");
   const [filterDate, setFilterDate] = useState<string>("");
   const [filterTime, setFilterTime] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [availableDatesForActivity, setAvailableDatesForActivity] = useState<
+    string[]
+  >([]);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
 
   useEffect(() => {
     loadData();
@@ -87,23 +48,28 @@ export default function ReservationsTab() {
         apiClient.get("/api/users"),
       ]);
 
-      // Parsear reservas - puede venir como array directo o dentro de data
       const reservationsData = reservationsRes.data;
       const reservationsList = Array.isArray(reservationsData)
         ? reservationsData
         : reservationsData?.data || reservationsData?.reservations || [];
 
-      // Parsear actividades - puede venir como array directo o dentro de data
       const activitiesData = activitiesRes.data;
       const activitiesList = Array.isArray(activitiesData)
         ? activitiesData
         : activitiesData?.data || activitiesData?.activities || [];
 
-      // Parsear usuarios - puede venir como array directo o dentro de data
       const usersData = usersRes.data;
       const usersList = Array.isArray(usersData)
         ? usersData
         : usersData?.data || usersData?.users || [];
+
+      const sortedReservations = reservationsList.sort(
+        (a: Reservation, b: Reservation) => {
+          const dateA = new Date(`${a.activityDate}T${a.startTime}`);
+          const dateB = new Date(`${b.activityDate}T${b.startTime}`);
+          return dateA.getTime() - dateB.getTime();
+        },
+      );
 
       setReservations(reservationsList);
       setActivities(activitiesList);
@@ -115,7 +81,6 @@ export default function ReservationsTab() {
         title: "Error",
         text: "No se pudieron cargar los datos",
       });
-      // Asegurar que siempre sean arrays para evitar errores
       setReservations([]);
       setActivities([]);
       setUsers([]);
@@ -127,6 +92,7 @@ export default function ReservationsTab() {
   const loadTurnsForActivity = async (activityId: string, date?: string) => {
     if (!activityId) {
       setTurns([]);
+      setAvailableDatesForActivity([]);
       return;
     }
 
@@ -137,10 +103,9 @@ export default function ReservationsTab() {
         params.startDate = date;
         params.endDate = date;
       } else {
-        // Cargar turnos de los próximos 30 días
         const startDate = new Date();
         const endDate = new Date();
-        endDate.setDate(endDate.getDate() + 30);
+        endDate.setDate(endDate.getDate() + 90);
         params.startDate = startDate.toISOString().split("T")[0];
         params.endDate = endDate.toISOString().split("T")[0];
       }
@@ -150,17 +115,24 @@ export default function ReservationsTab() {
         ? data
         : data?.data || data?.turns || [];
 
-      // Filtrar solo turnos disponibles y no cancelados
       const availableTurns = turnsList.filter(
         (turn: Turn) =>
           turn.status !== "cancelled" &&
           turn.status !== "completed" &&
           turn.availableSpots > 0,
       );
-
-      setTurns(availableTurns);
+      const uniqueDates = Array.from(
+        new Set(availableTurns.map((turn: Turn) => turn.date)),
+      ) as string[];
+      setAvailableDatesForActivity(uniqueDates);
+      if (date) {
+        setTurns(availableTurns.filter((turn: Turn) => turn.date === date));
+      } else {
+        setTurns(availableTurns);
+      }
     } catch (error: any) {
       console.error("Error loading turns:", error);
+      setAvailableDatesForActivity([]);
       setTurns([]);
     } finally {
       setLoadingTurns(false);
@@ -169,7 +141,6 @@ export default function ReservationsTab() {
 
   const handleChangeReservationTurn = async (turnId: string) => {
     if (!selectedReservation) return;
-
     try {
       await apiClient.patch(
         `/api/reservations/${selectedReservation.id}/turn`,
@@ -177,17 +148,13 @@ export default function ReservationsTab() {
           turnId,
         },
       );
-
       await Swal.fire({
         icon: "success",
         title: "¡Éxito!",
         text: "Reserva reasignada a otra actividad correctamente",
       });
 
-      setShowAssignModal(false);
-      setSelectedReservation(null);
-      setSelectedActivityId("");
-      setTurns([]);
+      closeAssignModal();
       loadData();
     } catch (error: any) {
       console.error("Error changing reservation turn:", error);
@@ -211,9 +178,7 @@ export default function ReservationsTab() {
       confirmButtonText: "Sí, cancelar",
       cancelButtonText: "No",
     });
-
     if (!result.isConfirmed) return;
-
     try {
       await apiClient.put(`/api/reservations/${reservationId}/cancel`);
       await Swal.fire({
@@ -232,14 +197,46 @@ export default function ReservationsTab() {
     }
   };
 
-  // Filtrar reservas
+  const openAssignModal = (reservation: Reservation) => {
+    setSelectedReservation(reservation);
+    setShowAssignModal(true);
+  };
+
+  const closeAssignModal = () => {
+    setShowAssignModal(false);
+    setSelectedReservation(null);
+    setSelectedActivityId("");
+    setSelectedDate("");
+    setAvailableDatesForActivity([]);
+    setTurns([]);
+  };
+
+  const handleAssignSubmit = () => {
+    const select = document.getElementById("turn-select") as HTMLSelectElement;
+    if (select && select.value) {
+      handleChangeReservationTurn(select.value);
+    } else {
+      Swal.fire({
+        icon: "warning",
+        title: "Selecciona un turno",
+        text: "Debes seleccionar una actividad y un turno para reasignar la reserva",
+      });
+    }
+  };
+
+  const clearFilters = () => {
+    setFilterActivity("");
+    setFilterDate("");
+    setFilterTime("");
+    setFilterStatus("");
+    setCurrentPage(1);
+  };
+
   const filteredReservations = reservations.filter((reservation) => {
     const activityName =
       reservation.activity?.name || reservation.turn?.activity?.name || "";
-    const reservationDate = new Date(reservation.activityDate)
-      .toISOString()
-      .split("T")[0];
-    const reservationTime = reservation.startTime.substring(0, 5); // HH:MM
+    const reservationDate = reservation.activityDate.split("T")[0];
+    const reservationTime = reservation.startTime.substring(0, 5);
 
     if (
       filterActivity &&
@@ -259,11 +256,15 @@ export default function ReservationsTab() {
     return true;
   });
 
+  const hasActiveFilters =
+    filterActivity || filterDate || filterTime || filterStatus;
+
   const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { color: string; text: string }> = {
+    const statusMap: StatusMap = {
       confirmed: { color: "bg-green-100 text-green-800", text: "Confirmada" },
       cancelled: { color: "bg-red-100 text-red-800", text: "Cancelada" },
       completed: { color: "bg-blue-100 text-blue-800", text: "Completada" },
+      pending: { color: "bg-yellow-100 text-yellow-800", text: "Pendiente" },
     };
 
     const statusInfo = statusMap[status] || {
@@ -279,6 +280,34 @@ export default function ReservationsTab() {
       </span>
     );
   };
+  const formatReservationDate = (date: string): string => {
+    const [year, month, day] = date.split("T")[0].split("-");
+    const dateObj = new Date(
+      parseInt(year),
+      parseInt(month) - 1,
+      parseInt(day),
+    );
+    return dateObj.toLocaleDateString("es-ES", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  const formatTurnDate = (date: string): string => {
+    return new Date(date).toLocaleDateString("es-ES", {
+      weekday: "short",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  const getActivityName = (reservation: Reservation): string => {
+    return (
+      reservation.activity?.name || reservation.turn?.activity?.name || "N/A"
+    );
+  };
 
   if (loading) {
     return (
@@ -287,6 +316,14 @@ export default function ReservationsTab() {
       </div>
     );
   }
+
+  const totalPages = Math.ceil(filteredReservations.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedReservations = filteredReservations.slice(
+    startIndex,
+    endIndex,
+  );
 
   return (
     <div className="space-y-6">
@@ -297,12 +334,11 @@ export default function ReservationsTab() {
         </h2>
         <button
           onClick={() => setShowCreateForm(true)}
-          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium"
+          className="bg-red-600 text-white text-lg px-12 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium"
         >
           + Crear Reserva
         </button>
       </div>
-
       {/* Filtros */}
       <div className="bg-white p-4 rounded-lg shadow">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -312,7 +348,10 @@ export default function ReservationsTab() {
             </label>
             <select
               value={filterActivity}
-              onChange={(e) => setFilterActivity(e.target.value)}
+              onChange={(e) => {
+                setFilterActivity(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full px-3 py-2 border rounded-lg"
             >
               <option value="">Todas</option>
@@ -323,7 +362,6 @@ export default function ReservationsTab() {
               ))}
             </select>
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Fecha
@@ -335,7 +373,6 @@ export default function ReservationsTab() {
               className="w-full px-3 py-2 border rounded-lg"
             />
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Hora
@@ -347,7 +384,6 @@ export default function ReservationsTab() {
               className="w-full px-3 py-2 border rounded-lg"
             />
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Estado
@@ -364,24 +400,22 @@ export default function ReservationsTab() {
             </select>
           </div>
         </div>
-
         {/* Botón limpiar filtros */}
-        {(filterActivity || filterDate || filterTime || filterStatus) && (
+        {hasActiveFilters && (
           <button
-            onClick={() => {
-              setFilterActivity("");
-              setFilterDate("");
-              setFilterTime("");
-              setFilterStatus("");
-            }}
+            onClick={clearFilters}
             className="mt-4 text-sm text-red-600 hover:text-red-700"
           >
             Limpiar filtros
           </button>
         )}
+        <div className="mt-4 text-sm text-gray-600">
+          Mostrando {startIndex + 1}-
+          {Math.min(endIndex, filteredReservations.length)} de{" "}
+          {filteredReservations.length} reservas
+        </div>
       </div>
-
-      {/* Tabla de reservas */}
+      {/* ========== TABLA DE RESERVAS ========== */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -418,218 +452,361 @@ export default function ReservationsTab() {
                   </td>
                 </tr>
               ) : (
-                filteredReservations.map((reservation) => {
-                  const activityName =
-                    reservation.activity?.name ||
-                    reservation.turn?.activity?.name ||
-                    "N/A";
-                  const reservationDate = new Date(
-                    reservation.activityDate,
-                  ).toLocaleDateString("es-ES", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  });
-
-                  return (
-                    <tr key={reservation.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {reservation.user.name}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {reservation.user.email}
-                          </div>
+                paginatedReservations.map((reservation) => (
+                  <tr key={reservation.id} className="hover:bg-gray-50">
+                    {/* Usuario */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {reservation.user.name}
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {activityName}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {reservationDate}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {reservation.startTime}
-                        {reservation.endTime && ` - ${reservation.endTime}`}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(reservation.status)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                        {reservation.status === "confirmed" && (
-                          <>
-                            <button
-                              onClick={() => {
-                                setSelectedReservation(reservation);
-                                setShowAssignModal(true);
-                              }}
-                              className="text-blue-600 hover:text-blue-900"
-                            >
-                              Reasignar
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleCancelReservation(reservation.id)
-                              }
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              Cancelar
-                            </button>
-                          </>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
+                        <div className="text-sm text-gray-500">
+                          {reservation.user.email}
+                        </div>
+                      </div>
+                    </td>
+                    {/* Actividad */}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {getActivityName(reservation)}
+                    </td>
+                    {/* Fecha */}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {formatReservationDate(reservation.activityDate)}
+                    </td>
+                    {/* Hora */}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {reservation.startTime}
+                      {reservation.endTime && ` - ${reservation.endTime}`}
+                    </td>
+                    {/* Estado */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getStatusBadge(reservation.status)}
+                    </td>
+                    {/* Acciones */}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                      {reservation.status === "confirmed" && (
+                        <>
+                          <button
+                            onClick={() => openAssignModal(reservation)}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            Reasignar
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleCancelReservation(reservation.id)
+                            }
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            Cancelar
+                          </button>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
         </div>
+        {/* Paginación */}
+        {totalPages > 1 && (
+          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            {/* Controles móviles */}
+            <div className="flex-1 flex justify-between sm:hidden">
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Anterior
+              </button>
+              <button
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Siguiente
+              </button>
+            </div>
+            {/* Controles desktop */}
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Página <span className="font-medium">{currentPage}</span> de{" "}
+                  <span className="font-medium">{totalPages}</span>
+                </p>
+              </div>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Anterior
+                  </button>
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNumber;
+                    if (totalPages <= 5) pageNumber = i + 1;
+                    else if (currentPage <= 3) pageNumber = i + 1;
+                    else if (currentPage >= totalPages - 2)
+                      pageNumber = totalPages - 4 + i;
+                    else pageNumber = currentPage - 2 + i;
+                    return (
+                      <button
+                        key={pageNumber}
+                        onClick={() => setCurrentPage(pageNumber)}
+                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === pageNumber ? "z-10 bg-red-50 border-red-500 text-red-600" : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"}`}
+                      >
+                        {pageNumber}
+                      </button>
+                    );
+                  })}
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                    }
+                    disabled={currentPage === totalPages}
+                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Siguiente
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* Modal de reasignación */}
+      {/* ========== MODAL DE REASIGNACIÓN ========== */}
       {showAssignModal && selectedReservation && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6">
+              {/* Header del modal */}
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-2xl font-bold text-gray-900">
-                  Reasignar a Otra Actividad
+                  Reasignar Reserva
                 </h3>
                 <button
-                  onClick={() => {
-                    setShowAssignModal(false);
-                    setSelectedReservation(null);
-                    setSelectedActivityId("");
-                    setTurns([]);
-                  }}
+                  onClick={closeAssignModal}
                   className="text-gray-400 hover:text-gray-600 text-2xl"
                 >
                   ×
                 </button>
               </div>
 
-              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">
-                  <strong>Usuario:</strong> {selectedReservation.user.name} (
-                  {selectedReservation.user.email})
-                </p>
-                <p className="text-sm text-gray-600 mb-1">
-                  <strong>Actividad actual:</strong>{" "}
-                  {selectedReservation.activity?.name ||
-                    selectedReservation.turn?.activity?.name}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <strong>Fecha y hora actual:</strong>{" "}
-                  {new Date(
-                    selectedReservation.activityDate,
-                  ).toLocaleDateString("es-ES")}{" "}
-                  {selectedReservation.startTime}
-                </p>
+              {/* Información actual */}
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="font-semibold text-blue-900 mb-2">
+                  📋 Reserva Actual
+                </h4>
+                <div className="space-y-1 text-sm text-blue-800">
+                  <p>
+                    <strong>Usuario:</strong> {selectedReservation.user.name} (
+                    {selectedReservation.user.email})
+                  </p>
+                  <p>
+                    <strong>Actividad:</strong>{" "}
+                    {getActivityName(selectedReservation)}
+                  </p>
+                  <p>
+                    <strong>Fecha:</strong>{" "}
+                    {formatReservationDate(selectedReservation.activityDate)}
+                  </p>
+                  <p>
+                    <strong>Horario:</strong> {selectedReservation.startTime}
+                    {selectedReservation.endTime &&
+                      ` - ${selectedReservation.endTime}`}
+                  </p>
+                </div>
               </div>
 
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Seleccionar nueva actividad
-                </label>
-                <select
-                  value={selectedActivityId}
-                  onChange={(e) => {
-                    setSelectedActivityId(e.target.value);
-                    loadTurnsForActivity(e.target.value);
-                  }}
-                  className="w-full px-3 py-2 border rounded-lg"
-                >
-                  <option value="">Seleccionar actividad...</option>
-                  {activities
-                    .filter(
-                      (a) =>
-                        a.id !==
-                        (selectedReservation.activity?.id ||
-                          selectedReservation.turn?.activityId),
-                    )
-                    .map((activity) => (
-                      <option key={activity.id} value={activity.id}>
-                        {activity.name}
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              {selectedActivityId && (
-                <div className="mb-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Columna izquierda: Selección de actividad */}
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Seleccionar turno disponible
+                    1️⃣ Seleccionar actividad
+                  </label>
+                  <select
+                    value={selectedActivityId}
+                    onChange={(e) => {
+                      setSelectedActivityId(e.target.value);
+                      setSelectedDate("");
+                      setTurns([]);
+                      loadTurnsForActivity(e.target.value);
+                    }}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  >
+                    <option value="">Seleccionar actividad...</option>
+                    {activities.map((activity) => {
+                      const isCurrent =
+                        activity.id ===
+                        (selectedReservation?.activity?.id ||
+                          selectedReservation?.turn?.activityId);
+                      return (
+                        <option key={activity.id} value={activity.id}>
+                          {activity.name} {isCurrent && "(Actual)"}
+                        </option>
+                      );
+                    })}
+                  </select>
+
+                  {selectedActivityId && !loadingTurns && (
+                    <div className="mt-2 p-3 bg-gray-50 rounded-lg">
+                      <p className="text-xs text-gray-600">
+                        <strong>Capacidad:</strong>{" "}
+                        {activities.find((a) => a.id === selectedActivityId)
+                          ?.capacity || "N/A"}{" "}
+                        personas
+                      </p>
+                      <p className="text-xs text-gray-600 mt-1">
+                        <strong>Fechas disponibles:</strong>{" "}
+                        {availableDatesForActivity.length}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Columna derecha: Calendario */}
+                <div>
+                  {selectedActivityId && (
+                    <>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        2️⃣ Seleccionar fecha
+                      </label>
+                      {loadingTurns ? (
+                        <div className="flex items-center justify-center py-12 bg-gray-50 rounded-lg">
+                          <div className="text-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                            <p className="text-sm text-gray-500">
+                              Cargando fechas disponibles...
+                            </p>
+                          </div>
+                        </div>
+                      ) : availableDatesForActivity.length === 0 ? (
+                        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <p className="text-sm text-yellow-800">
+                            ⚠️ No hay fechas disponibles para esta actividad en
+                            los próximos 90 días.
+                          </p>
+                        </div>
+                      ) : (
+                        <CalendarDatePicker
+                          availableDates={availableDatesForActivity}
+                          selectedDate={selectedDate}
+                          onDateSelect={(date) => {
+                            setSelectedDate(date);
+                            loadTurnsForActivity(selectedActivityId, date);
+                          }}
+                        />
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Lista de turnos del día seleccionado */}
+              {selectedDate && (
+                <div className="mt-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    3️⃣ Seleccionar horario
                   </label>
                   {loadingTurns ? (
                     <div className="text-center py-4">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-600 mx-auto"></div>
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
                       <p className="text-sm text-gray-500 mt-2">
-                        Cargando turnos...
+                        Cargando horarios...
                       </p>
                     </div>
                   ) : turns.length === 0 ? (
-                    <p className="text-sm text-gray-500 py-2">
-                      No hay turnos disponibles para esta actividad
-                    </p>
+                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-sm text-yellow-800">
+                        No hay turnos disponibles para esta fecha.
+                      </p>
+                    </div>
                   ) : (
-                    <select
-                      id="turn-select"
-                      className="w-full px-3 py-2 border rounded-lg"
-                      defaultValue=""
-                    >
-                      <option value="">Seleccionar turno...</option>
-                      {turns.map((turn) => {
-                        const turnDate = new Date(turn.date).toLocaleDateString(
-                          "es-ES",
-                          {
-                            weekday: "short",
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          },
-                        );
-                        return (
-                          <option key={turn.id} value={turn.id}>
-                            {turnDate} - {turn.startTime} a {turn.endTime} (
-                            {turn.availableSpots} cupos disponibles)
-                          </option>
-                        );
-                      })}
-                    </select>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto p-2">
+                      {turns.map((turn) => (
+                        <button
+                          key={turn.id}
+                          type="button"
+                          onClick={() => {
+                            const turnSelect = document.getElementById(
+                              "turn-select",
+                            ) as HTMLInputElement;
+                            if (turnSelect) turnSelect.value = turn.id;
+                            document
+                              .querySelectorAll(".turn-option")
+                              .forEach((el) =>
+                                el.classList.remove(
+                                  "ring-2",
+                                  "ring-blue-500",
+                                  "bg-blue-50",
+                                ),
+                              );
+                            (
+                              document.activeElement as HTMLElement
+                            )?.classList.add(
+                              "ring-2",
+                              "ring-blue-500",
+                              "bg-blue-50",
+                            );
+                          }}
+                          className="turn-option p-4 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all text-left"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="font-semibold text-gray-900">
+                                {turn.startTime} - {turn.endTime}
+                              </div>
+                              <div className="text-xs text-gray-600 mt-1">
+                                {formatTurnDate(turn.date)}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div
+                                className={`text-sm font-medium ${
+                                  turn.availableSpots > 3
+                                    ? "text-green-600"
+                                    : turn.availableSpots > 0
+                                      ? "text-orange-600"
+                                      : "text-red-600"
+                                }`}
+                              >
+                                {turn.availableSpots} cupos
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                disponibles
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                   )}
+                  {/* Input hidden para guardar el turnId seleccionado */}
+                  <input type="hidden" id="turn-select" />
                 </div>
               )}
 
-              <div className="flex gap-3">
+              {/* Botones de acción */}
+              <div className="flex gap-3 mt-6 pt-6 border-t">
                 <button
-                  onClick={() => {
-                    const select = document.getElementById(
-                      "turn-select",
-                    ) as HTMLSelectElement;
-                    if (select && select.value) {
-                      handleChangeReservationTurn(select.value);
-                    } else {
-                      Swal.fire({
-                        icon: "warning",
-                        title: "Selecciona un turno",
-                        text: "Debes seleccionar una actividad y un turno para reasignar la reserva",
-                      });
-                    }
-                  }}
-                  disabled={!selectedActivityId || turns.length === 0}
+                  onClick={handleAssignSubmit}
+                  disabled={
+                    !selectedActivityId || !selectedDate || turns.length === 0
+                  }
                   className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Reasignar
+                  ✅ Confirmar Reasignación
                 </button>
                 <button
-                  onClick={() => {
-                    setShowAssignModal(false);
-                    setSelectedReservation(null);
-                    setSelectedActivityId("");
-                    setTurns([]);
-                  }}
+                  onClick={closeAssignModal}
                   className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg hover:bg-gray-300 transition-colors font-medium"
                 >
                   Cancelar
@@ -639,14 +816,15 @@ export default function ReservationsTab() {
           </div>
         </div>
       )}
-
-      {/* Formulario de crear reserva */}
+      {/* ========== FORMULARIO DE CREAR RESERVA ========== */}
       {showCreateForm && (
         <ManualReservationForm
           users={users}
           activities={activities}
           onClose={() => {
             setShowCreateForm(false);
+          }}
+          onSuccess={() => {
             loadData();
           }}
         />
