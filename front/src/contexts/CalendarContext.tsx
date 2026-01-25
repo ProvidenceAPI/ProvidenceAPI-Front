@@ -306,7 +306,13 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [selectedDate, isAuthenticated]);
+  }, [
+    selectedDate,
+    isAuthenticated,
+    fetchActivities,
+    fetchTurns,
+    fetchReservations,
+  ]);
 
   const goToNextMonth = () => {
     setSelectedDate((prevDate) => {
@@ -348,7 +354,12 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       }
     };
     loadInitialData();
-  }, []);
+  }, [
+    fetchActivities,
+  fetchTurns,
+  fetchReservations,
+  isAuthenticated,
+  ]);
 
   return (
     <CalendarContext.Provider
