@@ -32,6 +32,9 @@ export default function ReservationsTab() {
     string[]
   >([]);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
+
   useEffect(() => {
     loadData();
   }, []);
@@ -59,6 +62,14 @@ export default function ReservationsTab() {
       const usersList = Array.isArray(usersData)
         ? usersData
         : usersData?.data || usersData?.users || [];
+
+      const sortedReservations = reservationsList.sort(
+        (a: Reservation, b: Reservation) => {
+          const dateA = new Date(`${a.activityDate}T${a.startTime}`);
+          const dateB = new Date(`${b.activityDate}T${b.startTime}`);
+          return dateA.getTime() - dateB.getTime();
+        },
+      );
 
       setReservations(reservationsList);
       setActivities(activitiesList);
@@ -130,7 +141,6 @@ export default function ReservationsTab() {
 
   const handleChangeReservationTurn = async (turnId: string) => {
     if (!selectedReservation) return;
-
     try {
       await apiClient.patch(
         `/api/reservations/${selectedReservation.id}/turn`,
@@ -138,7 +148,6 @@ export default function ReservationsTab() {
           turnId,
         },
       );
-
       await Swal.fire({
         icon: "success",
         title: "¡Éxito!",
@@ -169,9 +178,7 @@ export default function ReservationsTab() {
       confirmButtonText: "Sí, cancelar",
       cancelButtonText: "No",
     });
-
     if (!result.isConfirmed) return;
-
     try {
       await apiClient.put(`/api/reservations/${reservationId}/cancel`);
       await Swal.fire({
@@ -189,6 +196,7 @@ export default function ReservationsTab() {
       });
     }
   };
+
   const openAssignModal = (reservation: Reservation) => {
     setSelectedReservation(reservation);
     setShowAssignModal(true);
@@ -221,6 +229,7 @@ export default function ReservationsTab() {
     setFilterDate("");
     setFilterTime("");
     setFilterStatus("");
+    setCurrentPage(1);
   };
 
   const filteredReservations = reservations.filter((reservation) => {
@@ -255,6 +264,7 @@ export default function ReservationsTab() {
       confirmed: { color: "bg-green-100 text-green-800", text: "Confirmada" },
       cancelled: { color: "bg-red-100 text-red-800", text: "Cancelada" },
       completed: { color: "bg-blue-100 text-blue-800", text: "Completada" },
+      pending: { color: "bg-yellow-100 text-yellow-800", text: "Pendiente" },
     };
 
     const statusInfo = statusMap[status] || {
@@ -307,6 +317,14 @@ export default function ReservationsTab() {
     );
   }
 
+  const totalPages = Math.ceil(filteredReservations.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedReservations = filteredReservations.slice(
+    startIndex,
+    endIndex,
+  );
+
   return (
     <div className="space-y-6">
       {/* Header con botón de crear */}
@@ -330,7 +348,10 @@ export default function ReservationsTab() {
             </label>
             <select
               value={filterActivity}
-              onChange={(e) => setFilterActivity(e.target.value)}
+              onChange={(e) => {
+                setFilterActivity(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full px-3 py-2 border rounded-lg"
             >
               <option value="">Todas</option>
@@ -388,6 +409,11 @@ export default function ReservationsTab() {
             Limpiar filtros
           </button>
         )}
+        <div className="mt-4 text-sm text-gray-600">
+          Mostrando {startIndex + 1}-
+          {Math.min(endIndex, filteredReservations.length)} de{" "}
+          {filteredReservations.length} reservas
+        </div>
       </div>
       {/* ========== TABLA DE RESERVAS ========== */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -426,7 +452,7 @@ export default function ReservationsTab() {
                   </td>
                 </tr>
               ) : (
-                filteredReservations.map((reservation) => (
+                paginatedReservations.map((reservation) => (
                   <tr key={reservation.id} className="hover:bg-gray-50">
                     {/* Usuario */}
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -483,6 +509,78 @@ export default function ReservationsTab() {
             </tbody>
           </table>
         </div>
+        {/* Paginación */}
+        {totalPages > 1 && (
+          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            {/* Controles móviles */}
+            <div className="flex-1 flex justify-between sm:hidden">
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Anterior
+              </button>
+              <button
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Siguiente
+              </button>
+            </div>
+            {/* Controles desktop */}
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Página <span className="font-medium">{currentPage}</span> de{" "}
+                  <span className="font-medium">{totalPages}</span>
+                </p>
+              </div>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Anterior
+                  </button>
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNumber;
+                    if (totalPages <= 5) pageNumber = i + 1;
+                    else if (currentPage <= 3) pageNumber = i + 1;
+                    else if (currentPage >= totalPages - 2)
+                      pageNumber = totalPages - 4 + i;
+                    else pageNumber = currentPage - 2 + i;
+                    return (
+                      <button
+                        key={pageNumber}
+                        onClick={() => setCurrentPage(pageNumber)}
+                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === pageNumber ? "z-10 bg-red-50 border-red-500 text-red-600" : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"}`}
+                      >
+                        {pageNumber}
+                      </button>
+                    );
+                  })}
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                    }
+                    disabled={currentPage === totalPages}
+                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Siguiente
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       {/* ========== MODAL DE REASIGNACIÓN ========== */}
       {showAssignModal && selectedReservation && (
@@ -642,7 +740,6 @@ export default function ReservationsTab() {
                               "turn-select",
                             ) as HTMLInputElement;
                             if (turnSelect) turnSelect.value = turn.id;
-                            // Marcar visualmente el seleccionado
                             document
                               .querySelectorAll(".turn-option")
                               .forEach((el) =>

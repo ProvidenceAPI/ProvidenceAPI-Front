@@ -48,7 +48,10 @@ export default function ManualReservationForm({
     activityId: "",
   });
   const [searchTerm, setSearchTerm] = useState("");
-  const sortedUsers = [...users].sort((a, b) => {
+  const activeUsers = users.filter(
+    (user) => user.status?.toLowerCase() === "active",
+  );
+  const sortedUsers = [...activeUsers].sort((a, b) => {
     const nameA = `${a.name} ${a.lastname || ""}`.toLowerCase();
     const nameB = `${b.name} ${b.lastname || ""}`.toLowerCase();
     return nameA.localeCompare(nameB);
