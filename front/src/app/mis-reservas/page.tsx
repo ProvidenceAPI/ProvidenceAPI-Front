@@ -208,8 +208,6 @@ export default function MisReservasPage() {
       setAvailableTurns([]);
       await fetchMisReservas();
     } catch (error: any) {
-      console.log("Error capturado:", error); // Para debug
-
       const errorMessage =
         error?.response?.data?.message || error?.message || "Error desconocido";
       const errorMessageLower = errorMessage.toLowerCase();
