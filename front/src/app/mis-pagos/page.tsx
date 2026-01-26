@@ -26,8 +26,12 @@ export default function MisPagosPage() {
 
   useEffect(() => {
     const loadPayments = async () => {
-      const data = await paymentService.getPaymentHistory();
-      setPagos(data);
+      try {
+        const data = await paymentService.getPaymentHistory();
+        setPagos(data);
+      } catch {
+        console.error("Error cargando pagos:", error);
+      }
     };
     loadPayments();
   }, []);
@@ -81,9 +85,23 @@ export default function MisPagosPage() {
         setSuccessMessage(
           "¡Pago aprobado exitosamente! Recargando historial...",
         );
+        setTimeout(async () => {
+          const data = await paymentService.getPaymentHistory();
+          setPagos(data);
+          window.history.replaceState({}, "", "/mis-pagos");
+        }, 1000);
+      } else if (status === "rejected") {
+        setError("El pago fue rechazado. Por favor intenta nuevamente.");
         setTimeout(() => {
           window.history.replaceState({}, "", "/mis-pagos");
-        }, 2000);
+        }, 3000);
+      } else if (status === "pending") {
+        setWarningMessage(
+          "Tu pago está pendiente de confirmación. Te notificaremos cuando se apruebe.",
+        );
+        setTimeout(() => {
+          window.history.replaceState({}, "", "/mis-pagos");
+        }, 3000);
       }
     }
   }, []);
