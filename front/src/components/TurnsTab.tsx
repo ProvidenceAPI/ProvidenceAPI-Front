@@ -9,6 +9,11 @@ import { format, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { useAppContext } from "src/contexts/AppContext";
 
+const parseLocalDate = (dateString: string): Date => {
+  const [year, month, day] = dateString.split("T")[0].split("-");
+  return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+};
+
 export default function TurnsTab() {
   const { isSuperAdmin } = useAppContext();
   const {
@@ -129,9 +134,10 @@ export default function TurnsTab() {
   }, [selectedDate, filterActivity, filterStatus, fetchTurns]);
 
   const getTurnsForDay = (day: Date) => {
-    const dayTurns = turns.filter((turn) =>
-      isSameDay(new Date(turn.date), day),
-    );
+    const dayTurns = turns.filter((turn) => {
+      const turnDate = parseLocalDate(turn.date);
+      return isSameDay(turnDate, day);
+    });
     return dayTurns;
   };
   const handleDayClick = (day: Date) => {

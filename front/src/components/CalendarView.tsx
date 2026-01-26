@@ -27,6 +27,11 @@ interface CalendarViewProps {
   onDayClick?: (day: Date) => void;
 }
 
+const parseLocalDate = (dateString: string): Date => {
+  const [year, month, day] = dateString.split("T")[0].split("-");
+  return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+};
+
 export default function CalendarView({
   reservations,
   onDayClick,
@@ -49,7 +54,8 @@ export default function CalendarView({
     }
     return reservations.filter((reservation) => {
       try {
-        return reservation && isSameDay(new Date(reservation.date), day);
+        const reservationDate = parseLocalDate(reservation.date);
+        return isSameDay(reservationDate, day);
       } catch (error) {
         return false;
       }
