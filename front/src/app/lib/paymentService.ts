@@ -56,18 +56,22 @@ export const paymentService = {
 
   getPaymentHistory: async (): Promise<Payment[]> => {
     try {
-      const response = await apiClient.get("/api/payments/me");
-      const rawData: any = response.data;
-      const payments = rawData.data || rawData.payments || rawData;
-      if (!Array.isArray(payments)) {
-        return [];
+      const { data } = await apiClient.get("/api/payments/me");
+      if (Array.isArray(data)) {
+        return data;
       }
-      return payments;
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        return [];
+      if (data.data && Array.isArray(data.data)) {
+        return data.data;
       }
+      console.error("Formato inesperado de respuesta:", data);
       return [];
+    } catch (error: any) {
+      console.error("Error en getPaymentHistory:", error);
+      if (error.response?.status === 401) {
+        console.warn("No autenticado");
+        return [];
+      }
+      throw error;
     }
   },
 
