@@ -709,7 +709,7 @@ export default function AdminCreationFormTab() {
               </button>
               <button
                 type="button"
-                onClick={() => router.push("/admin/dashboard")}
+                onClick={() => router.push("/admin-dashboard")}
                 className="w-full py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
                 disabled={loading}
               >
