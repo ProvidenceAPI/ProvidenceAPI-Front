@@ -208,14 +208,15 @@ export default function MisReservasPage() {
       setAvailableTurns([]);
       await fetchMisReservas();
     } catch (error: any) {
-      const errorMessage = getErrorMessage(error);
-      const isFreeTrialError = isErrorType(error, "free trial");
-      const isSubscriptionError = error.statusCode === 403;
-      const isPastTurnError =
-        isErrorType(error, "past") || isErrorType(error, "pasado");
-      const isTooCloseError =
-        isErrorType(error, "anticipación") || isErrorType(error, "advance");
-      if (isTooCloseError) {
+      const errorMessage =
+        error?.response?.data?.message || error?.message || "Error desconocido";
+      const errorMessageLower = errorMessage.toLowerCase();
+
+      if (
+        errorMessageLower.includes("anticipación") ||
+        errorMessageLower.includes("advance") ||
+        errorMessageLower.includes("at least 1 hour")
+      ) {
         Swal.fire({
           icon: "warning",
           title: "Reserva muy próxima",
@@ -225,7 +226,14 @@ export default function MisReservasPage() {
         if (selectedDate && selectedActivity) {
           await fetchTurnsForDate(selectedActivity, selectedDate);
         }
-      } else if (isPastTurnError) {
+        return;
+      }
+
+      if (
+        errorMessageLower.includes("past") ||
+        errorMessageLower.includes("pasado") ||
+        errorMessageLower.includes("already occurred")
+      ) {
         Swal.fire({
           icon: "warning",
           title: "Turno no disponible",
@@ -235,14 +243,29 @@ export default function MisReservasPage() {
         if (selectedDate && selectedActivity) {
           await fetchTurnsForDate(selectedActivity, selectedDate);
         }
-      } else if (isFreeTrialError) {
+        return;
+      }
+
+      if (
+        errorMessageLower.includes("free trial") ||
+        errorMessageLower.includes("clase gratis") ||
+        errorMessageLower.includes("already used")
+      ) {
         Swal.fire({
           icon: "warning",
           title: "Clase gratis ya utilizada",
           text: "Ya has usado tu clase de prueba gratis. Suscríbete para continuar reservando clases.",
           confirmButtonColor: "#dc2626",
+          confirmButtonText: "Entendido",
         });
-      } else if (isSubscriptionError) {
+        return;
+      }
+
+      if (
+        errorMessageLower.includes("subscription") ||
+        errorMessageLower.includes("suscripción") ||
+        error?.response?.status === 403
+      ) {
         Swal.fire({
           icon: "info",
           title: "Suscripción requerida",
@@ -250,14 +273,46 @@ export default function MisReservasPage() {
           confirmButtonColor: "#dc2626",
           confirmButtonText: "Entendido",
         });
-      } else {
+        return;
+      }
+
+      if (
+        errorMessageLower.includes("no available") ||
+        errorMessageLower.includes("sin cupos") ||
+        errorMessageLower.includes("full")
+      ) {
         Swal.fire({
-          icon: "error",
-          title: "Error al reservar",
-          text: errorMessage,
+          icon: "info",
+          title: "Sin cupos disponibles",
+          text: "Este turno ya está lleno. Por favor selecciona otro horario.",
           confirmButtonColor: "#dc2626",
         });
+        if (selectedDate && selectedActivity) {
+          await fetchTurnsForDate(selectedActivity, selectedDate);
+        }
+        return;
       }
+
+      if (
+        errorMessageLower.includes("already have") ||
+        errorMessageLower.includes("ya tienes") ||
+        errorMessageLower.includes("duplicate")
+      ) {
+        Swal.fire({
+          icon: "warning",
+          title: "Reserva duplicada",
+          text: "Ya tienes una reserva para esta actividad en este horario.",
+          confirmButtonColor: "#dc2626",
+        });
+        return;
+      }
+
+      Swal.fire({
+        icon: "error",
+        title: "Error al reservar",
+        text: "Ocurrió un error al procesar tu reserva. Por favor intenta nuevamente.",
+        confirmButtonColor: "#dc2626",
+      });
     }
   };
 
