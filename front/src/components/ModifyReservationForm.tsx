@@ -5,6 +5,8 @@ import { useCalendar } from "src/contexts/CalendarContext";
 import { reservationService } from "src/app/lib";
 import { Reservation } from "src/interfaces/Reservation";
 import { Activity } from "src/interfaces/Activity";
+import Swal from "sweetalert2";
+import { getTranslatedErrorMessage } from "src/app/lib/errorTranslations";
 
 interface ModifyReservationFormProps {
   reservation: Reservation;
@@ -63,14 +65,18 @@ export default function ModifyReservationForm({
 
     try {
       await modifyReservation(reservation.id, formData);
-      alert("Reserva modificada exitosamente. Se envió un email al usuario.");
+      await Swal.fire({
+        icon: "success",
+        title: "¡Éxito!",
+        text: "Reserva modificada exitosamente. Se envió un email al usuario.",
+      });
       onClose();
     } catch (error: any) {
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Error al modificar la reserva";
-      alert(errorMessage);
+      await Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: getTranslatedErrorMessage(error, "Error al modificar la reserva"),
+      });
     } finally {
       setLoading(false);
     }

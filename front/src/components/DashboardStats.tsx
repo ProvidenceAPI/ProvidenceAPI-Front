@@ -4,6 +4,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useAppContext } from "src/contexts/AppContext";
 import { reservationService } from "src/app/lib/ReservationService";
 import { Reservation } from "src/interfaces/Reservation";
+import Swal from "sweetalert2";
+import { getTranslatedErrorMessage } from "src/app/lib/errorTranslations";
 
 export default function DashboardStats() {
   const { user } = useAppContext();
@@ -33,18 +35,33 @@ export default function DashboardStats() {
   }, [user?.id, loadUserReservations]);
 
   const handleCancelReservation = async (reservationId: string) => {
-    const confirmed = window.confirm(
-      "¿Estás seguro de que deseas cancelar esta reserva?",
-    );
+    const result = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "¿Deseas cancelar esta reserva?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Sí, cancelar",
+      cancelButtonText: "No",
+    });
 
-    if (!confirmed) return;
+    if (!result.isConfirmed) return;
     setCancellingId(reservationId);
     try {
       await reservationService.cancelReservation(reservationId);
-      alert("Reserva cancelada exitosamente");
+      await Swal.fire({
+        icon: "success",
+        title: "¡Éxito!",
+        text: "Reserva cancelada exitosamente",
+      });
       await loadUserReservations();
     } catch (error: any) {
-      alert(error.message || "Error al cancelar la reserva");
+      await Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: getTranslatedErrorMessage(error, "Error al cancelar la reserva"),
+      });
     } finally {
       setCancellingId(null);
     }

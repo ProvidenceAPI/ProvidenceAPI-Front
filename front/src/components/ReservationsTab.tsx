@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { apiClient } from "src/app/lib/apiClient";
 import Swal from "sweetalert2";
 import ManualReservationForm from "./ManualReservationForm";
+import { getTranslatedErrorMessage } from "src/app/lib/errorTranslations";
 import { Reservation } from "src/interfaces/Reservation";
 import { IUser } from "src/interfaces/IUser";
 import { Turn } from "src/interfaces/Turn";
@@ -28,6 +29,7 @@ export default function ReservationsTab() {
   const [filterTime, setFilterTime] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<string>("");
+  const [selectedTurnId, setSelectedTurnId] = useState<string>("");
   const [availableDatesForActivity, setAvailableDatesForActivity] = useState<
     string[]
   >([]);
@@ -155,32 +157,53 @@ export default function ReservationsTab() {
 
   const handleChangeReservationTurn = async (turnId: string) => {
     if (!selectedReservation) return;
+    
+    // Validar que turnId sea un UUID válido
+    if (!turnId || typeof turnId !== 'string' || turnId.trim() === '') {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Debes seleccionar un turno válido",
+      });
+      return;
+    }
+
     try {
+      // Mostrar loading mientras se procesa
+      Swal.fire({
+        title: "Procesando...",
+        text: "Reasignando la reserva",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+
       await apiClient.patch(
         `/api/reservations/${selectedReservation.id}/turn`,
         {
-          turnId,
+          turnId: turnId.trim(),
         },
       );
+      
+      // Cerrar el modal inmediatamente
       closeAssignModal();
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      await loadData();
-
+      
+      // Cerrar el loading y mostrar éxito
       await Swal.fire({
         icon: "success",
         title: "¡Éxito!",
         text: "Reserva reasignada a otra actividad correctamente",
       });
 
-      closeAssignModal();
-      await loadData();
+      // Recargar los datos en segundo plano (sin await para no bloquear)
+      loadData();
     } catch (error: any) {
       console.error("Error changing reservation turn:", error);
       Swal.fire({
         icon: "error",
         title: "Error",
-        text:
-          error.response?.data?.message || "No se pudo reasignar la reserva",
+        text: getTranslatedErrorMessage(error, "No se pudo reasignar la reserva"),
       });
     }
   };
@@ -210,7 +233,7 @@ export default function ReservationsTab() {
       Swal.fire({
         icon: "error",
         title: "Error",
-        text: error.response?.data?.message || "No se pudo cancelar la reserva",
+        text: getTranslatedErrorMessage(error, "No se pudo cancelar la reserva"),
       });
     }
   };
@@ -225,21 +248,21 @@ export default function ReservationsTab() {
     setSelectedReservation(null);
     setSelectedActivityId("");
     setSelectedDate("");
+    setSelectedTurnId("");
     setAvailableDatesForActivity([]);
     setTurns([]);
   };
 
   const handleAssignSubmit = () => {
-    const select = document.getElementById("turn-select") as HTMLSelectElement;
-    if (select && select.value) {
-      handleChangeReservationTurn(select.value);
-    } else {
+    if (!selectedTurnId) {
       Swal.fire({
         icon: "warning",
         title: "Selecciona un turno",
         text: "Debes seleccionar una actividad y un turno para reasignar la reserva",
       });
+      return;
     }
+    handleChangeReservationTurn(selectedTurnId);
   };
 
   const clearFilters = () => {
@@ -659,6 +682,7 @@ export default function ReservationsTab() {
                     onChange={(e) => {
                       setSelectedActivityId(e.target.value);
                       setSelectedDate("");
+                      setSelectedTurnId("");
                       setTurns([]);
                       loadTurnsForActivity(e.target.value);
                     }}
@@ -723,6 +747,7 @@ export default function ReservationsTab() {
                           selectedDate={selectedDate}
                           onDateSelect={(date) => {
                             setSelectedDate(date);
+                            setSelectedTurnId("");
                             loadTurnsForActivity(selectedActivityId, date);
                           }}
                         />
@@ -758,10 +783,7 @@ export default function ReservationsTab() {
                           key={turn.id}
                           type="button"
                           onClick={() => {
-                            const turnSelect = document.getElementById(
-                              "turn-select",
-                            ) as HTMLInputElement;
-                            if (turnSelect) turnSelect.value = turn.id;
+                            setSelectedTurnId(turn.id);
                             document
                               .querySelectorAll(".turn-option")
                               .forEach((el) =>
@@ -779,7 +801,11 @@ export default function ReservationsTab() {
                               "bg-blue-50",
                             );
                           }}
-                          className="turn-option p-4 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all text-left"
+                          className={`turn-option p-4 border-2 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all text-left ${
+                            selectedTurnId === turn.id
+                              ? "ring-2 ring-blue-500 bg-blue-50 border-blue-400"
+                              : "border-gray-200"
+                          }`}
                         >
                           <div className="flex justify-between items-start">
                             <div>
@@ -811,8 +837,6 @@ export default function ReservationsTab() {
                       ))}
                     </div>
                   )}
-                  {/* Input hidden para guardar el turnId seleccionado */}
-                  <input type="hidden" id="turn-select" />
                 </div>
               )}
 
@@ -821,7 +845,7 @@ export default function ReservationsTab() {
                 <button
                   onClick={handleAssignSubmit}
                   disabled={
-                    !selectedActivityId || !selectedDate || turns.length === 0
+                    !selectedActivityId || !selectedDate || turns.length === 0 || !selectedTurnId
                   }
                   className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
