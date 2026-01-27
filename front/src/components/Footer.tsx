@@ -121,7 +121,7 @@ export const Footer: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-sm font-medium">
-                    info@providencefitness.com
+                    providenceapi@gmail.com
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     Respondemos en 24h
@@ -134,10 +134,10 @@ export const Footer: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-sm font-medium">
-                    Provincia de Buenos Aires 760
+                    Paraná 3745, Provincia de Buenos Aires 
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    Cipoletti, Argentina
+                    Martinez, Argentina
                   </p>
                 </div>
               </li>

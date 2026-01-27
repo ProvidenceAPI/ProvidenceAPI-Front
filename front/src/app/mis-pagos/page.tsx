@@ -34,7 +34,7 @@ export default function MisPagosPage() {
       }
     };
     loadPayments();
-  }, []);
+  }, [error]);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
