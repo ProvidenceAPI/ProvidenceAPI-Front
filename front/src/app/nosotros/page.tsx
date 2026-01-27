@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import NosotrosFooter from "src/components/NosotrosFooter";
 
 const media = [
   { type: "image", src: "/media/nosotros1.jpg" },
@@ -236,6 +237,7 @@ export default function NosotrosPage() {
             </div>
           </div>
         </section>
+         <NosotrosFooter/>
       </div>
     </>
   );

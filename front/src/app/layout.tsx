@@ -1,12 +1,25 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Montserrat, Inter } from "next/font/google";
 import "./globals.css";
 import AppProvider from "src/contexts/AppContext";
 import { CalendarProvider } from "src/contexts/CalendarContext";
 import { Footer } from "src/components/Footer";
 import { Navbar } from "src/components/Navbar";
 
-const inter = Inter({ subsets: ["latin"] });
+// Configura Montserrat como fuente principal (Sans-serif moderna)
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-montserrat",
+  display: "swap",
+});
+
+// Opcional: Mantener Inter para texto de cuerpo si lo prefieres
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Providence Fitness",
@@ -19,9 +32,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning className={`${montserrat.variable} ${inter.variable}`}>
       <body
-        className={`${inter.className} bg-gray-50`}
+        className={`${montserrat.className} bg-gray-50 antialiased`}
         suppressHydrationWarning
       >
         <AppProvider>
