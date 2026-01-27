@@ -37,7 +37,7 @@ export default function DashboardPage() {
   }
   const isAdminOrSuperAdmin =
     user?.rol === "admin" || user?.rol === "superAdmin";
-  const showDashboardStats = !isAdminOrSuperAdmin;
+  const showDashboardStats = isAdminOrSuperAdmin;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">

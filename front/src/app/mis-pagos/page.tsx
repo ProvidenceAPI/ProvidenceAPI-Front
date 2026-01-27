@@ -29,12 +29,13 @@ export default function MisPagosPage() {
       try {
         const data = await paymentService.getPaymentHistory();
         setPagos(data);
-      } catch {
-        console.error("Error cargando pagos:", error);
+      } catch (err) {
+        console.error("Error cargando pagos:", err);
+        setError("Error al cargar el historial de pagos");
       }
     };
     loadPayments();
-  }, [error]);
+  }, []);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -85,23 +86,30 @@ export default function MisPagosPage() {
         setSuccessMessage(
           "¡Pago aprobado exitosamente! Recargando historial...",
         );
-        setTimeout(async () => {
-          const data = await paymentService.getPaymentHistory();
-          setPagos(data);
-          window.history.replaceState({}, "", "/mis-pagos");
+        const timer = setTimeout(async () => {
+          try {
+            const data = await paymentService.getPaymentHistory();
+            setPagos(data);
+            window.history.replaceState({}, "", "/mis-pagos");
+          } catch (err) {
+            console.error("Error recargando pagos:", err);
+          }
         }, 1000);
+        return () => clearTimeout(timer);
       } else if (status === "rejected") {
         setError("El pago fue rechazado. Por favor intenta nuevamente.");
-        setTimeout(() => {
+        const timer = setTimeout(() => {
           window.history.replaceState({}, "", "/mis-pagos");
         }, 3000);
+        return () => clearTimeout(timer);
       } else if (status === "pending") {
         setWarningMessage(
           "Tu pago está pendiente de confirmación. Te notificaremos cuando se apruebe.",
         );
-        setTimeout(() => {
+        const timer = setTimeout(() => {
           window.history.replaceState({}, "", "/mis-pagos");
         }, 3000);
+        return () => clearTimeout(timer);
       }
     }
   }, []);
