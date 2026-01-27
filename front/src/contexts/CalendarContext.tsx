@@ -10,6 +10,13 @@ import React, {
 } from "react";
 import { useAppContext } from "./AppContext";
 import { apiClient } from "src/app/lib/apiClient";
+import {
+  broadcastReservationUpdate,
+  reservationChannel,
+  turnChannel,
+  activityChannel,
+} from "src/utils/broadcastChannel";
+import { endOfMonth, format, startOfMonth } from "date-fns";
 
 export interface Activity {
   id: string;
@@ -118,8 +125,13 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<"day" | "week" | "month">("month");
   const [actionLoading, setActionLoading] = useState(false);
+  const [lastFetch, setLastFetch] = useState<{ [key: string]: number }>({});
 
   const fetchActivities = useCallback(async () => {
+    const now = Date.now();
+    if (lastFetch.activities && now - lastFetch.activities < 2000) {
+      return;
+    }
     try {
       const { data } = await apiClient.get("/api/activities/active");
       const withColors = data.map((activity: Activity, index: number) => ({
@@ -127,11 +139,13 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         color: colors[index % colors.length],
       }));
       setActivities(withColors);
+      setLastFetch((prev) => ({ ...prev, activities: now }));
     } catch (err: any) {
       setError(err.message);
       setActivities([]);
+      console.error("Error fetching activities:", err);
     }
-  }, []);
+  }, [lastFetch]);
 
   const fetchTurns = useCallback(
     async (filters?: {
@@ -164,6 +178,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           : data?.data || data?.turns || [];
         setTurns(list);
       } catch (err: any) {
+        console.error("❌ Error en fetchTurns:", err);
         setError(err.message);
         setTurns([]);
       }
@@ -192,7 +207,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     if (!token) throw new Error("No autenticado");
     try {
       const { data } = await apiClient.post("/api/reservations", { turnId });
+      broadcastReservationUpdate("created", data.id);
       await fetchReservations();
+      await fetchTurns();
       return data;
     } catch (err: any) {
       throw err;
@@ -269,6 +286,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         "Advertencia: Nueva reserva creada pero no se pudo cancelar la original",
       );
     }
+    broadcastReservationUpdate("modified", reservationId);
     await fetchReservations();
   };
 
@@ -278,6 +296,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       await apiClient.put(`/api/reservations/${reservationId}/cancel`, {
         reason,
       });
+      broadcastReservationUpdate("cancelled", reservationId);
       await fetchReservations();
     } catch (err: any) {
       setError(err.message);
@@ -288,20 +307,19 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   const refetchAll = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const startDate = new Date(selectedDate);
-    startDate.setDate(1);
-    const endDate = new Date(selectedDate);
-    endDate.setMonth(endDate.getMonth() + 1, 0);
+    const monthStart = startOfMonth(selectedDate);
+    const monthEnd = endOfMonth(selectedDate);
     try {
       await Promise.all([
         fetchActivities(),
         fetchTurns({
-          startDate: startDate.toISOString().split("T")[0],
-          endDate: endDate.toISOString().split("T")[0],
+          startDate: format(monthStart, "yyyy-MM-dd"),
+          endDate: format(monthEnd, "yyyy-MM-dd"),
         }),
         isAuthenticated ? fetchReservations() : Promise.resolve(),
       ]);
     } catch (err: any) {
+      console.error("❌ Error en refetchAll:", err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -331,35 +349,37 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    const loadInitialData = async () => {
-      setLoading(true);
-      const startDate = new Date();
-      startDate.setDate(1);
-      const endDate = new Date();
-      endDate.setMonth(endDate.getMonth() + 1, 0);
+    refetchAll();
+  }, [selectedDate, refetchAll]);
 
-      try {
-        await Promise.all([
-          fetchActivities(),
-          fetchTurns({
-            startDate: startDate.toISOString().split("T")[0],
-            endDate: endDate.toISOString().split("T")[0],
-          }),
-          isAuthenticated ? fetchReservations() : Promise.resolve(),
-        ]);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+  useEffect(() => {
+    const handleActivityChange = (event: MessageEvent) => {
+      fetchActivities();
+    };
+
+    const handleTurnChange = (event: MessageEvent) => {
+      refetchAll();
+    };
+
+    const handleReservationChange = (event: MessageEvent) => {
+      if (isAuthenticated) {
+        fetchReservations();
       }
     };
-    loadInitialData();
-  }, [
-    fetchActivities,
-  fetchTurns,
-  fetchReservations,
-  isAuthenticated,
-  ]);
+
+    activityChannel.addEventListener("message", handleActivityChange);
+    turnChannel.addEventListener("message", handleTurnChange);
+    reservationChannel.addEventListener("message", handleReservationChange);
+
+    return () => {
+      activityChannel.removeEventListener("message", handleActivityChange);
+      turnChannel.removeEventListener("message", handleTurnChange);
+      reservationChannel.removeEventListener(
+        "message",
+        handleReservationChange,
+      );
+    };
+  }, [fetchActivities, fetchTurns, fetchReservations, isAuthenticated]);
 
   return (
     <CalendarContext.Provider

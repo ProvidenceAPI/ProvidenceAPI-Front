@@ -5,6 +5,7 @@ import { apiClient } from "src/app/lib/apiClient";
 import { IUser } from "src/interfaces/IUser";
 import { Activity } from "src/interfaces/Activity";
 import Swal from "sweetalert2";
+import { broadcastReservationUpdate } from "src/utils/broadcastChannel";
 import { getTranslatedErrorMessage } from "src/app/lib/errorTranslations";
 
 interface Turn {
@@ -119,17 +120,17 @@ export default function ManualReservationForm({
   useEffect(() => {
     loadAvailableTurns();
   }, [loadAvailableTurns]);
- 
+
   const isValidUUID = (str: string): boolean => {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     return uuidRegex.test(str);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-   
-    if (!formData.userId || formData.userId.trim() === '') {
+
+    if (!formData.userId || formData.userId.trim() === "") {
       await Swal.fire({
         icon: "warning",
         title: "Usuario requerido",
@@ -138,7 +139,7 @@ export default function ManualReservationForm({
       return;
     }
 
-    if (!selectedTurnId || selectedTurnId.trim() === '') {
+    if (!selectedTurnId || selectedTurnId.trim() === "") {
       await Swal.fire({
         icon: "warning",
         title: "Turno requerido",
@@ -150,7 +151,6 @@ export default function ManualReservationForm({
     const trimmedUserId = formData.userId.trim();
     const trimmedTurnId = selectedTurnId.trim();
 
-   
     if (!isValidUUID(trimmedUserId)) {
       await Swal.fire({
         icon: "error",
@@ -171,13 +171,12 @@ export default function ManualReservationForm({
 
     setLoading(true);
     try {
-      const requestData = {
-        turnId: trimmedTurnId,
-        userId: trimmedUserId,
-      };
-      
-      await apiClient.post("/api/reservations/admin", requestData);
-      
+      const response = await apiClient.post("/api/reservations/admin", {
+        turnId: selectedTurnId,
+        userId: formData.userId,
+      });
+      broadcastReservationUpdate("created", response.data?.id);
+
       await Swal.fire({
         icon: "success",
         title: "¡Éxito!",
@@ -186,32 +185,31 @@ export default function ManualReservationForm({
       onSuccess?.();
       onClose();
     } catch (error: any) {
-      
       let errorMessage = "Error al crear la reserva";
-      
+
       if (error?.response) {
-       
         const data = error.response.data;
-        
+
         if (data?.message) {
           errorMessage = getTranslatedErrorMessage(error, errorMessage);
         } else if (data?.error) {
-          errorMessage = getTranslatedErrorMessage({ response: { data: { message: data.error } } }, errorMessage);
+          errorMessage = getTranslatedErrorMessage(
+            { response: { data: { message: data.error } } },
+            errorMessage,
+          );
         } else if (Array.isArray(data?.message)) {
-          
           const validationErrors = data.message.join(", ");
           errorMessage = `Error de validación: ${validationErrors}`;
         } else {
           errorMessage = getTranslatedErrorMessage(error, errorMessage);
         }
       } else if (error?.request) {
-        
-        errorMessage = "No se pudo conectar con el servidor. Verifica tu conexión a internet.";
+        errorMessage =
+          "No se pudo conectar con el servidor. Verifica tu conexión a internet.";
       } else {
-       
         errorMessage = error?.message || errorMessage;
       }
-      
+
       await Swal.fire({
         icon: "error",
         title: "Error al crear la reserva",

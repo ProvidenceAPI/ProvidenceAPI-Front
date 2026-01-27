@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useAppContext } from "src/contexts/AppContext";
 import { reservationService } from "src/app/lib/ReservationService";
 import { Reservation } from "src/interfaces/Reservation";
+import { reservationChannel } from "src/utils/broadcastChannel";
 import Swal from "sweetalert2";
 import { getTranslatedErrorMessage } from "src/app/lib/errorTranslations";
 
@@ -156,6 +157,19 @@ export default function DashboardStats() {
       </div>
     );
   }
+
+  useEffect(() => {
+    const handleReservationChange = (event: MessageEvent) => {
+      loadUserReservations();
+    };
+    reservationChannel.addEventListener("message", handleReservationChange);
+    return () => {
+      reservationChannel.removeEventListener(
+        "message",
+        handleReservationChange,
+      );
+    };
+  }, [loadUserReservations]);
 
   return (
     <div className="space-y-6">
