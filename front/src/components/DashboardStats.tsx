@@ -150,13 +150,6 @@ export default function DashboardStats() {
   const cancelledReservations = reservations.filter(
     (r) => r.status === "cancelled",
   );
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[#DC2626]"></div>
-      </div>
-    );
-  }
 
   useEffect(() => {
     const handleReservationChange = (event: MessageEvent) => {
@@ -170,6 +163,14 @@ export default function DashboardStats() {
       );
     };
   }, [loadUserReservations]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[#DC2626]"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
