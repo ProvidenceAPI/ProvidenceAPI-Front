@@ -41,6 +41,9 @@ export default function AdminCreationFormTab({
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [emailExists, setEmailExists] = useState(false);
+  const [dniExists, setDniExists] = useState(false);
+  const [phoneExists, setPhoneExists] = useState(false);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [validations, setValidations] = useState({
     name: false,
     lastname: false,
@@ -119,9 +122,14 @@ export default function AdminCreationFormTab({
     if (name === "phone") {
       const formatted = value.replace(/\D/g, "").substring(0, 15);
       setFormData((prev) => ({ ...prev, [name]: formatted }));
+      setPhoneExists(false);
     } else if (name === "dni") {
       const formatted = value.replace(/\D/g, "").substring(0, 10);
       setFormData((prev) => ({ ...prev, [name]: formatted }));
+      setDniExists(false);
+    } else if (name === "email") {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+      setEmailExists(false);
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
@@ -130,6 +138,56 @@ export default function AdminCreationFormTab({
         ...prev,
         [name]: "",
       }));
+    }
+  };
+
+  const checkAvailability = useCallback(async () => {
+    const email = formData.email?.trim();
+    const dni = formData.dni?.trim();
+    const phone = formData.phone?.trim();
+    if (!email && !dni && !phone) return;
+    setCheckingAvailability(true);
+    try {
+      const params = new URLSearchParams();
+      if (email) params.set("email", email);
+      if (dni) params.set("dni", dni);
+      if (phone) params.set("phone", phone);
+      const { data } = await apiClient.get<{
+        emailTaken: boolean;
+        dniTaken: boolean;
+        phoneTaken: boolean;
+      }>(`/api/users/check-availability?${params.toString()}`);
+      setEmailExists(!!data.emailTaken);
+      setDniExists(!!data.dniTaken);
+      setPhoneExists(!!data.phoneTaken);
+    } catch {
+      // Silenciar error (ej. sin token): no actualizar estados
+    } finally {
+      setCheckingAvailability(false);
+    }
+  }, [formData.email, formData.dni, formData.phone]);
+
+  const handleEmailBlur = () => {
+    if (formData.email && /\S+@\S+\.\S+/.test(formData.email)) {
+      checkAvailability();
+    } else {
+      setEmailExists(false);
+    }
+  };
+
+  const handleDniBlur = () => {
+    if (formData.dni.length >= 7 && formData.dni.length <= 10) {
+      checkAvailability();
+    } else {
+      setDniExists(false);
+    }
+  };
+
+  const handlePhoneBlur = () => {
+    if (formData.phone.length >= 10 && formData.phone.length <= 15) {
+      checkAvailability();
+    } else {
+      setPhoneExists(false);
     }
   };
 
@@ -193,6 +251,8 @@ export default function AdminCreationFormTab({
       newErrors.phone = "Teléfono mínimo 10 dígitos";
     } else if (formData.phone.length > 15) {
       newErrors.phone = "Teléfono máximo 15 dígitos";
+    } else if (phoneExists) {
+      newErrors.phone = "Este teléfono ya está registrado";
     }
 
     if (!formData.dni) {
@@ -201,6 +261,8 @@ export default function AdminCreationFormTab({
       newErrors.dni = "DNI mínimo 7 dígitos";
     } else if (formData.dni.length > 10) {
       newErrors.dni = "DNI máximo 10 dígitos";
+    } else if (dniExists) {
+      newErrors.dni = "Este DNI ya está registrado";
     }
 
     setErrors(newErrors);
@@ -275,8 +337,12 @@ export default function AdminCreationFormTab({
         dni: "",
         genre: "Male",
       });
+      setEmailExists(false);
+      setDniExists(false);
+      setPhoneExists(false);
+      setErrors({});
     } catch (error: any) {
-      let errorMessage = "No se pudo crear el administrador.";
+      let errorMessage = "No se pudo crear el usuario.";
       if (
         error.message.includes("already exists") ||
         error.message.includes("ya existe")
@@ -289,7 +355,7 @@ export default function AdminCreationFormTab({
         error.message.includes("token")
       ) {
         errorMessage =
-          "❌ No tienes permisos para crear administradores. Debes ser SuperAdmin.";
+          "❌ No tienes permisos para crear usuarios. Debes ser SuperAdmin.";
       } else if (error.message.includes("network")) {
         errorMessage = "❌ Error de conexión. Verifica tu internet.";
       } else if (error.response?.data?.message) {
@@ -420,12 +486,13 @@ export default function AdminCreationFormTab({
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
+                onBlur={handleEmailBlur}
                 className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
                   errors.email
                     ? "border-red-500"
                     : emailExists
-                      ? "border-yellow-500"
-                      : validations.email
+                      ? "border-red-500"
+                      : validations.email && !emailExists
                         ? "border-green-500"
                         : "border-gray-300"
                 }`}
@@ -435,9 +502,11 @@ export default function AdminCreationFormTab({
               {errors.email ? (
                 <p className="text-red-600 text-sm mt-1">{errors.email}</p>
               ) : emailExists ? (
-                <p className="text-yellow-600 text-sm mt-1">
-                  ⚠️ Este email ya está registrado
+                <p className="text-red-600 text-sm mt-1">
+                  Este email ya está registrado
                 </p>
+              ) : checkingAvailability && formData.email?.includes("@") ? (
+                <p className="text-gray-500 text-sm mt-1">Comprobando...</p>
               ) : (
                 formData.email.length > 0 &&
                 !validations.email && (
@@ -664,10 +733,11 @@ export default function AdminCreationFormTab({
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
+                  onBlur={handlePhoneBlur}
                   className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
-                    errors.phone
+                    errors.phone || phoneExists
                       ? "border-red-500"
-                      : validations.phone
+                      : validations.phone && !phoneExists
                         ? "border-green-500"
                         : "border-gray-300"
                   }`}
@@ -676,6 +746,12 @@ export default function AdminCreationFormTab({
                 />
                 {errors.phone ? (
                   <p className="text-red-600 text-sm mt-1">{errors.phone}</p>
+                ) : phoneExists ? (
+                  <p className="text-red-600 text-sm mt-1">
+                    Este teléfono ya está registrado
+                  </p>
+                ) : checkingAvailability && formData.phone.length >= 10 ? (
+                  <p className="text-gray-500 text-sm mt-1">Comprobando...</p>
                 ) : (
                   formData.phone.length > 0 &&
                   !validations.phone && (
@@ -694,10 +770,11 @@ export default function AdminCreationFormTab({
                   name="dni"
                   value={formData.dni}
                   onChange={handleChange}
+                  onBlur={handleDniBlur}
                   className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
-                    errors.dni
+                    errors.dni || dniExists
                       ? "border-red-500"
-                      : validations.dni
+                      : validations.dni && !dniExists
                         ? "border-green-500"
                         : "border-gray-300"
                   }`}
@@ -706,6 +783,14 @@ export default function AdminCreationFormTab({
                 />
                 {errors.dni ? (
                   <p className="text-red-600 text-sm mt-1">{errors.dni}</p>
+                ) : dniExists ? (
+                  <p className="text-red-600 text-sm mt-1">
+                    Este DNI ya está registrado
+                  </p>
+                ) : checkingAvailability &&
+                  formData.dni.length >= 7 &&
+                  formData.dni.length <= 10 ? (
+                  <p className="text-gray-500 text-sm mt-1">Comprobando...</p>
                 ) : (
                   formData.dni.length > 0 &&
                   !validations.dni && (
@@ -743,7 +828,7 @@ export default function AdminCreationFormTab({
               </h4>
               <ol className="text-sm text-blue-700 space-y-1 list-decimal pl-5">
                 <li>Se crea un usuario normal en el sistema</li>
-                <li>El nuevo Usuario puede iniciar sesión inmediatamente</li>
+                <li>El nuevo usuario puede iniciar sesión inmediatamente</li>
                 <li>Se recomienda cambiar la contraseña en el primer login</li>
               </ol>
             </div>
