@@ -10,6 +10,7 @@ import {
   type UpdateActivityDTO,
 } from "src/app/lib";
 import Swal from "sweetalert2";
+import { broadcastActivityUpdate } from "src/utils/broadcastChannel";
 
 interface ScheduleSlot {
   day: string;
@@ -65,10 +66,74 @@ export default function ActivityTab() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState({
+    name: "",
+    description: "",
+    capacity: "",
+    duration: "",
+    price: "",
+    trainer: "",
+    schedule: "",
+  });
 
   useEffect(() => {
     fetchActivities();
   }, []);
+
+  const validateField = (field: string, value: any) => {
+    let error = "";
+    switch (field) {
+      case "name":
+        if (!value || value.trim().length === 0) {
+          error = "El nombre es obligatorio";
+        } else if (value.length < 3) {
+          error = "El nombre debe tener al menos 3 caracteres";
+        }
+        break;
+
+      case "description":
+        if (!value || value.trim().length === 0) {
+          error = "La descripción es obligatoria";
+        } else if (value.length < 50) {
+          error = "La descripción debe tener al menos 50 caracteres";
+        }
+        break;
+
+      case "capacity":
+        if (value < 10) {
+          error = "El cupo mínimo es 10 personas";
+        } else if (value > 25) {
+          error = "El cupo máximo es 25 personas";
+        }
+        break;
+
+      case "duration":
+        if (value < 30) {
+          error = "La duración mínima es 15 minutos";
+        } else if (value > 90) {
+          error = "La duración máxima es 90 minutos";
+        }
+        break;
+
+      case "price":
+        if (value < 3000) {
+          error = "El precio no puede ser menor a $3000";
+        } else if (value > 99999) {
+          error = "El precio es demasiado alto";
+        }
+        break;
+
+      case "trainer":
+        if (!value || value.trim().length === 0) {
+          error = "El nombre es obligatorio";
+        } else if (value.length < 8) {
+          error = "El nombre debe tener al menos 8 caracteres";
+        }
+        break;
+    }
+    setErrors((prev) => ({ ...prev, [field]: error }));
+    return error === "";
+  };
 
   const fetchActivities = async () => {
     setLoading(true);
@@ -94,6 +159,31 @@ export default function ActivityTab() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
+    const nameValid = validateField("name", formData.name);
+    const descValid = validateField("description", formData.description);
+    const capValid = validateField("capacity", formData.capacity);
+    const durValid = validateField("duration", formData.duration);
+    const priceValid = validateField("price", formData.price);
+    const trainerValid = validateField("trainer", formData.trainer);
+
+    if (!nameValid || !descValid || !capValid || !durValid || !priceValid) {
+      Swal.fire({
+        icon: "error",
+        title: "Errores en el formulario",
+        text: "Por favor corrige los errores antes de continuar",
+        confirmButtonColor: "#dc2626",
+      });
+      return;
+    }
+
+    if (scheduleSlots.length === 0) {
+      setErrors((prev) => ({
+        ...prev,
+        schedule: "Debes agregar al menos un horario",
+      }));
+      Swal.fire("Error", "Debes agregar al menos un horario", "error");
+      return;
+    }
     if (!formData.name || !formData.description) {
       Swal.fire("Error", "Nombre y descripción son obligatorios", "error");
       return;
@@ -113,14 +203,13 @@ export default function ActivityTab() {
           description: formData.description,
           capacity: formData.capacity,
           duration: formData.duration,
+          trainer: formData.trainer,
           price: formData.price,
           schedule: schedule,
           hasFreeTrial: formData.hasFreeTrial,
         };
-        if (formData.trainer) {
-          updateData.trainer = formData.trainer;
-        }
         await activityService.updateActivity(editingActivity.id, updateData);
+
         if (imageFile) {
           await activityService.uploadActivityImage(
             editingActivity.id,
@@ -132,8 +221,10 @@ export default function ActivityTab() {
             imageUrl,
           );
         }
+        broadcastActivityUpdate("updated", editingActivity.id);
         await fetchActivities();
         closeModal();
+
         Swal.fire({
           icon: "success",
           title: "✅ Éxito",
@@ -174,8 +265,10 @@ export default function ActivityTab() {
             console.warn("Error actualizando URL de imagen:", imgError);
           }
         }
+        broadcastActivityUpdate("created", createdActivity.id);
         await fetchActivities();
         closeModal();
+
         Swal.fire({
           icon: "success",
           title: "✅ Éxito",
@@ -233,6 +326,7 @@ export default function ActivityTab() {
     if (!result.isConfirmed) return;
     try {
       await activityService.deleteActivity(activity.id);
+      broadcastActivityUpdate("deleted", activity.id);
       Swal.fire("✅ Eliminada", "La actividad ha sido eliminada", "success");
       await fetchActivities();
     } catch (error: any) {
@@ -242,6 +336,8 @@ export default function ActivityTab() {
   const handleToggleStatus = async (activity: Activity) => {
     try {
       await activityService.toggleActivityStatus(activity.id);
+      broadcastActivityUpdate("updated", activity.id);
+
       Swal.fire({
         icon: "success",
         title: "Estado actualizado",
@@ -287,13 +383,13 @@ export default function ActivityTab() {
     setFormData({
       name: activity.name,
       description: activity.description,
+      trainer: activity.trainer,
       capacity: activity.capacity,
       duration: activity.duration,
       price:
         typeof activity.price === "number"
           ? activity.price
           : Number(activity.price) || 0,
-      trainer: activity.trainer || "",
       hasFreeTrial: activity.hasFreeTrial || false,
     });
     const slots = convertScheduleToSlots(activity.schedule);
@@ -521,6 +617,12 @@ export default function ActivityTab() {
                     </span>
                   </p>
                 )}
+                {!editingActivity && (
+                  <p className="text-sm text-blue-600 mt-2 bg-blue-50 p-2 rounded">
+                    ℹ️ Esto solo creará la actividad. Los turnos se generan
+                    desde la pestaña "Gestión de Turnos"
+                  </p>
+                )}
               </div>
               <form onSubmit={handleSubmit} className="p-6 space-y-6">
                 <div>
@@ -530,12 +632,19 @@ export default function ActivityTab() {
                   <input
                     type="text"
                     value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                    onChange={(e) => {
+                      setFormData({ ...formData, name: e.target.value });
+                      validateField("name", e.target.value);
+                    }}
+                    onBlur={(e) => validateField("name", e.target.value)}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
+                      errors.name ? "border-red-500" : "border-gray-300"
+                    }`}
                     required
                   />
+                  {errors.name && (
+                    <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -543,13 +652,22 @@ export default function ActivityTab() {
                   </label>
                   <textarea
                     value={formData.description}
-                    onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setFormData({ ...formData, description: e.target.value });
+                      validateField("description", e.target.value);
+                    }}
+                    onBlur={(e) => validateField("description", e.target.value)}
                     rows={3}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
+                      errors.description ? "border-red-500" : "border-gray-300"
+                    }`}
                     required
                   />
+                  {errors.description && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.description}
+                    </p>
+                  )}
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
@@ -559,15 +677,28 @@ export default function ActivityTab() {
                     <input
                       type="number"
                       value={formData.capacity}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const value =
+                          e.target.value === "" ? 0 : Number(e.target.value);
                         setFormData({
                           ...formData,
-                          capacity: parseInt(e.target.value),
-                        })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                          capacity: value,
+                        });
+                        if (e.target.value !== "") {
+                          validateField("capacity", value);
+                        }
+                      }}
+                      onBlur={(e) => validateField("trainer", e.target.value)}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 ${
+                        errors.capacity ? "border-red-500" : "border-gray-300"
+                      }`}
                       required
                     />
+                    {errors.capacity && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.capacity}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -576,15 +707,27 @@ export default function ActivityTab() {
                     <input
                       type="number"
                       value={formData.duration}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const value =
+                          e.target.value === "" ? 0 : Number(e.target.value);
                         setFormData({
                           ...formData,
-                          duration: parseInt(e.target.value),
-                        })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                          duration: value,
+                        });
+                        if (e.target.value !== "") {
+                          validateField("duration", value);
+                        }
+                      }}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 ${
+                        errors.duration ? "border-red-500" : "border-gray-300"
+                      }`}
                       required
                     />
+                    {errors.duration && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.duration}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -593,15 +736,27 @@ export default function ActivityTab() {
                     <input
                       type="number"
                       value={formData.price}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const value =
+                          e.target.value === "" ? 0 : Number(e.target.value);
                         setFormData({
                           ...formData,
-                          price: parseInt(e.target.value),
-                        })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                          price: value,
+                        });
+                        if (e.target.value !== "") {
+                          validateField("price", value);
+                        }
+                      }}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 ${
+                        errors.price ? "border-red-500" : "border-gray-300"
+                      }`}
                       required
                     />
+                    {errors.price && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.price}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -612,11 +767,20 @@ export default function ActivityTab() {
                     <input
                       type="text"
                       value={formData.trainer}
-                      onChange={(e) =>
-                        setFormData({ ...formData, trainer: e.target.value })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                      onChange={(e) => {
+                        setFormData({ ...formData, trainer: e.target.value });
+                        validateField("trainer", e.target.value);
+                      }}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
+                        errors.trainer ? "border-red-500" : "border-gray-300"
+                      }`}
+                      required
                     />
+                    {errors.trainer && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.trainer}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div>
