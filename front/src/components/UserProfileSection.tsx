@@ -310,21 +310,21 @@ export default function UserProfileSection({
                     Información Personal
                   </h3>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
+                    <div className="space-y-3 min-w-0">
                       <div>
                         <p className="text-sm text-gray-500">Nombre completo</p>
-                        <p className="font-medium text-lg">
+                        <p className="font-medium text-lg break-words">
                           {user?.name} {user?.lastname || ""}
                         </p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">Email</p>
-                        <p className="font-medium">{user?.email}</p>
+                        <p className="font-medium break-words break-all">{user?.email}</p>
                       </div>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-3 md:ml-4 lg:ml-8">
                       <div>
                         <p className="text-sm text-gray-500">DNI</p>
                         <p className="font-medium">
@@ -345,7 +345,7 @@ export default function UserProfileSection({
                       </div>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-3 md:ml-4 lg:ml-8">
                       <div>
                         <p className="text-sm text-gray-500">
                           Fecha de Nacimiento
