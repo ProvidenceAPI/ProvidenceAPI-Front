@@ -5,15 +5,17 @@ export default function Ubicacion() {
     <main>
       <section className="py-16 px-6 md:px-12 text-center">
         <h1 className="text-4xl md:text-5xl font-bold text-black mb-4">
-          UBICACION
+          UBICACIÓN
         </h1>
         <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-          Visítanos en nuestro gimnasio principal en Cipoletti
+          Visítanos en nuestro gimnasio principal en Unicenter Shopping
         </p>
       </section>
+      
       {/* Contenedor principal */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-8 items-start">
+          
           {/* Columna izquierda - Tarjetas compactas */}
           <div className="space-y-5">
             {/* Dirección */}
@@ -29,12 +31,12 @@ export default function Ubicacion() {
                     Dirección
                   </h3>
                   <p className="text-gray-800 mb-3 leading-relaxed">
-                    Provincia de Buenos Aires 760,
+                    Paraná, 3745, Provincia de Buenos Aires 
                     <br />
-                    Cipoletti, Argentina
+                    Martínez, Argentina
                   </p>
                   <a
-                    href="https://maps.google.com/?q=Provincia+de+Buenos+Aires+760,Cipoletti,Río+Negro,Argentina"
+                    href="https://www.google.com/maps/place/Unicenter+Shopping/@-34.5081762,-58.527121,17z/data=!3m1!4b1!4m6!3m5!1s0x95bcb0ee292497e9:0xf9a611e58747f528!8m2!3d-34.5081762!4d-58.527121!16zL20vMGY4NXpk?entry=ttu&g_ep=EgoyMDI2MDEyMS4wIKXMDSoKLDEwMDc5MjA3M0gBUAM%3D" 
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center text-red-600 hover:text-red-700 text-sm font-medium"
@@ -88,10 +90,10 @@ export default function Ubicacion() {
                 <div className="flex-grow">
                   <h3 className="font-semibold text-gray-900 mb-2">Email</h3>
                   <a
-                    href="mailto:info@providencefitness.com"
+                    href="mailto:providenceapi@gmail.com"
                     className="text-gray-800 hover:text-red-600 text-lg font-medium transition-colors block mb-3"
                   >
-                    info@providencefitness.com
+                    providenceapi@gmail.com
                   </a>
                   <p className="text-gray-500 text-sm">
                     Respondemos en menos de 24 horas
@@ -99,6 +101,7 @@ export default function Ubicacion() {
                 </div>
               </div>
             </div>
+
             {/* Horarios */}
             <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200 hover:border-red-300 transition-colors">
               <div className="flex items-start gap-4">
@@ -134,23 +137,25 @@ export default function Ubicacion() {
               </div>
             </div>
           </div>
-          {/* Columna derecha - Mapa limpio */}
+
+          {/* Columna derecha - Mapa */}
           <div className="h-auto">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden h-full">
-              {/* Mapa simple sin header */}
+              {/* Mapa simplificado  */}
               <div className="h-[500px] md:h-[600px]">
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3104.142651098254!2d-67.99811192367717!3d-38.93385437170407!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x960a33c3e8e4a26d%3A0xb8a3d83681c00a74!2sProvincia%20de%20Buenos%20Aires%20760%2C%20Cipoletti%2C%20R%C3%ADo%20Negro!5e0!3m2!1ses-419!2sar!4v1704675200000!5m2!1ses-419!2sar"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3287.102218611716!2d-58.5271209!3d-34.5081762!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95bcb0ee292497e9%3A0xf9a611e58747f528!2sUnicenter%20Shopping!5e0!3m2!1ses!2sar!4v1700000000000!5m2!1ses!2sar"
                   width="100%"
                   height="100%"
                   style={{ border: 0 }}
                   allowFullScreen
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
-                  title="Ubicación Providence Fitness"
+                  title="Ubicación Providence Fitness - Unicenter Shopping"
                 />
               </div>
             </div>
+
             {/* Información adicional pequeña */}
             <div className="mt-6 grid grid-cols-2 gap-4">
               <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
@@ -176,17 +181,17 @@ export default function Ubicacion() {
                 <p className="text-gray-600 text-xs">Acceso por bus</p>
               </div>
             </div>
+
             {/* Botón pequeño */}
             <div className="mt-6">
               <a
-                href="https://maps.google.com/?q=Provincia+de+Buenos+Aires+760,Cipoletti,Río+Negro,Argentina"
+                href="https://maps.app.goo.gl/?link=https://www.google.com/maps/place/Unicenter+Shopping/@-34.5081762,-58.5271209,17z/data=!3m1!4b1!4m6!3m5!1s0x95bcb0ee292497e9:0xf9a611e58747f528!8m2!3d-34.5081762!4d-58.5271209!16s%2Fg%2F11b8z5vxj3?entry=ttu"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block w-full bg-gray-900 hover:bg-black text-white font-medium py-3 px-4 rounded-lg text-center transition-colors text-sm"
               >
                 Obtener direcciones
               </a>
-              <br></br>
             </div>
           </div>
         </div>

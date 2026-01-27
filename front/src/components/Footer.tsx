@@ -121,7 +121,7 @@ export const Footer: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-sm font-medium">
-                    info@providencefitness.com
+                    providenceapi@gmail.com
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     Respondemos en 24h
@@ -134,10 +134,10 @@ export const Footer: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-sm font-medium">
-                    Provincia de Buenos Aires 760
+                    Paraná 3745, Provincia de Buenos Aires 
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    Cipoletti, Argentina
+                    Martinez, Argentina
                   </p>
                 </div>
               </li>
@@ -159,13 +159,13 @@ export const Footer: React.FC = () => {
         </div>
 
         {/* División y copyright */}
-        <div className="mt-16 pt-8 border-t border-gray-800">
-          <div className="flex flex-col md:flex-row justify-center items-center gap-4">
-            <p className="text-gray-500 text-sm">
-              &copy; {currentYear} Providence Fitness. Todos los derechos
-              reservados.
-            </p>
-          </div>
+        <div className="mt-12 pt-6 border-t border-gray-800 text-center">
+          <p className="text-gray-500 text-sm">
+            © {new Date().getFullYear()} Providence Fitness. Todos los derechos reservados.
+          </p>
+          <p className="text-gray-600 text-xs mt-2">
+            Diseñado y desarrollado con ❤️ por nuestro equipo
+          </p>
         </div>
       </div>
     </footer>
