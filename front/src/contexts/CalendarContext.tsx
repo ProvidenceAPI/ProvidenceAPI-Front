@@ -350,7 +350,8 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     refetchAll();
-  }, [selectedDate, refetchAll]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate]);
 
   useEffect(() => {
     const handleActivityChange = (event: MessageEvent) => {
