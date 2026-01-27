@@ -20,7 +20,9 @@ interface AdminCreationFormTabProps {
   onBackToOverview?: () => void;
 }
 
-export default function AdminCreationFormTab({ onBackToOverview }: AdminCreationFormTabProps) {
+export default function AdminCreationFormTab({
+  onBackToOverview,
+}: AdminCreationFormTabProps) {
   const [formData, setFormData] = useState<AdminFormData>({
     name: "",
     lastname: "",
@@ -81,25 +83,28 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
       name: formData.name.length >= 3 && formData.name.length <= 80,
       lastname: formData.lastname.length >= 3 && formData.lastname.length <= 80,
       email: formData.email ? /\S+@\S+\.\S+/.test(formData.email) : false,
-      password: formData.password ? 
-        formData.password.length >= 8 && formData.password.length <= 15 : false,
-      confirmPassword: formData.password === formData.confirmPassword && 
+      password: formData.password
+        ? formData.password.length >= 8 && formData.password.length <= 15
+        : false,
+      confirmPassword:
+        formData.password === formData.confirmPassword &&
         formData.confirmPassword.length > 0,
       phone: formData.phone ? /^\d{10,15}$/.test(formData.phone) : false,
-      dni: formData.dni ? 
-        (formData.dni.length >= 7 && 
-         formData.dni.length <= 10) : false,
+      dni: formData.dni
+        ? formData.dni.length >= 7 && formData.dni.length <= 10
+        : false,
       genre: true,
-      birthdate: formData.birthdate ? 
-        (() => {
-          const birthDate = new Date(formData.birthdate);
-          if (isNaN(birthDate.getTime())) return false;
-          const today = new Date();
-          const age = today.getFullYear() - birthDate.getFullYear();
-          return age >= 18;
-        })() : false,
+      birthdate: formData.birthdate
+        ? (() => {
+            const birthDate = new Date(formData.birthdate);
+            if (isNaN(birthDate.getTime())) return false;
+            const today = new Date();
+            const age = today.getFullYear() - birthDate.getFullYear();
+            return age >= 18;
+          })()
+        : false,
     };
-    
+
     setValidations(newValidations);
   }, [formData]);
 
@@ -130,7 +135,7 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
 
   const validateForm = (): boolean => {
     const newErrors: Partial<AdminFormData> = {};
-    
+
     if (!formData.name.trim()) {
       newErrors.name = "El nombre es requerido";
     } else if (formData.name.length < 3) {
@@ -138,7 +143,7 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
     } else if (formData.name.length > 80) {
       newErrors.name = "El nombre no debe exceder 80 caracteres";
     }
-    
+
     if (!formData.lastname.trim()) {
       newErrors.lastname = "El apellido es requerido";
     } else if (formData.lastname.length < 3) {
@@ -146,7 +151,7 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
     } else if (formData.lastname.length > 80) {
       newErrors.lastname = "El apellido no debe exceder 80 caracteres";
     }
-    
+
     if (!formData.email.trim()) {
       newErrors.email = "El email es requerido";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
@@ -154,7 +159,7 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
     } else if (emailExists) {
       newErrors.email = "Este email ya está registrado";
     }
-    
+
     if (!formData.password) {
       newErrors.password = "La contraseña es requerida";
     } else if (formData.password.length < 8) {
@@ -162,11 +167,11 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
     } else if (formData.password.length > 15) {
       newErrors.password = "Máximo 15 caracteres";
     }
-    
+
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Las contraseñas no coinciden";
     }
-    
+
     if (!formData.birthdate) {
       newErrors.birthdate = "Fecha de nacimiento requerida";
     } else {
@@ -181,7 +186,7 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
         }
       }
     }
-    
+
     if (!formData.phone) {
       newErrors.phone = "Teléfono requerido";
     } else if (formData.phone.length < 10) {
@@ -189,7 +194,7 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
     } else if (formData.phone.length > 15) {
       newErrors.phone = "Teléfono máximo 15 dígitos";
     }
-    
+
     if (!formData.dni) {
       newErrors.dni = "DNI requerido";
     } else if (formData.dni.length < 7) {
@@ -239,7 +244,7 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
       if (!userResponse.user || !userResponse.user.id) {
         throw new Error("No se recibió ID de usuario en la respuesta");
       }
-      
+
       await new Promise((resolve) => setTimeout(resolve, 1000));
       await Swal.fire({
         title: "✅ ¡Usuario creado!",
@@ -270,25 +275,27 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
         dni: "",
         genre: "Male",
       });
-    } catch (error: any) {      
+    } catch (error: any) {
       let errorMessage = "No se pudo crear el administrador.";
       if (
         error.message.includes("already exists") ||
         error.message.includes("ya existe")
       ) {
-        errorMessage = "❌ Este email ya está registrado. Intenta con otro email.";
+        errorMessage =
+          "❌ Este email ya está registrado. Intenta con otro email.";
         setEmailExists(true);
       } else if (
         error.message.includes("Unauthorized") ||
         error.message.includes("token")
       ) {
-        errorMessage = "❌ No tienes permisos para crear administradores. Debes ser SuperAdmin.";
+        errorMessage =
+          "❌ No tienes permisos para crear administradores. Debes ser SuperAdmin.";
       } else if (error.message.includes("network")) {
         errorMessage = "❌ Error de conexión. Verifica tu internet.";
       } else if (error.response?.data?.message) {
         errorMessage = `❌ ${error.response.data.message}`;
       }
-      
+
       await Swal.fire({
         title: "Error",
         html: `
@@ -310,10 +317,14 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
   };
 
   const getPasswordStrength = (password: string) => {
-    if (password.length === 0) return { text: "Sin contraseña", color: "text-gray-400" };
-    if (password.length < 8) return { text: "Muy débil", color: "text-red-500" };
-    if (password.length < 10) return { text: "Débil", color: "text-yellow-500" };
-    if (password.length < 12) return { text: "Moderada", color: "text-green-500" };
+    if (password.length === 0)
+      return { text: "Sin contraseña", color: "text-gray-400" };
+    if (password.length < 8)
+      return { text: "Muy débil", color: "text-red-500" };
+    if (password.length < 10)
+      return { text: "Débil", color: "text-yellow-500" };
+    if (password.length < 12)
+      return { text: "Moderada", color: "text-green-500" };
     return { text: "Fuerte", color: "text-green-600" };
   };
 
@@ -348,8 +359,11 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
                   value={formData.name}
                   onChange={handleChange}
                   className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
-                    errors.name ? "border-red-500" : 
-                    validations.name ? "border-green-500" : "border-gray-300"
+                    errors.name
+                      ? "border-red-500"
+                      : validations.name
+                        ? "border-green-500"
+                        : "border-gray-300"
                   }`}
                   placeholder="Ej: Juan"
                   disabled={loading}
@@ -357,7 +371,8 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
                 {errors.name ? (
                   <p className="text-red-600 text-sm mt-1">{errors.name}</p>
                 ) : (
-                  formData.name.length > 0 && !validations.name && (
+                  formData.name.length > 0 &&
+                  !validations.name && (
                     <p className="text-yellow-600 text-sm mt-1">
                       Mínimo 3 caracteres
                     </p>
@@ -374,8 +389,11 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
                   value={formData.lastname}
                   onChange={handleChange}
                   className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
-                    errors.lastname ? "border-red-500" : 
-                    validations.lastname ? "border-green-500" : "border-gray-300"
+                    errors.lastname
+                      ? "border-red-500"
+                      : validations.lastname
+                        ? "border-green-500"
+                        : "border-gray-300"
                   }`}
                   placeholder="Ej: Pérez"
                   disabled={loading}
@@ -383,7 +401,8 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
                 {errors.lastname ? (
                   <p className="text-red-600 text-sm mt-1">{errors.lastname}</p>
                 ) : (
-                  formData.lastname.length > 0 && !validations.lastname && (
+                  formData.lastname.length > 0 &&
+                  !validations.lastname && (
                     <p className="text-yellow-600 text-sm mt-1">
                       Mínimo 3 caracteres
                     </p>
@@ -402,9 +421,13 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
                 value={formData.email}
                 onChange={handleChange}
                 className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
-                  errors.email ? "border-red-500" : 
-                  emailExists ? "border-yellow-500" :
-                  validations.email ? "border-green-500" : "border-gray-300"
+                  errors.email
+                    ? "border-red-500"
+                    : emailExists
+                      ? "border-yellow-500"
+                      : validations.email
+                        ? "border-green-500"
+                        : "border-gray-300"
                 }`}
                 placeholder="ejemplo@email.com"
                 disabled={loading}
@@ -416,7 +439,8 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
                   ⚠️ Este email ya está registrado
                 </p>
               ) : (
-                formData.email.length > 0 && !validations.email && (
+                formData.email.length > 0 &&
+                !validations.email && (
                   <p className="text-yellow-600 text-sm mt-1">
                     Introduce un email válido
                   </p>
@@ -436,8 +460,11 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
                     value={formData.password}
                     onChange={handleChange}
                     className={`w-full p-3 pr-10 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
-                      errors.password ? "border-red-500" : 
-                      validations.password ? "border-green-500" : "border-gray-300"
+                      errors.password
+                        ? "border-red-500"
+                        : validations.password
+                          ? "border-green-500"
+                          : "border-gray-300"
                     }`}
                     placeholder="Mínimo 8 caracteres"
                     disabled={loading}
@@ -487,24 +514,33 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
                 </div>
                 {errors.password ? (
                   <p className="text-red-600 text-sm mt-1">{errors.password}</p>
-                ) : formData.password.length > 0 && (
-                  <div className="mt-2 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className={`text-sm ${getPasswordStrength(formData.password).color}`}>
-                        Seguridad: {getPasswordStrength(formData.password).text}
-                      </span>
-                      <span className={`text-sm ${
-                        formData.password.length < 8 ? "text-red-500" : 
-                        formData.password.length > 15 ? "text-red-500" : 
-                        "text-green-600"
-                      }`}>
-                        {formData.password.length}/15
-                      </span>
+                ) : (
+                  formData.password.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span
+                          className={`text-sm ${getPasswordStrength(formData.password).color}`}
+                        >
+                          Seguridad:{" "}
+                          {getPasswordStrength(formData.password).text}
+                        </span>
+                        <span
+                          className={`text-sm ${
+                            formData.password.length < 8
+                              ? "text-red-500"
+                              : formData.password.length > 15
+                                ? "text-red-500"
+                                : "text-green-600"
+                          }`}
+                        >
+                          {formData.password.length}/15
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  )
                 )}
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Confirmar contraseña *
@@ -516,8 +552,11 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     className={`w-full p-3 pr-10 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
-                      errors.confirmPassword ? "border-red-500" : 
-                      validations.confirmPassword ? "border-green-500" : "border-gray-300"
+                      errors.confirmPassword
+                        ? "border-red-500"
+                        : validations.confirmPassword
+                          ? "border-green-500"
+                          : "border-gray-300"
                     }`}
                     placeholder="Repite la contraseña"
                     disabled={loading}
@@ -566,9 +605,12 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
                   </button>
                 </div>
                 {errors.confirmPassword ? (
-                  <p className="text-red-600 text-sm mt-1">{errors.confirmPassword}</p>
+                  <p className="text-red-600 text-sm mt-1">
+                    {errors.confirmPassword}
+                  </p>
                 ) : (
-                  formData.confirmPassword.length > 0 && !validations.confirmPassword && (
+                  formData.confirmPassword.length > 0 &&
+                  !validations.confirmPassword && (
                     <p className="text-yellow-600 text-sm mt-1">
                       Las contraseñas no coinciden
                     </p>
@@ -589,15 +631,19 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
                 max={getMaxBirthdate()}
                 min={getMinBirthdate()}
                 className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
-                  errors.birthdate ? "border-red-500" : 
-                  validations.birthdate ? "border-green-500" : "border-gray-300"
+                  errors.birthdate
+                    ? "border-red-500"
+                    : validations.birthdate
+                      ? "border-green-500"
+                      : "border-gray-300"
                 }`}
                 disabled={loading}
               />
               {errors.birthdate ? (
                 <p className="text-red-600 text-sm mt-1">{errors.birthdate}</p>
               ) : (
-                formData.birthdate && !validations.birthdate && (
+                formData.birthdate &&
+                !validations.birthdate && (
                   <p className="text-yellow-600 text-sm mt-1">
                     Debe ser mayor de 18 años
                   </p>
@@ -619,8 +665,11 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
                   value={formData.phone}
                   onChange={handleChange}
                   className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
-                    errors.phone ? "border-red-500" : 
-                    validations.phone ? "border-green-500" : "border-gray-300"
+                    errors.phone
+                      ? "border-red-500"
+                      : validations.phone
+                        ? "border-green-500"
+                        : "border-gray-300"
                   }`}
                   placeholder="10-15 dígitos"
                   disabled={loading}
@@ -628,7 +677,8 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
                 {errors.phone ? (
                   <p className="text-red-600 text-sm mt-1">{errors.phone}</p>
                 ) : (
-                  formData.phone.length > 0 && !validations.phone && (
+                  formData.phone.length > 0 &&
+                  !validations.phone && (
                     <p className="text-yellow-600 text-sm mt-1">
                       Debe tener entre 10 y 15 dígitos
                     </p>
@@ -645,8 +695,11 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
                   value={formData.dni}
                   onChange={handleChange}
                   className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
-                    errors.dni ? "border-red-500" : 
-                    validations.dni ? "border-green-500" : "border-gray-300"
+                    errors.dni
+                      ? "border-red-500"
+                      : validations.dni
+                        ? "border-green-500"
+                        : "border-gray-300"
                   }`}
                   placeholder="7-10 dígitos"
                   disabled={loading}
@@ -654,7 +707,8 @@ export default function AdminCreationFormTab({ onBackToOverview }: AdminCreation
                 {errors.dni ? (
                   <p className="text-red-600 text-sm mt-1">{errors.dni}</p>
                 ) : (
-                  formData.dni.length > 0 && !validations.dni && (
+                  formData.dni.length > 0 &&
+                  !validations.dni && (
                     <p className="text-yellow-600 text-sm mt-1">
                       Debe tener entre 7 y 10 dígitos
                     </p>
