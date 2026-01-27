@@ -1,4 +1,3 @@
-// src/app/lib/paymentService.ts
 import { apiClient } from "./apiClient";
 import { Payment } from "src/interfaces/Payments";
 
