@@ -444,7 +444,9 @@ export default function NavigationTab() {
         {activeTab === "activities" && <ActivityTab />}
         {activeTab === "users" && <UsersTab />}
         {activeTab === "reservations" && <ReservationsTab />}
-        {activeTab === "AdminCreationForm" && <AdminCreationFormTab />}
+        {activeTab === "AdminCreationForm" && (
+          <AdminCreationFormTab onBackToOverview={() => setActiveTab("overview")} />
+        )}
       </main>
       {/* MODAL DE REPORTES */}
       {showReportsModal && reportData && (
