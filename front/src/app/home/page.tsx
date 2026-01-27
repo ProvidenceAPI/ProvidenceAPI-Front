@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppContext } from "src/contexts/AppContext";
 import Image from "next/image";
 import { activityService } from "src/app/lib";
 import { Activity } from "src/interfaces/Activity";
+import { activityChannel } from "src/utils/broadcastChannel";
 
 const HomePage: React.FC = () => {
   const { loading: authLoading } = useAppContext();
@@ -14,16 +15,11 @@ const HomePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
 
-  useEffect(() => {
-    loadActivities();
-  }, []);
-
-  const loadActivities = async () => {
+  const loadActivities = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
       const data = await activityService.getActiveActivities();
-
       setActivities(data);
     } catch (error) {
       setError(
@@ -32,7 +28,21 @@ const HomePage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadActivities();
+  }, [loadActivities]);
+
+  useEffect(() => {
+    const handleActivityChange = (event: MessageEvent) => {
+      loadActivities();
+    };
+    activityChannel.addEventListener("message", handleActivityChange);
+    return () => {
+      activityChannel.removeEventListener("message", handleActivityChange);
+    };
+  }, [loadActivities]);
 
   const getActivitySlug = (name: string): string => {
     return name

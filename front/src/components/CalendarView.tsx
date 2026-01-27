@@ -28,15 +28,17 @@ interface CalendarViewProps {
 }
 
 const parseLocalDate = (dateString: string): Date => {
-  const [year, month, day] = dateString.split("T")[0].split("-");
-  return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  const datePart = dateString.split("T")[0];
+  const [year, month, day] = datePart.split("-").map(Number);
+  return new Date(year, month - 1, day, 12, 0, 0);
 };
 
 export default function CalendarView({
   reservations,
   onDayClick,
 }: CalendarViewProps) {
-  const { selectedDate, setSelectedDate, fetchTurns } = useCalendar();
+  const { selectedDate, setSelectedDate, fetchTurns, refetchAll } =
+    useCalendar();
   const currentMonth = selectedDate;
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -52,53 +54,32 @@ export default function CalendarView({
     if (!Array.isArray(reservations)) {
       return [];
     }
-    return reservations.filter((reservation) => {
+    const filtered = reservations.filter((reservation) => {
       try {
         const reservationDate = parseLocalDate(reservation.date);
-        return isSameDay(reservationDate, day);
+        const matches = isSameDay(reservationDate, day);
+        return matches;
       } catch (error) {
+        console.error("  Error parseando fecha:", reservation.date, error);
         return false;
       }
     });
+    return filtered;
   };
 
-  const goToPreviousMonth = async () => {
+  const goToPreviousMonth = () => {
     const newMonth = subMonths(currentMonth, 1);
     setSelectedDate(newMonth);
-    const startDate = new Date(newMonth);
-    startDate.setDate(1);
-    const endDate = new Date(newMonth);
-    endDate.setMonth(endDate.getMonth() + 1, 0);
-    await fetchTurns({
-      startDate: startDate.toISOString().split("T")[0],
-      endDate: endDate.toISOString().split("T")[0],
-    });
   };
 
   const goToNextMonth = async () => {
     const newMonth = addMonths(currentMonth, 1);
     setSelectedDate(newMonth);
-    const startDate = new Date(newMonth);
-    startDate.setDate(1);
-    const endDate = new Date(newMonth);
-    endDate.setMonth(endDate.getMonth() + 1, 0);
-    await fetchTurns({
-      startDate: startDate.toISOString().split("T")[0],
-      endDate: endDate.toISOString().split("T")[0],
-    });
   };
 
   const goToToday = async () => {
     const today = new Date();
     setSelectedDate(today);
-    const startDate = new Date(today);
-    startDate.setDate(1);
-    const endDate = new Date(today);
-    endDate.setMonth(endDate.getMonth() + 1, 0);
-    await fetchTurns({
-      startDate: startDate.toISOString().split("T")[0],
-      endDate: endDate.toISOString().split("T")[0],
-    });
   };
 
   return (

@@ -40,67 +40,70 @@ export default function UsersTab() {
 
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const loadAllUsersOnce = useCallback(async () => {
-    if (dataLoaded) return;
-    try {
-      const data: any = await userService.getUsers(1, 1000, "");
-      let fetchedUsers: UserData[] = [];
-      if (data?.users && Array.isArray(data.users)) {
-        fetchedUsers = data.users;
-      } else if (data?.data && Array.isArray(data.data)) {
-        fetchedUsers = data.data;
-      } else if (Array.isArray(data)) {
-        fetchedUsers = data;
+  const loadAllUsersOnce = useCallback(
+    async (forceReload: boolean = false) => {
+      if (dataLoaded && !forceReload) return;
+      try {
+        const data: any = await userService.getUsers(1, 1000, "");
+        let fetchedUsers: UserData[] = [];
+        if (data?.users && Array.isArray(data.users)) {
+          fetchedUsers = data.users;
+        } else if (data?.data && Array.isArray(data.data)) {
+          fetchedUsers = data.data;
+        } else if (Array.isArray(data)) {
+          fetchedUsers = data;
+        }
+
+        const safeUsers: UserData[] = fetchedUsers.map((user) => {
+          let normalizedRole: UserData["rol"] = "user";
+          if (user.rol) {
+            const roleStr = String(user.rol).toLowerCase();
+            if (roleStr === "superadmin" || roleStr === "superAdmin") {
+              normalizedRole = "superadmin";
+            } else if (roleStr === "admin" || roleStr === "Admin") {
+              normalizedRole = "admin";
+            } else {
+              normalizedRole = "user";
+            }
+          }
+
+          let normalizedStatus: UserData["status"] = "active";
+          if (user.status) {
+            const statusStr = String(user.status).toLowerCase();
+            if (statusStr === "active" || statusStr === "activo") {
+              normalizedStatus = "active";
+            } else if (statusStr === "banned" || statusStr === "baneado") {
+              normalizedStatus = "banned";
+            } else if (statusStr === "cancelled" || statusStr === "cancelado") {
+              normalizedStatus = "cancelled";
+            }
+          }
+          return {
+            ...user,
+            name: user.name || "",
+            email: user.email || "",
+            phone: user.phone || "",
+            rol: normalizedRole,
+            status: normalizedStatus,
+          };
+        });
+
+        setAllUsers(safeUsers);
+        setUsers(safeUsers);
+        setTotalUsers(safeUsers.length);
+        setTotalPages(Math.ceil(safeUsers.length / 10));
+        setDataLoaded(true);
+      } catch (error: any) {
+        console.error("Error cargando usuarios:", error);
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: error.message || "Error al cargar usuarios",
+        });
       }
-
-      const safeUsers: UserData[] = fetchedUsers.map((user) => {
-        let normalizedRole: UserData["rol"] = "user";
-        if (user.rol) {
-          const roleStr = String(user.rol).toLowerCase();
-          if (roleStr === "superadmin" || roleStr === "superAdmin") {
-            normalizedRole = "superadmin";
-          } else if (roleStr === "admin" || roleStr === "Admin") {
-            normalizedRole = "admin";
-          } else {
-            normalizedRole = "user";
-          }
-        }
-
-        let normalizedStatus: UserData["status"] = "active";
-        if (user.status) {
-          const statusStr = String(user.status).toLowerCase();
-          if (statusStr === "active" || statusStr === "activo") {
-            normalizedStatus = "active";
-          } else if (statusStr === "banned" || statusStr === "baneado") {
-            normalizedStatus = "banned";
-          } else if (statusStr === "cancelled" || statusStr === "cancelado") {
-            normalizedStatus = "cancelled";
-          }
-        }
-        return {
-          ...user,
-          name: user.name || "",
-          email: user.email || "",
-          phone: user.phone || "",
-          rol: normalizedRole,
-          status: normalizedStatus,
-        };
-      });
-
-      setAllUsers(safeUsers);
-      setUsers(safeUsers);
-      setTotalUsers(safeUsers.length);
-      setTotalPages(Math.ceil(safeUsers.length / 10));
-      setDataLoaded(true);
-    } catch (error: any) {
-      console.error("Error cargando usuarios:", error);
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: error.message || "Error al cargar usuarios",
-      });
-    }
-  }, [dataLoaded]);
+    },
+    [dataLoaded],
+  );
 
   const performFrontendSearch = useCallback(
     (searchValue: string) => {
@@ -363,12 +366,8 @@ export default function UsersTab() {
 
     try {
       await userService.updateUserRole(userId, newRole);
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, rol: newRole } : u)),
-      );
-      setAllUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, rol: newRole } : u)),
-      );
+      await loadAllUsersOnce(true);
+
       Swal.fire({
         icon: "success",
         title: "Rol actualizado",
@@ -427,7 +426,6 @@ export default function UsersTab() {
       });
       return;
     }
-
     const previousUsers = [...users];
     const previousAllUsers = [...allUsers];
 
@@ -442,15 +440,12 @@ export default function UsersTab() {
     setEditingUser(null);
 
     try {
-      // ✅ SOLO ACTUALIZAR LO QUE CAMBIÓ
       if (hasStatusChanged) {
         await userService.updateUserStatus(userToEdit.id, userToEdit.status);
       }
-
       if (hasRoleChanged) {
         await userService.updateUserRole(userToEdit.id, userToEdit.rol);
       }
-
       if (hasEmailChanged || hasPhoneChanged) {
         const updateData: any = {};
         if (hasEmailChanged) {
@@ -461,6 +456,7 @@ export default function UsersTab() {
         }
         await userService.updateUser(userToEdit.id, updateData);
       }
+      await loadAllUsersOnce(true);
 
       Swal.fire({
         icon: "success",
@@ -519,12 +515,7 @@ export default function UsersTab() {
 
     try {
       await userService.updateUserStatus(userId, "cancelled");
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, status: "cancelled" } : u)),
-      );
-      setAllUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, status: "cancelled" } : u)),
-      );
+      await loadAllUsersOnce(true);
 
       Swal.fire({
         icon: "success",

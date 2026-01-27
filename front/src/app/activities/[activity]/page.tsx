@@ -157,6 +157,7 @@ export default function ActivityPage() {
     await reservationService.createReservation(reservationData);
     await loadAvailableTurns();
     await checkUserFreeReservation();
+    await checkActiveSubscription();
   };
   if (loading) {
     return (
@@ -207,6 +208,27 @@ export default function ActivityPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Información de la actividad */}
             <div className="lg:col-span-2">
+              <div className="mb-6">
+                <Link
+                  href="/home"
+                  className="inline-flex items-center text-gray-700 hover:text-[#DC2626] transition-colors font-semibold text-base"
+                >
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                    />
+                  </svg>
+                  Volver a actividades
+                </Link>
+              </div>
               <div className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">Descripción</h2>
                 <p className="text-gray-700 leading-relaxed">
@@ -431,27 +453,6 @@ export default function ActivityPage() {
                     No hay horarios configurados
                   </p>
                 )}
-              </div>
-              <div className="mt-6">
-                <Link
-                  href="/home"
-                  className="inline-flex items-center text-gray-600 hover:text-[#DC2626] transition-colors"
-                >
-                  <svg
-                    className="w-4 h-4 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10 19l-7-7m0 0l7-7m-7 7h18"
-                    />
-                  </svg>
-                  Volver a actividades
-                </Link>
               </div>
             </div>
           </div>

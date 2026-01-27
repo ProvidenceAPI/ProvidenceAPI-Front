@@ -257,7 +257,20 @@ export default function NosotrosFooter() {
                 { tech: "Tailwind CSS", color: "from-teal-500/20 to-cyan-500/20" },
                 { tech: "Node.js", color: "from-green-600/20 to-emerald-500/20" },
                 { tech: "Nest.js", color: "from-green-700/20 to-green-600/20" },
-                { tech: "Google Maps API", color: "from-red-500/20 to-red-600/20" },
+                { tech: "PostgreSQL", color: "from-red-500/20 to-red-600/20" },
+                { tech: "TypeORM", color: "from-blue-500/20 to-cyan-500/20" },
+                { tech: "Swagger", color: "from-gray-800 to-black" },
+                { tech: "Passport", color: "from-blue-600/20 to-blue-700/20" },
+                { tech: "JWT", color: "from-teal-500/20 to-cyan-500/20" },
+                { tech: "Cloudinary", color: "from-green-600/20 to-emerald-500/20" },
+                { tech: "MercadoPago", color: "from-green-700/20 to-green-600/20" },
+                { tech: "SendGrid", color: "from-red-500/20 to-red-600/20" },
+                { tech: "Axios", color: "from-blue-500/20 to-cyan-500/20" },
+                { tech: "Google OAuth2", color: "from-gray-800 to-black" },
+                { tech: "SweetAlert2", color: "from-blue-600/20 to-blue-700/20" },
+                { tech: "Google Maps URLs API", color: "from-teal-500/20 to-cyan-500/20" },
+                { tech: "Leaflet", color: "from-green-600/20 to-emerald-500/20" },
+                { tech: "OpenStreetMap", color: "from-green-700/20 to-green-600/20" },
               ].map((item, index) => (
                 <span
                   key={index}

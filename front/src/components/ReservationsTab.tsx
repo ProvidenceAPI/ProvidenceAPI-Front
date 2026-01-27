@@ -11,6 +11,10 @@ import { Turn } from "src/interfaces/Turn";
 import { Activity } from "src/interfaces/Activity";
 import { StatusMap } from "src/interfaces/StatusBadge";
 import CalendarDatePicker from "./CalendarDateSelector";
+import {
+  broadcastReservationUpdate,
+  reservationChannel,
+} from "src/utils/broadcastChannel";
 
 export default function ReservationsTab() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -39,6 +43,19 @@ export default function ReservationsTab() {
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  useEffect(() => {
+    const handleReservationChange = (event: MessageEvent) => {
+      loadData();
+    };
+    reservationChannel.addEventListener("message", handleReservationChange);
+    return () => {
+      reservationChannel.removeEventListener(
+        "message",
+        handleReservationChange,
+      );
+    };
   }, []);
 
   const loadData = async () => {
@@ -157,9 +174,9 @@ export default function ReservationsTab() {
 
   const handleChangeReservationTurn = async (turnId: string) => {
     if (!selectedReservation) return;
-    
+
     // Validar que turnId sea un UUID válido
-    if (!turnId || typeof turnId !== 'string' || turnId.trim() === '') {
+    if (!turnId || typeof turnId !== "string" || turnId.trim() === "") {
       Swal.fire({
         icon: "error",
         title: "Error",
@@ -185,25 +202,24 @@ export default function ReservationsTab() {
           turnId: turnId.trim(),
         },
       );
-      
-      // Cerrar el modal inmediatamente
+      broadcastReservationUpdate("modified", selectedReservation.id);
       closeAssignModal();
-      
-      // Cerrar el loading y mostrar éxito
+      await loadData();
+
       await Swal.fire({
         icon: "success",
         title: "¡Éxito!",
         text: "Reserva reasignada a otra actividad correctamente",
       });
-
-      // Recargar los datos en segundo plano (sin await para no bloquear)
-      loadData();
     } catch (error: any) {
       console.error("Error changing reservation turn:", error);
       Swal.fire({
         icon: "error",
         title: "Error",
-        text: getTranslatedErrorMessage(error, "No se pudo reasignar la reserva"),
+        text: getTranslatedErrorMessage(
+          error,
+          "No se pudo reasignar la reserva",
+        ),
       });
     }
   };
@@ -222,6 +238,8 @@ export default function ReservationsTab() {
     if (!result.isConfirmed) return;
     try {
       await apiClient.put(`/api/reservations/${reservationId}/cancel`);
+      broadcastReservationUpdate("cancelled", reservationId);
+
       await Swal.fire({
         icon: "success",
         title: "¡Éxito!",
@@ -233,7 +251,10 @@ export default function ReservationsTab() {
       Swal.fire({
         icon: "error",
         title: "Error",
-        text: getTranslatedErrorMessage(error, "No se pudo cancelar la reserva"),
+        text: getTranslatedErrorMessage(
+          error,
+          "No se pudo cancelar la reserva",
+        ),
       });
     }
   };
@@ -307,12 +328,10 @@ export default function ReservationsTab() {
       completed: { color: "bg-blue-100 text-blue-800", text: "Completada" },
       pending: { color: "bg-yellow-100 text-yellow-800", text: "Pendiente" },
     };
-
     const statusInfo = statusMap[status] || {
       color: "bg-gray-100 text-gray-800",
       text: status,
     };
-
     return (
       <span
         className={`px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}
@@ -321,6 +340,7 @@ export default function ReservationsTab() {
       </span>
     );
   };
+
   const formatReservationDate = (date: string): string => {
     const [year, month, day] = date.split("T")[0].split("-");
     const dateObj = new Date(
@@ -845,7 +865,10 @@ export default function ReservationsTab() {
                 <button
                   onClick={handleAssignSubmit}
                   disabled={
-                    !selectedActivityId || !selectedDate || turns.length === 0 || !selectedTurnId
+                    !selectedActivityId ||
+                    !selectedDate ||
+                    turns.length === 0 ||
+                    !selectedTurnId
                   }
                   className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >

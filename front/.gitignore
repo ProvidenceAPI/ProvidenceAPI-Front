@@ -50,7 +50,8 @@ Thumbs.db
 .npm
 
 # Optional eslint cache
-.eslintcache
+/.eslintcache
+.eslintrc.json
 
 # Optional REPL history
 .node_repl_history
