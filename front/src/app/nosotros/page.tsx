@@ -27,6 +27,7 @@ export default function NosotrosPage() {
 
   return (
     <>
+    <NosotrosFooter/>
       <div className="bg-white text-black min-h-screen">
         {/* QUIÉNES SOMOS */}
         <section className="py-24 md:py-32 bg-gradient-to-b from-white to-gray-50">
@@ -237,7 +238,6 @@ export default function NosotrosPage() {
             </div>
           </div>
         </section>
-         <NosotrosFooter/>
       </div>
     </>
   );

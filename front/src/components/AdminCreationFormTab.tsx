@@ -743,7 +743,7 @@ export default function AdminCreationFormTab({
               </h4>
               <ol className="text-sm text-blue-700 space-y-1 list-decimal pl-5">
                 <li>Se crea un usuario normal en el sistema</li>
-                <li>El nuevo usuario puede iniciar sesión inmediatamente</li>
+                <li>El nuevo Usuario puede iniciar sesión inmediatamente</li>
                 <li>Se recomienda cambiar la contraseña en el primer login</li>
               </ol>
             </div>
