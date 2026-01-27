@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 import { apiClient } from "src/app/lib/apiClient";
 
@@ -17,8 +16,11 @@ interface AdminFormData {
   genre: "Female" | "Male" | "Nonbinary" | "Other";
 }
 
-export default function AdminCreationFormTab() {
-  const router = useRouter();
+interface AdminCreationFormTabProps {
+  onBackToOverview?: () => void;
+}
+
+export default function AdminCreationFormTab({ onBackToOverview }: AdminCreationFormTabProps) {
   const [formData, setFormData] = useState<AdminFormData>({
     name: "",
     lastname: "",
@@ -709,11 +711,11 @@ export default function AdminCreationFormTab() {
               </button>
               <button
                 type="button"
-                onClick={() => router.push("/admin/dashboard")}
+                onClick={onBackToOverview || (() => window.history.back())}
                 className="w-full py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
                 disabled={loading}
               >
-                ← Volver al panel
+                ← Volver al Panel de Resumen
               </button>
             </div>
           </form>
