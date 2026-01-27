@@ -5,6 +5,7 @@ import { apiClient } from "src/app/lib/apiClient";
 import { IUser } from "src/interfaces/IUser";
 import { Activity } from "src/interfaces/Activity";
 import Swal from "sweetalert2";
+import { broadcastReservationUpdate } from "src/utils/broadcastChannel";
 
 interface Turn {
   id: string;
@@ -131,10 +132,12 @@ export default function ManualReservationForm({
 
     setLoading(true);
     try {
-      await apiClient.post("/api/reservations/admin", {
+      const response = await apiClient.post("/api/reservations/admin", {
         turnId: selectedTurnId,
         userId: formData.userId,
       });
+      broadcastReservationUpdate("created", response.data?.id);
+
       await Swal.fire({
         icon: "success",
         title: "¡Éxito!",

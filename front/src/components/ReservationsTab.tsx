@@ -10,6 +10,10 @@ import { Turn } from "src/interfaces/Turn";
 import { Activity } from "src/interfaces/Activity";
 import { StatusMap } from "src/interfaces/StatusBadge";
 import CalendarDatePicker from "./CalendarDateSelector";
+import {
+  broadcastReservationUpdate,
+  reservationChannel,
+} from "src/utils/broadcastChannel";
 
 export default function ReservationsTab() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -37,6 +41,19 @@ export default function ReservationsTab() {
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  useEffect(() => {
+    const handleReservationChange = (event: MessageEvent) => {
+      loadData();
+    };
+    reservationChannel.addEventListener("message", handleReservationChange);
+    return () => {
+      reservationChannel.removeEventListener(
+        "message",
+        handleReservationChange,
+      );
+    };
   }, []);
 
   const loadData = async () => {
@@ -162,8 +179,8 @@ export default function ReservationsTab() {
           turnId,
         },
       );
+      broadcastReservationUpdate("modified", selectedReservation.id);
       closeAssignModal();
-      await new Promise((resolve) => setTimeout(resolve, 300));
       await loadData();
 
       await Swal.fire({
@@ -171,9 +188,6 @@ export default function ReservationsTab() {
         title: "¡Éxito!",
         text: "Reserva reasignada a otra actividad correctamente",
       });
-
-      closeAssignModal();
-      await loadData();
     } catch (error: any) {
       console.error("Error changing reservation turn:", error);
       Swal.fire({
@@ -199,6 +213,8 @@ export default function ReservationsTab() {
     if (!result.isConfirmed) return;
     try {
       await apiClient.put(`/api/reservations/${reservationId}/cancel`);
+      broadcastReservationUpdate("cancelled", reservationId);
+
       await Swal.fire({
         icon: "success",
         title: "¡Éxito!",
@@ -284,12 +300,10 @@ export default function ReservationsTab() {
       completed: { color: "bg-blue-100 text-blue-800", text: "Completada" },
       pending: { color: "bg-yellow-100 text-yellow-800", text: "Pendiente" },
     };
-
     const statusInfo = statusMap[status] || {
       color: "bg-gray-100 text-gray-800",
       text: status,
     };
-
     return (
       <span
         className={`px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}
@@ -298,6 +312,7 @@ export default function ReservationsTab() {
       </span>
     );
   };
+
   const formatReservationDate = (date: string): string => {
     const [year, month, day] = date.split("T")[0].split("-");
     const dateObj = new Date(
