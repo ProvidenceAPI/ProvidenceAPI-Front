@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useCalendar } from "src/contexts/CalendarContext";
 import { Reservation } from "src/interfaces/Reservation";
+import Swal from "sweetalert2";
+import { getTranslatedErrorMessage } from "src/app/lib/errorTranslations";
 
 interface CancelReservationModalProps {
   reservation: Reservation;
@@ -22,10 +24,18 @@ export default function CancelReservationModal({
 
     try {
       await cancelReservation(reservation.id, reason || undefined);
-      alert("Reserva cancelada exitosamente. Se envió un email al usuario.");
+      await Swal.fire({
+        icon: "success",
+        title: "¡Éxito!",
+        text: "Reserva cancelada exitosamente. Se envió un email al usuario.",
+      });
       onClose();
-    } catch (error) {
-      alert("Error al cancelar la reserva");
+    } catch (error: any) {
+      await Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: getTranslatedErrorMessage(error, "Error al cancelar la reserva"),
+      });
     } finally {
       setLoading(false);
     }

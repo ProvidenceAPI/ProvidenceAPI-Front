@@ -1,13 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useCalendar } from "src/contexts/CalendarContext";
 import { reservationService } from "src/app/lib";
 import CalendarView from "src/components/CalendarView";
 import Swal from "sweetalert2";
-import { format, isSameDay } from "date-fns";
+import { endOfMonth, format, isSameDay, startOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
 import { useAppContext } from "src/contexts/AppContext";
+import { broadcastTurnUpdate, turnChannel } from "src/utils/broadcastChannel";
+
+const parseLocalDate = (dateString: string): Date => {
+  const datePart = dateString.split("T")[0];
+  const [year, month, day] = datePart.split("-").map(Number);
+  return new Date(year, month - 1, day, 12, 0, 0);
+};
 
 export default function TurnsTab() {
   const { isSuperAdmin } = useAppContext();
@@ -108,16 +115,14 @@ export default function TurnsTab() {
   };
 
   useEffect(() => {
-    const startDate = new Date(selectedDate);
-    startDate.setDate(1);
-    startDate.setHours(0, 0, 0, 0);
-    const endDate = new Date(selectedDate);
-    endDate.setMonth(endDate.getMonth() + 1, 0);
-    endDate.setHours(23, 59, 59, 999);
-
+    if (!filterActivity && !filterStatus) {
+      return;
+    }
+    const monthStart = startOfMonth(selectedDate);
+    const monthEnd = endOfMonth(selectedDate);
     const filters: any = {
-      startDate: startDate.toISOString().split("T")[0],
-      endDate: endDate.toISOString().split("T")[0],
+      startDate: format(monthStart, "yyyy-MM-dd"),
+      endDate: format(monthEnd, "yyyy-MM-dd"),
     };
     if (filterActivity) {
       filters.activityId = filterActivity;
@@ -126,14 +131,16 @@ export default function TurnsTab() {
       filters.status = filterStatus;
     }
     fetchTurns(filters);
-  }, [selectedDate, filterActivity, filterStatus, fetchTurns]);
+  }, [filterActivity, filterStatus]);
 
   const getTurnsForDay = (day: Date) => {
-    const dayTurns = turns.filter((turn) =>
-      isSameDay(new Date(turn.date), day),
-    );
+    const dayTurns = turns.filter((turn) => {
+      const turnDate = parseLocalDate(turn.date);
+      return isSameDay(turnDate, day);
+    });
     return dayTurns;
   };
+
   const handleDayClick = (day: Date) => {
     const dayTurns = getTurnsForDay(day);
     if (dayTurns.length === 0) {
@@ -257,37 +264,88 @@ export default function TurnsTab() {
       return;
     }
     const activity = activities.find((a) => a.id === selectedActivity);
+    const availableDays: string[] = [];
+    const availableHours: { [key: string]: string[] } = {};
+    const dayMapping: { [key: string]: string } = {
+      Monday: "Lunes",
+      Tuesday: "Martes",
+      Wednesday: "Miércoles",
+      Thursday: "Jueves",
+      Friday: "Viernes",
+      Saturday: "Sábado",
+      Sunday: "Domingo",
+      Lunes: "Lunes",
+      Martes: "Martes",
+      Miércoles: "Miércoles",
+      Jueves: "Jueves",
+      Viernes: "Viernes",
+      Sábado: "Sábado",
+      Domingo: "Domingo",
+    };
+
+    if (activity?.schedule && Array.isArray(activity.schedule)) {
+      activity.schedule.forEach((scheduleItem: string) => {
+        const [day, time] = scheduleItem.split(" ");
+        if (day && time) {
+          const normalizedDay = dayMapping[day] || day;
+          if (!availableDays.includes(normalizedDay)) {
+            availableDays.push(normalizedDay);
+          }
+          if (!availableHours[normalizedDay]) {
+            availableHours[normalizedDay] = [];
+          }
+          availableHours[normalizedDay].push(time);
+        }
+      });
+    }
     const { value: dates } = await Swal.fire({
       title: `📅 Generar Turnos - ${activity?.name}`,
       html: `
       <div class="space-y-4 text-left">
-        <p class="text-sm text-gray-600 mb-4">
-          Los turnos se generarán según el horario configurado de la actividad
-        </p>
-        <div>
-          <label class="block text-sm font-medium mb-2">Fecha inicio</label>
-          <input 
-            type="date" 
-            id="startDate" 
-            class="w-full p-2 border rounded"
-            min="${new Date().toISOString().split("T")[0]}"
-          >
+      <!-- Horarios configurados -->
+      <div class="bg-blue-50 border border-blue-200 p-3 rounded">
+        <p class="font-semibold text-blue-900 text-sm mb-2">📅 Horarios configurados:</p>
+        <div class="bg-white rounded p-2 text-xs space-y-1">
+          ${
+            availableDays.length > 0
+              ? availableDays
+                  .map((day) => {
+                    const hours = availableHours[day] || [];
+                    return `<div class="flex justify-between"><span class="font-medium">${day}</span><span class="text-gray-600">${hours.join(", ")}</span></div>`;
+                  })
+                  .join("")
+              : '<p class="text-gray-500 text-center">No hay horarios configurados</p>'
+          }
         </div>
-        <div>
-          <label class="block text-sm font-medium mb-2">Fecha fin</label>
-          <input 
-            type="date" 
-            id="endDate" 
-            class="w-full p-2 border rounded"
-            min="${new Date().toISOString().split("T")[0]}"
-          >
-        </div>
+        <p class="text-xs text-gray-600 mt-2">⏱️ Duración: ${activity?.duration || 60} minutos</p>
+        <p class="text-xs text-blue-800 mt-2">ℹ️ Se generarán turnos automáticamente según estos horarios</p>
       </div>
-    `,
+      
+      <div>
+        <label class="block text-sm font-medium mb-2">Fecha inicio</label>
+        <input 
+          type="date" 
+          id="startDate" 
+          class="w-full p-2 border rounded"
+          min="${new Date().toISOString().split("T")[0]}"
+        >
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-2">Fecha fin</label>
+        <input 
+          type="date" 
+          id="endDate" 
+          class="w-full p-2 border rounded"
+          min="${new Date().toISOString().split("T")[0]}"
+        >
+      </div>
+    </div>
+  `,
       confirmButtonText: "⚡ Generar",
       confirmButtonColor: "#ef4444",
       showCancelButton: true,
       cancelButtonText: "Cancelar",
+      width: "650px",
       preConfirm: () => {
         const start = (document.getElementById("startDate") as HTMLInputElement)
           .value;
@@ -297,7 +355,7 @@ export default function TurnsTab() {
           Swal.showValidationMessage("Completa ambas fechas");
           return null;
         }
-        if (new Date(start) > new Date(end)) {
+        if (start > end) {
           Swal.showValidationMessage(
             "La fecha de inicio debe ser anterior a la fecha fin",
           );
@@ -314,12 +372,15 @@ export default function TurnsTab() {
         allowOutsideClick: false,
         didOpen: () => Swal.showLoading(),
       });
+
       const generated = await reservationService.generateTurns({
         activityId: selectedActivity,
         startDate: dates.start,
         endDate: dates.end,
       });
+      broadcastTurnUpdate("created");
       await refetchAll();
+
       Swal.fire({
         icon: "success",
         title: "✅ Turnos Generados",
@@ -350,7 +411,6 @@ export default function TurnsTab() {
     const activity = activities.find((a) => a.id === selectedActivity);
     const availableDays: string[] = [];
     const availableHours: { [key: string]: string[] } = {};
-
     const dayMapping: { [key: string]: string } = {
       Monday: "Lunes",
       Tuesday: "Martes",
@@ -469,8 +529,8 @@ export default function TurnsTab() {
           Swal.showValidationMessage("El gimnasio abre de 6:00 AM a 10:00 PM");
           return null;
         }
-
-        const selectedDate = new Date(date + "T00:00:00");
+        const [year, month, day] = date.split("-").map(Number);
+        const selectedDate = new Date(year, month - 1, day);
         const dayNamesEs = [
           "Domingo",
           "Lunes",
@@ -503,10 +563,11 @@ export default function TurnsTab() {
     });
     if (!formData) return;
     try {
-      await reservationService.createTurn({
+      const createdTurn = await reservationService.createTurn({
         activityId: selectedActivity,
         ...formData,
       });
+      broadcastTurnUpdate("created", createdTurn?.id);
       await refetchAll();
       Swal.fire({
         icon: "success",
@@ -560,6 +621,7 @@ export default function TurnsTab() {
     if (!formData) return;
     try {
       await reservationService.updateTurn(turnId, formData);
+      broadcastTurnUpdate("updated", turnId);
       await refetchAll();
       Swal.fire("✅ Actualizado", "Turno actualizado correctamente", "success");
     } catch (error: any) {
@@ -578,7 +640,7 @@ export default function TurnsTab() {
           (turn as any).activityName || turn.activity?.name || "Actividad"
         }</p>
         <p class="text-sm"><strong>Fecha:</strong> ${format(
-          new Date(turn.date),
+          parseLocalDate(turn.date),
           "dd/MM/yyyy",
         )}</p>
         <p class="text-sm"><strong>Horario:</strong> ${turn.startTime} - ${turn.endTime}</p>
@@ -602,6 +664,7 @@ export default function TurnsTab() {
     if (!result.isConfirmed) return;
     try {
       await reservationService.cancelTurn(turnId);
+      broadcastTurnUpdate("cancelled", turnId);
       await refetchAll();
       Swal.fire("✅ Cancelado", "El turno ha sido cancelado", "success");
     } catch (error: any) {
@@ -624,12 +687,32 @@ export default function TurnsTab() {
     if (!result.isConfirmed) return;
     try {
       await reservationService.deleteTurn(turnId);
+      broadcastTurnUpdate("deleted", turnId);
       await refetchAll();
       Swal.fire("✅ Eliminado", "El turno ha sido eliminado", "success");
     } catch (error: any) {
       handleApiError(error, "No se pudo eliminar el turno");
     }
   };
+
+  useEffect(() => {
+    const handleTurnChange = (event: MessageEvent) => {
+      refetchAll();
+    };
+    turnChannel.addEventListener("message", handleTurnChange);
+    return () => {
+      turnChannel.removeEventListener("message", handleTurnChange);
+    };
+  }, [refetchAll]);
+
+  const mappedReservations = useMemo(() => {
+    return turns.map((t) => ({
+      id: t.id,
+      date: t.date,
+      activityName: (t as any).activityName || t.activity?.name || "Actividad",
+      status: t.status,
+    }));
+  }, [turns]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -765,13 +848,7 @@ export default function TurnsTab() {
           </div>
         ) : (
           <CalendarView
-            reservations={turns.map((t) => ({
-              id: t.id,
-              date: t.date,
-              activityName:
-                (t as any).activityName || t.activity?.name || "Actividad",
-              status: t.status,
-            }))}
+            reservations={mappedReservations}
             onDayClick={handleDayClick}
           />
         )}

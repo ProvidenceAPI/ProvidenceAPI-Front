@@ -9,6 +9,7 @@ import Swal from "sweetalert2";
 import { Activity } from "src/interfaces/Activity";
 import { Turn } from "src/interfaces/Turn";
 import CalendarDatePicker from "src/components/CalendarDateSelector";
+import { getTranslatedErrorMessage } from "src/app/lib/errorTranslations";
 
 export default function MisReservasPage() {
   const { user, isAuthenticated, loading } = useAppContext();
@@ -208,55 +209,31 @@ export default function MisReservasPage() {
       setAvailableTurns([]);
       await fetchMisReservas();
     } catch (error: any) {
-      const errorMessage = getErrorMessage(error);
-      const isFreeTrialError = isErrorType(error, "free trial");
-      const isSubscriptionError = error.statusCode === 403;
-      const isPastTurnError =
-        isErrorType(error, "past") || isErrorType(error, "pasado");
-      const isTooCloseError =
-        isErrorType(error, "anticipación") || isErrorType(error, "advance");
-      if (isTooCloseError) {
-        Swal.fire({
-          icon: "warning",
-          title: "Reserva muy próxima",
-          text: "Debes reservar con al menos 1 hora de anticipación.",
-          confirmButtonColor: "#dc2626",
-        });
+      const translatedMessage = getTranslatedErrorMessage(
+        error,
+        "Ocurrió un error al procesar tu reserva. Por favor intenta nuevamente."
+      );
+      
+      Swal.fire({
+        icon: "error",
+        title: "Error al reservar",
+        text: translatedMessage,
+        confirmButtonColor: "#dc2626",
+      });
+      
+      // Si es un error de disponibilidad, refrescar los turnos
+      const errorMessage = error?.response?.data?.message || error?.message || "";
+      const errorMessageLower = errorMessage.toLowerCase();
+      if (
+        errorMessageLower.includes("no available") ||
+        errorMessageLower.includes("sin cupos") ||
+        errorMessageLower.includes("full") ||
+        errorMessageLower.includes("advance") ||
+        errorMessageLower.includes("at least 1 hour")
+      ) {
         if (selectedDate && selectedActivity) {
           await fetchTurnsForDate(selectedActivity, selectedDate);
         }
-      } else if (isPastTurnError) {
-        Swal.fire({
-          icon: "warning",
-          title: "Turno no disponible",
-          text: "Este turno ya no está disponible. Por favor selecciona otro horario.",
-          confirmButtonColor: "#dc2626",
-        });
-        if (selectedDate && selectedActivity) {
-          await fetchTurnsForDate(selectedActivity, selectedDate);
-        }
-      } else if (isFreeTrialError) {
-        Swal.fire({
-          icon: "warning",
-          title: "Clase gratis ya utilizada",
-          text: "Ya has usado tu clase de prueba gratis. Suscríbete para continuar reservando clases.",
-          confirmButtonColor: "#dc2626",
-        });
-      } else if (isSubscriptionError) {
-        Swal.fire({
-          icon: "info",
-          title: "Suscripción requerida",
-          text: "Para reservar esta actividad necesitas una suscripción activa.",
-          confirmButtonColor: "#dc2626",
-          confirmButtonText: "Entendido",
-        });
-      } else {
-        Swal.fire({
-          icon: "error",
-          title: "Error al reservar",
-          text: errorMessage,
-          confirmButtonColor: "#dc2626",
-        });
       }
     }
   };
@@ -287,7 +264,7 @@ export default function MisReservasPage() {
     } catch (error: any) {
       Swal.fire({
         title: "Error",
-        text: error.message || "Error al cancelar la reserva",
+        text: getTranslatedErrorMessage(error, "Error al cancelar la reserva"),
         icon: "error",
         confirmButtonColor: "#dc2626",
       });

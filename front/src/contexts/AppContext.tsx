@@ -34,6 +34,7 @@ interface AppContextType {
   updateUser: (updatedData: Partial<IUser>) => void;
   updateProfile: (userData: Partial<IUser>) => Promise<AuthResponse>;
   uploadProfileImage: (file: File) => Promise<AuthResponse>;
+  refreshUser: () => Promise<IUser>;
   isAuthenticated: boolean;
   clearError: () => void;
   googleLogin: () => void;
@@ -112,6 +113,18 @@ export default function AppProvider({
     setCart([]);
     router.push("/login");
   }, [router]);
+
+  const refreshUser = async () => {
+    try {
+      const { data: freshUserData } = await apiClient.get("/api/auth/me");
+      setUser(freshUserData);
+      localStorage.setItem("providence_user", JSON.stringify(freshUserData));
+      return freshUserData;
+    } catch (error) {
+      console.error("Error refreshing user:", error);
+      throw error;
+    }
+  };
 
   useEffect(() => {
     const loadUser = async () => {
@@ -367,16 +380,17 @@ export default function AppProvider({
       if (!token) {
         throw new Error("No hay sesión activa");
       }
-      const { data } = await apiClient.put("/api/users/profile", userData);
-      if (user) {
-        const updatedUser = { ...user, ...data };
-        setUser(updatedUser);
-        localStorage.setItem("providence_user", JSON.stringify(updatedUser));
-      }
+      const { data: freshUser } = await apiClient.put(
+        "/api/users/profile",
+        userData,
+      );
+      setUser(freshUser);
+      localStorage.setItem("providence_user", JSON.stringify(freshUser));
+
       return {
         success: true,
         message: "Perfil actualizado exitosamente",
-        data,
+        data: freshUser,
       };
     } catch (err: any) {
       const message = err.message || "Error al actualizar perfil";
@@ -532,6 +546,7 @@ export default function AppProvider({
     addToCart,
     removeFromCart,
     clearCart,
+    refreshUser,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

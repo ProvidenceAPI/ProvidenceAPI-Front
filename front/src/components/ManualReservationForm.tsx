@@ -5,6 +5,8 @@ import { apiClient } from "src/app/lib/apiClient";
 import { IUser } from "src/interfaces/IUser";
 import { Activity } from "src/interfaces/Activity";
 import Swal from "sweetalert2";
+import { broadcastReservationUpdate } from "src/utils/broadcastChannel";
+import { getTranslatedErrorMessage } from "src/app/lib/errorTranslations";
 
 interface Turn {
   id: string;
@@ -118,23 +120,63 @@ export default function ManualReservationForm({
   useEffect(() => {
     loadAvailableTurns();
   }, [loadAvailableTurns]);
+
+  const isValidUUID = (str: string): boolean => {
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedTurnId) {
+
+    if (!formData.userId || formData.userId.trim() === "") {
       await Swal.fire({
         icon: "warning",
-        title: "Selecciona un turno",
+        title: "Usuario requerido",
+        text: "Debes seleccionar un usuario para crear la reserva",
+      });
+      return;
+    }
+
+    if (!selectedTurnId || selectedTurnId.trim() === "") {
+      await Swal.fire({
+        icon: "warning",
+        title: "Turno requerido",
         text: "Debes seleccionar un turno disponible para crear la reserva",
+      });
+      return;
+    }
+
+    const trimmedUserId = formData.userId.trim();
+    const trimmedTurnId = selectedTurnId.trim();
+
+    if (!isValidUUID(trimmedUserId)) {
+      await Swal.fire({
+        icon: "error",
+        title: "Error de validación",
+        text: "El ID de usuario no es válido. Por favor, selecciona un usuario nuevamente.",
+      });
+      return;
+    }
+
+    if (!isValidUUID(trimmedTurnId)) {
+      await Swal.fire({
+        icon: "error",
+        title: "Error de validación",
+        text: "El ID de turno no es válido. Por favor, selecciona un turno nuevamente.",
       });
       return;
     }
 
     setLoading(true);
     try {
-      await apiClient.post("/api/reservations/admin", {
+      const response = await apiClient.post("/api/reservations/admin", {
         turnId: selectedTurnId,
         userId: formData.userId,
       });
+      broadcastReservationUpdate("created", response.data?.id);
+
       await Swal.fire({
         icon: "success",
         title: "¡Éxito!",
@@ -143,14 +185,35 @@ export default function ManualReservationForm({
       onSuccess?.();
       onClose();
     } catch (error: any) {
-      console.error("Error creating reservation:", error);
+      let errorMessage = "Error al crear la reserva";
+
+      if (error?.response) {
+        const data = error.response.data;
+
+        if (data?.message) {
+          errorMessage = getTranslatedErrorMessage(error, errorMessage);
+        } else if (data?.error) {
+          errorMessage = getTranslatedErrorMessage(
+            { response: { data: { message: data.error } } },
+            errorMessage,
+          );
+        } else if (Array.isArray(data?.message)) {
+          const validationErrors = data.message.join(", ");
+          errorMessage = `Error de validación: ${validationErrors}`;
+        } else {
+          errorMessage = getTranslatedErrorMessage(error, errorMessage);
+        }
+      } else if (error?.request) {
+        errorMessage =
+          "No se pudo conectar con el servidor. Verifica tu conexión a internet.";
+      } else {
+        errorMessage = error?.message || errorMessage;
+      }
+
       await Swal.fire({
         icon: "error",
-        title: "Error",
-        text:
-          error.response?.data?.message ||
-          error.message ||
-          "Error al crear la reserva",
+        title: "Error al crear la reserva",
+        text: errorMessage,
       });
     } finally {
       setLoading(false);
