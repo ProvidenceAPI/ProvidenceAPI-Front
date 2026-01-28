@@ -263,7 +263,6 @@ export default function TestimoniosPage() {
               Registrate ahora
             </a>
           </p>
-
           {/* Botón para dejar testimonio */}
           <button
             onClick={handleOpenForm}
@@ -273,7 +272,6 @@ export default function TestimoniosPage() {
           </button>
         </div>
       </section>
-
       {/* Formulario desplegable */}
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -290,7 +288,6 @@ export default function TestimoniosPage() {
                   ×
                 </button>
               </div>
-
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Rating */}
                 <div>
@@ -321,7 +318,6 @@ export default function TestimoniosPage() {
                     </p>
                   )}
                 </div>
-
                 {/* Comentario */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -352,7 +348,6 @@ export default function TestimoniosPage() {
                     </p>
                   </div>
                 </div>
-
                 {/* Botones */}
                 <div className="flex gap-3 pt-4">
                   <button
@@ -375,7 +370,6 @@ export default function TestimoniosPage() {
           </div>
         </div>
       )}
-
       {/* Sección de Testimonios */}
       <section className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         {loading && realTestimonials.length === 0 ? (
@@ -416,7 +410,6 @@ export default function TestimoniosPage() {
                 </div>
               ))}
             </div>
-
             {/* Paginación */}
             {totalPages > 1 && (
               <div className="flex justify-center items-center gap-4 mt-12">
