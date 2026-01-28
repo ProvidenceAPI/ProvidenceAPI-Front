@@ -7,6 +7,7 @@ import { Activity } from "src/interfaces/Activity";
 import Swal from "sweetalert2";
 import { broadcastReservationUpdate } from "src/utils/broadcastChannel";
 import { getTranslatedErrorMessage } from "src/app/lib/errorTranslations";
+import CalendarDatePicker from "./CalendarDateSelector";
 
 interface Turn {
   id: string;
@@ -40,6 +41,7 @@ export default function ManualReservationForm({
   const [loading, setLoading] = useState(false);
   const [loadingTurns, setLoadingTurns] = useState(false);
   const [availableTurns, setAvailableTurns] = useState<Turn[]>([]);
+  const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [selectedTurnId, setSelectedTurnId] = useState<string>("");
   const [filterDate, setFilterDate] = useState<string>(
     defaultDate ? defaultDate.toISOString().split("T")[0] : "",
@@ -73,33 +75,59 @@ export default function ManualReservationForm({
   const loadAvailableTurns = useCallback(async () => {
     if (!formData.activityId) {
       setAvailableTurns([]);
+      setAvailableDates([]);
       setSelectedTurnId("");
       return;
     }
 
     setLoadingTurns(true);
     try {
-      const params: any = { activityId: formData.activityId };
-      if (filterDate) {
-        params.startDate = filterDate;
-        params.endDate = filterDate;
-      } else {
-        const startDate = new Date();
-        const endDate = new Date();
-        endDate.setDate(endDate.getDate() + 30);
-        params.startDate = startDate.toISOString().split("T")[0];
-        params.endDate = endDate.toISOString().split("T")[0];
-      }
+      // Siempre traer un rango (próximos 30 días) para poder pintar el calendario
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + 30);
+      const params: any = {
+        activityId: formData.activityId,
+        startDate: startDate.toISOString().split("T")[0],
+        endDate: endDate.toISOString().split("T")[0],
+      };
 
       const { data } = await apiClient.get("/api/turns", { params });
       const turnsList = Array.isArray(data)
         ? data
         : data?.data || data?.turns || [];
-      const available = turnsList.filter(
-        (turn: Turn) =>
+      
+      // Función para verificar si un turno es reservable (fecha futura y mínimo 1 hora de anticipación)
+      const isTurnBookable = (turn: Turn): boolean => {
+        if (!turn.date || !turn.startTime) return false;
+        try {
+          const now = new Date();
+          const [year, month, day] = turn.date.split("-").map(Number);
+          const [hh, mm] = turn.startTime.split(":").map(Number);
+          if (
+            [year, month, day, hh, mm].some(
+              (n) => typeof n !== "number" || Number.isNaN(n),
+            )
+          ) {
+            return false;
+          }
+          const turnDateTime = new Date(year, month - 1, day, hh, mm);
+          // No permitir fechas/horas pasadas
+          if (turnDateTime <= now) return false;
+          // Mínimo 1 hora de anticipación
+          const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
+          return turnDateTime >= oneHourFromNow;
+        } catch {
+          return false;
+        }
+      };
+
+      const available: Turn[] = (turnsList as Turn[]).filter(
+        (turn) =>
           turn.status !== "cancelled" &&
           turn.status !== "completed" &&
-          turn.availableSpots > 0,
+          turn.availableSpots > 0 &&
+          isTurnBookable(turn), // Filtrar turnos pasados o con menos de 1 hora de anticipación
       );
       available.sort((a: Turn, b: Turn) => {
         const dateA = new Date(`${a.date}T${a.startTime}`);
@@ -107,11 +135,30 @@ export default function ManualReservationForm({
         return dateA.getTime() - dateB.getTime();
       });
 
-      setAvailableTurns(available);
+      const normalizeDate = (d: string) => d.split("T")[0];
+      const uniqueDates: string[] = Array.from(
+        new Set<string>(available.map((t) => normalizeDate(t.date))),
+      ).sort();
+      setAvailableDates(uniqueDates);
+
+      // Si la fecha seleccionada no tiene turnos, seleccionar la primera disponible
+      const nextDate =
+        filterDate && uniqueDates.includes(filterDate)
+          ? filterDate
+          : uniqueDates[0] || "";
+      if (nextDate !== filterDate) {
+        setFilterDate(nextDate);
+      }
+
+      const visibleTurns = nextDate
+        ? available.filter((t: Turn) => normalizeDate(t.date) === nextDate)
+        : available;
+      setAvailableTurns(visibleTurns);
       setSelectedTurnId("");
     } catch (error: any) {
       console.error("Error loading turns:", error);
       setAvailableTurns([]);
+      setAvailableDates([]);
     } finally {
       setLoadingTurns(false);
     }
@@ -296,83 +343,36 @@ export default function ManualReservationForm({
             {formData.activityId && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Filtrar por fecha (opcional)
+                  Seleccionar fecha (calendario)
                 </label>
-                <input
-                  type="date"
-                  value={filterDate}
-                  onChange={(e) => {
-                    setFilterDate(e.target.value);
-                    setSelectedTurnId("");
-                  }}
-                  className="w-full px-3 py-2 border rounded-lg"
-                  min={new Date().toISOString().split("T")[0]}
-                />
-                {filterDate && !loadingTurns && (
-                  <div className="mt-2">
-                    {availableTurns.length > 0 ? (
-                      <p className="text-sm text-green-600 flex items-center gap-2">
-                        <svg
-                          className="w-4 h-4"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        <span className="font-medium">
+                <div className="mt-2">
+                  <CalendarDatePicker
+                    availableDates={availableDates}
+                    selectedDate={filterDate}
+                    onDateSelect={(date) => {
+                      setFilterDate(date);
+                      setSelectedTurnId("");
+                    }}
+                  />
+                </div>
+                {!loadingTurns && formData.activityId && (
+                  <div className="mt-2 text-sm text-gray-600">
+                    {filterDate ? (
+                      availableTurns.length > 0 ? (
+                        <span>
                           ✓ {availableTurns.length} turno
                           {availableTurns.length !== 1 ? "s" : ""} disponible
                           {availableTurns.length !== 1 ? "s" : ""} en esta fecha
                         </span>
-                      </p>
-                    ) : (
-                      <p className="text-sm text-amber-600 flex items-center gap-2">
-                        <svg
-                          className="w-4 h-4"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        <span className="font-medium">
+                      ) : (
+                        <span className="text-amber-600">
                           No hay turnos disponibles en esta fecha
                         </span>
-                      </p>
+                      )
+                    ) : (
+                      <span>Selecciona un día disponible en el calendario.</span>
                     )}
                   </div>
-                )}
-                {filterDate && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFilterDate("");
-                      setSelectedTurnId("");
-                    }}
-                    className="mt-2 text-sm text-red-600 hover:text-red-700"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                    Limpiar filtro de fecha
-                  </button>
                 )}
               </div>
             )}
@@ -398,35 +398,42 @@ export default function ManualReservationForm({
                     </p>
                   </div>
                 ) : (
-                  <div className="border rounded-lg max-h-64 overflow-y-auto">
-                    <select
-                      value={selectedTurnId}
-                      onChange={(e) => setSelectedTurnId(e.target.value)}
-                      className="w-full px-3 py-2 border-0 rounded-lg"
-                      required
-                      size={Math.min(availableTurns.length, 8)}
-                    >
-                      <option value="">Seleccionar un turno...</option>
+                  <div className="bg-white border border-gray-200 rounded-lg overflow-hidden max-h-64 overflow-y-auto">
+                    <div className="divide-y divide-gray-100">
                       {availableTurns.map((turn) => {
-                        const [year, month, day] = turn.date.split("-");
-                        const turnDate = new Date(
-                          parseInt(year),
-                          parseInt(month) - 1,
-                          parseInt(day),
-                        ).toLocaleDateString("es-ES", {
-                          weekday: "short",
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        });
+                        const isSelected = selectedTurnId === turn.id;
                         return (
-                          <option key={turn.id} value={turn.id}>
-                            {turnDate} - {turn.startTime} a {turn.endTime} (
-                            {turn.availableSpots} cupos disponibles)
-                          </option>
+                          <button
+                            key={turn.id}
+                            type="button"
+                            onClick={() => setSelectedTurnId(turn.id)}
+                            className={`w-full text-left px-4 py-3 transition-colors ${
+                              isSelected ? "bg-green-50" : "hover:bg-gray-50"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-4">
+                              <div>
+                                <p className="text-base font-semibold text-gray-900">
+                                  {turn.startTime} - {turn.endTime}
+                                </p>
+                                <p className="text-sm text-gray-600 mt-0.5">
+                                  {turn.availableSpots} cupos disponibles
+                                </p>
+                              </div>
+                              <span
+                                className={`px-3 py-1 rounded-md text-sm font-medium ${
+                                  isSelected
+                                    ? "bg-green-600 text-white"
+                                    : "bg-gray-200 text-gray-700"
+                                }`}
+                              >
+                                {isSelected ? "Seleccionado" : "Seleccionar"}
+                              </span>
+                            </div>
+                          </button>
                         );
                       })}
-                    </select>
+                    </div>
                   </div>
                 )}
               </div>

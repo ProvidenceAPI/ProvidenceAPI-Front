@@ -103,7 +103,7 @@ export const Navbar: React.FC = () => {
                 : "bg-red-600 hover:bg-red-700"
             }`}
           >
-            Panel Admin
+            Panel Administrativo
           </Link>
           <Link
             href="/dashboard"
@@ -140,7 +140,7 @@ export const Navbar: React.FC = () => {
                 : "bg-red-600 hover:bg-red-700"
             }`}
           >
-            Panel Admin
+            Panel Administrativo
           </Link>
           <Link
             href="/dashboard"
