@@ -117,6 +117,33 @@ export default function ScheduleList({
     }
   };
 
+  const isTurnBookable = (turn: Turn): boolean => {
+    if (!turn.date || !turn.startTime) return false;
+
+    try {
+      const now = new Date();
+      const [year, month, day] = turn.date.split("-").map(Number);
+      const [hh, mm] = turn.startTime.split(":").map(Number);
+      if (
+        [year, month, day, hh, mm].some(
+          (n) => typeof n !== "number" || Number.isNaN(n),
+        )
+      ) {
+        return false;
+      }
+      const turnDateTime = new Date(year, month - 1, day, hh, mm);
+
+      // No permitir fechas/horas pasadas
+      if (turnDateTime <= now) return false;
+
+      // Respetar la misma regla del backend: mínimo 1 hora de anticipación
+      const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
+      return turnDateTime >= oneHourFromNow;
+    } catch {
+      return false;
+    }
+  };
+
   const isTurnAvailable = (turn: Turn): boolean => {
     const spots =
       typeof turn.availableSpots === "number"
@@ -127,7 +154,9 @@ export default function ScheduleList({
   };
 
   const availableDates = useMemo(() => {
-    const turnsWithDates = turns.filter((turn) => turn.date);
+    const turnsWithDates = turns.filter(
+      (turn) => turn.date && isTurnAvailable(turn) && isTurnBookable(turn),
+    );
     const uniqueDates = Array.from(
       new Set(turnsWithDates.map((turn) => turn.date)),
     );
@@ -145,7 +174,12 @@ export default function ScheduleList({
       return [];
     }
 
-    const filtered = turns.filter((turn) => turn.date === selectedDate);
+    const filtered = turns.filter(
+      (turn) =>
+        turn.date === selectedDate &&
+        isTurnAvailable(turn) &&
+        isTurnBookable(turn),
+    );
     return filtered;
   }, [turns, selectedDate]);
 
