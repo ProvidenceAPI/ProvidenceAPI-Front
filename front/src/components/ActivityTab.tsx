@@ -10,7 +10,10 @@ import {
   type UpdateActivityDTO,
 } from "src/app/lib";
 import Swal from "sweetalert2";
-import { broadcastActivityUpdate } from "src/utils/broadcastChannel";
+import {
+  activityChannel,
+  broadcastActivityUpdate,
+} from "src/utils/broadcastChannel";
 
 interface ScheduleSlot {
   day: string;
@@ -78,6 +81,17 @@ export default function ActivityTab() {
 
   useEffect(() => {
     fetchActivities();
+  }, []);
+
+  useEffect(() => {
+    const handleActivityChange = (event: MessageEvent) => {
+      console.log("ActivityTab: Cambio de actividad detectado", event.data);
+      fetchActivities();
+    };
+    activityChannel.addEventListener("message", handleActivityChange);
+    return () => {
+      activityChannel.removeEventListener("message", handleActivityChange);
+    };
   }, []);
 
   const validateField = (field: string, value: any) => {
@@ -307,47 +321,98 @@ export default function ActivityTab() {
   };
 
   const handleDelete = async (activity: Activity) => {
-    const result = await Swal.fire({
-      title: "¿Eliminar actividad?",
-      html: `
-        <p>¿Estás seguro de eliminar <strong>${activity.name}</strong>?</p>
-        <p class="text-sm text-gray-600 mt-2">
-          ⚠️ Las reservas futuras serán canceladas automáticamente
-          y se notificará a los usuarios afectados.
-        </p>
-      `,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Sí, eliminar",
-      cancelButtonText: "Cancelar",
-    });
-    if (!result.isConfirmed) return;
     try {
       await activityService.deleteActivity(activity.id);
-      broadcastActivityUpdate("deleted", activity.id);
-      Swal.fire("✅ Eliminada", "La actividad ha sido eliminada", "success");
-      await fetchActivities();
+      Swal.fire({
+        icon: "success",
+        title: "¡Eliminada!",
+        text: "La actividad ha sido eliminada correctamente",
+        confirmButtonColor: "#22c55e",
+      });
+      fetchActivities();
     } catch (error: any) {
-      Swal.fire("❌ Error", error.message, "error");
+      if (error.response?.status === 400) {
+        const errorMessage = error.response?.data?.message || "";
+        if (
+          errorMessage.includes("active subscriptions") ||
+          errorMessage.includes("suscripciones activas")
+        ) {
+          Swal.fire({
+            icon: "error",
+            title: "No se puede eliminar",
+            text: "Esta actividad tiene suscripciones activas. Espera a que expiren o cancélalas primero.",
+            confirmButtonColor: "#ef4444",
+          });
+        } else {
+          Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: errorMessage || "No se pudo eliminar la actividad",
+            confirmButtonColor: "#ef4444",
+          });
+        }
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "No se pudo eliminar la actividad. Intenta nuevamente.",
+          confirmButtonColor: "#ef4444",
+        });
+      }
     }
   };
 
-  const handleToggleStatus = async (activity: Activity) => {
+  const handleToggleStatus = async (activityId: string) => {
+    const activity = activities.find((a) => a.id === activityId);
+    if (!activity) return;
+    const isActive = activity.status === "Active";
+    const newStatus = isActive ? "Inactiva" : "Activa";
+    const result = await Swal.fire({
+      title: `${isActive ? "⏸️ Desactivar" : "▶️ Activar"} Actividad`,
+      html: `
+        <div class="text-left">
+          <p class="mb-2">¿Deseas cambiar el estado de:</p>
+          <p class="font-bold mb-3">"${activity.name}"</p>
+          ${
+            isActive
+              ? `<p class="text-sm text-orange-600">⚠️ Al desactivar la actividad, todos los turnos futuros serán cancelados y las reservas activas serán canceladas automáticamente.</p>`
+              : `<p class="text-sm text-green-600">✅ La actividad estará disponible nuevamente para reservas.</p>`
+          }
+        </div>
+      `,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: isActive ? "#f59e0b" : "#10b981",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: `Sí, ${isActive ? "desactivar" : "activar"}`,
+      cancelButtonText: "Cancelar",
+    });
+    if (!result.isConfirmed) return;
+
     try {
-      await activityService.toggleActivityStatus(activity.id);
-      broadcastActivityUpdate("updated", activity.id);
+      await activityService.toggleActivityStatus(activityId);
+      broadcastActivityUpdate("updated", activityId);
+      await fetchActivities();
 
       Swal.fire({
         icon: "success",
-        title: "Estado actualizado",
-        timer: 1500,
-        showConfirmButton: false,
+        title: `✅ Estado Actualizado`,
+        text: `La actividad está ahora ${newStatus.toLowerCase()}`,
+        confirmButtonColor: "#10b981",
       });
-      await fetchActivities();
     } catch (error: any) {
-      Swal.fire("❌ Error", error.message, "error");
+      console.error("Error cambiando estado:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "No se pudo cambiar el estado";
+
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: errorMessage,
+        confirmButtonColor: "#dc2626",
+      });
     }
   };
 
@@ -596,7 +661,7 @@ export default function ActivityTab() {
                       ✏️ Editar
                     </button>
                     <button
-                      onClick={() => handleToggleStatus(activity)}
+                      onClick={() => handleToggleStatus(activity.id)}
                       className="flex-1 px-3 py-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition text-xs sm:text-sm font-medium"
                     >
                       🔄 Estado

@@ -92,6 +92,7 @@ export default function TestimoniosPage() {
   const [formData, setFormData] = useState({
     comment: "",
     rating: 5,
+    profession: "",
   });
   const [formErrors, setFormErrors] = useState({
     comment: "",
@@ -158,7 +159,6 @@ export default function TestimoniosPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validateForm()) {
       return;
     }
@@ -169,25 +169,52 @@ export default function TestimoniosPage() {
       await Swal.fire({
         icon: "success",
         title: "¡Testimonio enviado!",
-        text: "Tu testimonio está pendiente de aprobación. ¡Gracias por compartir tu experiencia!",
+        text: "¡Gracias por compartir tu experiencia!",
         confirmButtonColor: "#dc2626",
       });
 
       setShowForm(false);
-      setFormData({ comment: "", rating: 5 });
+      setFormData({
+        comment: "",
+        rating: 5,
+        profession: "",
+      });
       await checkEligibility();
       await loadTestimonials();
     } catch (error: any) {
+      console.error("Error creating testimonial:", error);
+      let errorMessage = "No se pudo enviar el testimonio. Intenta nuevamente.";
+      if (error.response?.data?.message) {
+        const backendMessage = error.response.data.message;
+        if (backendMessage.includes("profession must be a string")) {
+          errorMessage =
+            "Error en el formulario. Por favor intenta nuevamente.";
+        } else if (backendMessage.includes("already submitted")) {
+          errorMessage = "Ya has enviado un testimonio anteriormente.";
+        } else if (
+          backendMessage.includes("not completed") ||
+          backendMessage.includes("must complete")
+        ) {
+          errorMessage =
+            "Debes completar al menos una actividad para dejar un testimonio.";
+        } else if (
+          backendMessage.includes("unauthorized") ||
+          backendMessage.includes("Unauthorized")
+        ) {
+          errorMessage = "Debes iniciar sesión para dejar un testimonio.";
+        } else {
+          errorMessage = backendMessage;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
       Swal.fire({
         icon: "error",
         title: "Error",
-        text:
-          error.response?.data?.message ||
-          "No se pudo enviar el testimonio. Intenta nuevamente.",
+        text: errorMessage,
         confirmButtonColor: "#dc2626",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -350,6 +377,26 @@ export default function TestimoniosPage() {
                       {formData.comment.length}/500
                     </p>
                   </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="profession"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Profesión (opcional)
+                  </label>
+                  <input
+                    type="text"
+                    id="profession"
+                    name="profession"
+                    value={formData.profession || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, profession: e.target.value })
+                    }
+                    placeholder="Ej: Estudiante, Profesional, etc."
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
                 </div>
 
                 {/* Botones */}
