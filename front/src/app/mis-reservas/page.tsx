@@ -143,6 +143,7 @@ export default function MisReservasPage() {
       fetchDatesForActivity(activityId);
     }
   };
+
   const handleDateChange = (date: string) => {
     setSelectedDate(date);
     setAvailableTurns([]);
@@ -150,6 +151,7 @@ export default function MisReservasPage() {
       fetchTurnsForDate(selectedActivity, date);
     }
   };
+
   const handleReservarTurno = async (turnId: string) => {
     const turn = availableTurns.find((t) => t.id === turnId);
     if (turn) {
@@ -221,7 +223,6 @@ export default function MisReservasPage() {
         confirmButtonColor: "#dc2626",
       });
       
-      // Si es un error de disponibilidad, refrescar los turnos
       const errorMessage = error?.response?.data?.message || error?.message || "";
       const errorMessageLower = errorMessage.toLowerCase();
       if (
@@ -307,17 +308,6 @@ export default function MisReservasPage() {
     return `${horas}:${minutos}`;
   };
 
-  const getErrorMessage = (error: any): string => {
-    if (typeof error === "string") return error;
-    if (error?.message) return error.message;
-    if (error?.response?.data?.message) return error.response.data.message;
-    return "Error desconocido";
-  };
-
-  const isErrorType = (error: any, keyword: string): boolean => {
-    const message = getErrorMessage(error).toLowerCase();
-    return message.includes(keyword.toLowerCase());
-  };
   const getEstadoColor = (estado: string) => {
     switch (estado) {
       case "confirmed":
@@ -393,40 +383,49 @@ export default function MisReservasPage() {
     };
     return estados[estado] || estado;
   };
+
   if (loading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-lg">Cargando...</div>
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mb-4"></div>
+          <p className="text-gray-700 text-base">Cargando...</p>
+        </div>
       </div>
     );
   }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="mb-8 flex justify-between items-center px-6">
+      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl">
+        {/* HEADER Y BOTÓN */}
+        <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
               📅 Mis Reservas
             </h1>
-            <p className="text-gray-600 mt-2">
+            <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">
               Gestiona todas tus reservas de actividades
             </p>
           </div>
           <button
             onClick={() => setShowReservaModal(true)}
-            className="px-16 py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-lg font-medium hover:from-red-700 hover:to-orange-700 transition whitespace-nowrap"
+            className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-lg font-medium hover:from-red-700 hover:to-orange-700 transition text-sm sm:text-base"
           >
             ➕ Nueva Reserva
           </button>
         </div>
+
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
             {error}
           </div>
         )}
+
+        {/* FILTROS */}
         <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-sm font-medium text-gray-700">
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            <span className="text-xs sm:text-sm font-medium text-gray-700">
               🔍 Filtros:
             </span>
             {(filtroEstado !== "all" ||
@@ -444,7 +443,7 @@ export default function MisReservasPage() {
               </button>
             )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
                 Actividad
@@ -452,7 +451,7 @@ export default function MisReservasPage() {
               <select
                 value={filtroActividad}
                 onChange={(e) => setFiltroActividad(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
               >
                 <option value="all">Todas las actividades</option>
                 {actividadesUnicas.map((actividad) => (
@@ -469,7 +468,7 @@ export default function MisReservasPage() {
               <select
                 value={filtroFecha}
                 onChange={(e) => setFiltroFecha(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
               >
                 <option value="all">Todas las fechas</option>
                 <option value="hoy">Hoy</option>
@@ -486,7 +485,7 @@ export default function MisReservasPage() {
               <select
                 value={filtroEstado}
                 onChange={(e) => setFiltroEstado(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
               >
                 <option value="all">Todos los estados</option>
                 <option value="confirmed">Confirmada</option>
@@ -495,30 +494,32 @@ export default function MisReservasPage() {
               </select>
             </div>
           </div>
-          <div className="mt-3 text-sm text-gray-600">
+          <div className="mt-3 text-xs sm:text-sm text-gray-600">
             Mostrando{" "}
             <span className="font-semibold">{reservasFiltradas.length}</span> de{" "}
             <span className="font-semibold">{reservas.length}</span> reservas
           </div>
         </div>
+
+        {/* TABLA RESERVAS */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Fecha y Hora
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actividad
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="hidden sm:table-cell px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Detalles
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Estado
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Acciones
                   </th>
                 </tr>
@@ -528,14 +529,14 @@ export default function MisReservasPage() {
                   <tr>
                     <td
                       colSpan={5}
-                      className="px-6 py-8 text-center text-gray-500"
+                      className="px-3 sm:px-6 py-8 text-center text-gray-500 text-sm"
                     >
                       {reservas.length === 0
                         ? "No tienes reservas aún."
                         : "No se encontraron reservas con los filtros seleccionados."}
                       <button
                         onClick={() => setShowReservaModal(true)}
-                        className="text-red-600 hover:text-red-700 font-medium ml-1"
+                        className="text-red-600 hover:text-red-700 font-medium ml-1 text-xs sm:text-sm"
                       >
                         {reservas.length === 0
                           ? "¡Reserva tu primera clase!"
@@ -546,18 +547,18 @@ export default function MisReservasPage() {
                 ) : (
                   reservasFiltradas.map((reserva) => (
                     <tr key={reserva.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900 capitalize">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                        <div className="text-xs sm:text-sm font-medium text-gray-900 capitalize line-clamp-2">
                           {formatearFecha(reserva.activityDate)}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-xs text-gray-500">
                           {formatearHora(reserva.startTime)}
                           {reserva.endTime &&
                             ` - ${formatearHora(reserva.endTime)}`}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4">
+                        <div className="text-xs sm:text-sm font-medium text-gray-900">
                           {reserva.activity.name}
                         </div>
                         {reserva.isFreeTrial && (
@@ -566,23 +567,22 @@ export default function MisReservasPage() {
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                      <td className="hidden sm:table-cell px-3 sm:px-6 py-3 sm:py-4">
+                        <div className="text-xs sm:text-sm text-gray-900">
                           Capacidad: {reserva.activity.capacity || "-"}
                         </div>
-                        <div className="text-sm text-gray-500">
-                          Cupos disponibles:{" "}
-                          {reserva.turn?.availableSpots ?? "-"}
+                        <div className="text-xs text-gray-500">
+                          Cupos: {reserva.turn?.availableSpots ?? "-"}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                         <span
-                          className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getEstadoColor(reserva.status)}`}
+                          className={`px-2 sm:px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getEstadoColor(reserva.status)}`}
                         >
                           {getEstadoTexto(reserva.status)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium space-x-2 sm:space-x-3">
                         {(reserva.status === "pending" ||
                           reserva.status === "active" ||
                           reserva.status === "confirmed") && (
@@ -602,11 +602,14 @@ export default function MisReservasPage() {
           </div>
         </div>
       </div>
+
+      {/* MODAL NUEVA RESERVA */}
       {showReservaModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Nueva Reserva</h2>
+          <div className="bg-white rounded-xl w-full max-w-2xl md:max-w-4xl max-h-[90vh] overflow-y-auto">
+            {/* HEADER MODAL */}
+            <div className="p-4 sm:p-6 border-b flex justify-between items-center sticky top-0 bg-white">
+              <h2 className="text-lg sm:text-2xl font-bold">Nueva Reserva</h2>
               <button
                 onClick={() => {
                   setShowReservaModal(false);
@@ -620,7 +623,10 @@ export default function MisReservasPage() {
                 ✕
               </button>
             </div>
-            <div className="p-6 space-y-6">
+
+            {/* CONTENIDO MODAL */}
+            <div className="p-4 sm:p-6 space-y-6">
+              {/* PASO 1 - SELECCIONAR ACTIVIDAD */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   1️⃣ Selecciona una actividad
@@ -628,7 +634,7 @@ export default function MisReservasPage() {
                 <select
                   value={selectedActivity}
                   onChange={(e) => handleActivityChange(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
                 >
                   <option value="">Seleccionar actividad...</option>
                   {activities.map((activity) => (
@@ -638,6 +644,8 @@ export default function MisReservasPage() {
                   ))}
                 </select>
               </div>
+
+              {/* PASO 2 - SELECCIONAR FECHA */}
               {selectedActivity && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -646,12 +654,12 @@ export default function MisReservasPage() {
                   {loadingDates ? (
                     <div className="text-center py-4">
                       <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-red-600"></div>
-                      <p className="mt-2 text-sm text-gray-600">
+                      <p className="mt-2 text-xs sm:text-sm text-gray-600">
                         Cargando fechas disponibles...
                       </p>
                     </div>
                   ) : availableDates.length === 0 ? (
-                    <div className="text-center py-4 text-gray-500">
+                    <div className="text-center py-4 text-gray-500 text-sm">
                       No hay fechas disponibles para esta actividad
                     </div>
                   ) : (
@@ -663,6 +671,8 @@ export default function MisReservasPage() {
                   )}
                 </div>
               )}
+
+              {/* PASO 3 - SELECCIONAR HORARIO */}
               {selectedDate && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-4">
@@ -671,14 +681,14 @@ export default function MisReservasPage() {
                   {loadingTurns ? (
                     <div className="text-center py-8">
                       <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
-                      <p className="mt-2 text-gray-600">Cargando horarios...</p>
+                      <p className="mt-2 text-gray-600 text-sm">Cargando horarios...</p>
                     </div>
                   ) : availableTurns.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-gray-500 text-sm">
                       No hay turnos disponibles para esta fecha
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                       {availableTurns.map((turn) => {
                         const turnDateTime = new Date(
                           `${turn.date}T${turn.startTime}`,
@@ -692,11 +702,11 @@ export default function MisReservasPage() {
                         return (
                           <div
                             key={turn.id}
-                            className="border border-gray-200 rounded-lg p-4 hover:border-red-500 hover:shadow-md transition"
+                            className="border border-gray-200 rounded-lg p-3 sm:p-4 hover:border-red-500 hover:shadow-md transition"
                           >
-                            <div className="flex justify-between items-start mb-3">
+                            <div className="flex justify-between items-start mb-2 sm:mb-3">
                               <div>
-                                <div className="font-semibold text-gray-900">
+                                <div className="font-semibold text-xs sm:text-sm text-gray-900">
                                   {formatearHora(turn.startTime)} -{" "}
                                   {formatearHora(turn.endTime)}
                                 </div>
@@ -705,7 +715,6 @@ export default function MisReservasPage() {
                                     {turn.activity.duration} minutos
                                   </div>
                                 )}
-                                {/* 🔥 Indicador de tiempo restante */}
                                 {isSoonToStart && (
                                   <div className="text-xs text-orange-600 font-medium mt-1">
                                     ⏰ Comienza en {hoursRemaining}h
@@ -717,7 +726,7 @@ export default function MisReservasPage() {
                               </span>
                             </div>
                             {turn.isFreeTrial && (
-                              <div className="mb-3">
+                              <div className="mb-2 sm:mb-3">
                                 <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800">
                                   ✨ Clase Gratis
                                 </span>
@@ -725,7 +734,7 @@ export default function MisReservasPage() {
                             )}
                             <button
                               onClick={() => handleReservarTurno(turn.id)}
-                              className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition"
+                              className="w-full px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition text-xs sm:text-sm"
                             >
                               Reservar
                             </button>

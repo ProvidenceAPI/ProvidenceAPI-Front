@@ -116,8 +116,8 @@ export default function ActivityTab() {
         break;
 
       case "price":
-        if (value < 3000) {
-          error = "El precio no puede ser menor a $3000";
+        if (value < 1) {
+          error = "El precio no puede ser menor a $1";
         } else if (value > 99999) {
           error = "El precio es demasiado alto";
         }
@@ -333,6 +333,7 @@ export default function ActivityTab() {
       Swal.fire("❌ Error", error.message, "error");
     }
   };
+
   const handleToggleStatus = async (activity: Activity) => {
     try {
       await activityService.toggleActivityStatus(activity.id);
@@ -360,12 +361,12 @@ export default function ActivityTab() {
         if (typeof item === "string") {
           const parts = item.trim().split(" ");
           if (parts.length >= 2) {
-            const day = parts[0]; // Ya viene en español
+            const day = parts[0];
             const time = parts[1];
             slots.push({ day, time });
           }
         } else if (item?.day && Array.isArray(item.hours)) {
-          const day = item.day; // Ya viene en español
+          const day = item.day;
           item.hours.forEach((hour: string) => {
             if (hour && typeof hour === "string") {
               slots.push({ day, time: hour });
@@ -378,6 +379,7 @@ export default function ActivityTab() {
     }
     return slots.length > 0 ? slots : [{ day: "Lunes", time: "10:00" }];
   };
+
   const openEditModal = (activity: Activity) => {
     setEditingActivity(activity);
     setFormData({
@@ -420,9 +422,11 @@ export default function ActivityTab() {
     setShowModal(false);
     setEditingActivity(null);
   };
+
   const addScheduleSlot = () => {
     setScheduleSlots([...scheduleSlots, { day: "Lunes", time: "08:00" }]);
   };
+
   const removeScheduleSlot = (index: number) => {
     setScheduleSlots(scheduleSlots.filter((_, i) => i !== index));
   };
@@ -466,38 +470,41 @@ export default function ActivityTab() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-xl shadow p-6">
-        <div className="flex justify-between items-center">
+    <div className="space-y-4 sm:space-y-6">
+      {/* HEADER */}
+      <div className="bg-white rounded-xl shadow p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
               🏋️ Gestión de Actividades
             </h1>
-            <p className="text-gray-600 mt-1">
+            <p className="text-gray-600 mt-1 text-sm sm:text-base">
               Total: {activities.length} actividades
             </p>
           </div>
           {(isAdmin || isSuperAdmin) && (
             <button
               onClick={openCreateModal}
-              className="px-12 py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-lg font-medium hover:from-red-700 hover:to-orange-700 transition"
+              className="w-full sm:w-auto px-6 sm:px-12 py-2.5 sm:py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-lg font-medium hover:from-red-700 hover:to-orange-700 transition text-sm sm:text-base"
             >
               ➕ Nueva Actividad
             </button>
           )}
         </div>
       </div>
-      {/* Lista de actividades */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-6 max-w-full mx-auto">
+
+      {/* GRID DE ACTIVIDADES */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 px-0">
         {loading ? (
           <div className="col-span-full text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Cargando actividades...</p>
+            <p className="mt-4 text-gray-600 text-sm sm:text-base">
+              Cargando actividades...
+            </p>
           </div>
         ) : !activities || activities.length === 0 ? (
           <div className="col-span-full text-center py-12 bg-white rounded-xl">
-            <p className="text-gray-400 text-lg">
+            <p className="text-gray-400 text-base sm:text-lg">
               📭 No hay actividades creadas
             </p>
           </div>
@@ -509,7 +516,7 @@ export default function ActivityTab() {
             >
               {(activity.image || activity.imageUrl) &&
               !(activity.image || activity.imageUrl).includes("ejemplo") ? (
-                <div className="relative w-full h-32 bg-gray-100 overflow-hidden">
+                <div className="relative w-full h-32 sm:h-40 bg-gray-100 overflow-hidden">
                   <Image
                     src={activity.image || activity.imageUrl || ""}
                     alt={activity.name}
@@ -524,17 +531,19 @@ export default function ActivityTab() {
                   />
                 </div>
               ) : (
-                <div className="w-full h-40 bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center">
-                  <span className="text-white text-6xl">🏋️</span>
+                <div className="w-full h-32 sm:h-40 bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center">
+                  <span className="text-4xl sm:text-6xl">🏋️</span>
                 </div>
               )}
-              <div className="p-6 flex flex-col flex-1">
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="text-xl font-bold text-gray-900">
+
+              <div className="p-4 sm:p-6 flex flex-col flex-1">
+                {/* TÍTULO Y ESTADO */}
+                <div className="flex justify-between items-start gap-2 mb-3 sm:mb-4">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 line-clamp-2">
                     {activity.name}
                   </h3>
                   <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
                       activity.status === "Active"
                         ? "bg-green-100 text-green-800"
                         : "bg-gray-100 text-gray-800"
@@ -543,10 +552,14 @@ export default function ActivityTab() {
                     {activity.status === "Active" ? "✅ Activa" : "⏸️ Inactiva"}
                   </span>
                 </div>
-                <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+
+                {/* DESCRIPCIÓN */}
+                <p className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4 line-clamp-2">
                   {activity.description}
                 </p>
-                <div className="space-y-2 text-sm mb-3">
+
+                {/* DETALLES */}
+                <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm mb-3 sm:mb-4">
                   <div className="flex justify-between">
                     <span className="text-gray-600">💰 Precio:</span>
                     <span className="font-medium">${activity.price}</span>
@@ -560,34 +573,38 @@ export default function ActivityTab() {
                     <span className="font-medium">{activity.capacity}</span>
                   </div>
                 </div>
-                <div className="mb-4 pb-4 border-t pt-3">
-                  <div className="text-sm font-medium text-gray-700 mb-2">
+
+                {/* HORARIOS */}
+                <div className="mb-3 sm:mb-4 pb-3 sm:pb-4 border-t pt-2 sm:pt-3">
+                  <div className="text-xs sm:text-sm font-medium text-gray-700 mb-2">
                     📅 Horarios:
                   </div>
                   <div className="max-h-24 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-1">
                       {renderSchedule(activity.schedule)}
                     </div>
                   </div>
                 </div>
+
+                {/* ACCIONES */}
                 {(isAdmin || isSuperAdmin) && (
-                  <div className="pt-4 border-t flex gap-2 mt-auto">
+                  <div className="pt-3 sm:pt-4 border-t flex flex-col sm:flex-row gap-2 mt-auto">
                     <button
                       onClick={() => openEditModal(activity)}
-                      className="flex-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition text-sm font-medium"
+                      className="flex-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition text-xs sm:text-sm font-medium"
                     >
                       ✏️ Editar
                     </button>
                     <button
                       onClick={() => handleToggleStatus(activity)}
-                      className="flex-1 px-3 py-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition text-sm font-medium"
+                      className="flex-1 px-3 py-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition text-xs sm:text-sm font-medium"
                     >
                       🔄 Estado
                     </button>
                     {isSuperAdmin && (
                       <button
                         onClick={() => handleDelete(activity)}
-                        className="flex-1 px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition text-sm font-medium"
+                        className="flex-1 px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition text-xs sm:text-sm font-medium"
                       >
                         🗑️ Eliminar
                       </button>
@@ -599,18 +616,21 @@ export default function ActivityTab() {
           ))
         )}
       </div>
+
+      {/* MODAL */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto">
-          <div className="min-h-screen flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl w-full max-w-3xl my-8">
-              <div className="p-6 border-b">
-                <h2 className="text-2xl font-bold">
+        <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto p-4 sm:p-6">
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="bg-white rounded-xl w-full max-w-2xl sm:max-w-3xl my-6 sm:my-8">
+              {/* HEADER MODAL */}
+              <div className="p-4 sm:p-6 border-b sticky top-0 bg-white">
+                <h2 className="text-lg sm:text-2xl font-bold">
                   {editingActivity
                     ? "✏️ Editar Actividad"
                     : "➕ Nueva Actividad"}
                 </h2>
                 {editingActivity && (
-                  <p className="text-gray-600 mt-1">
+                  <p className="text-gray-600 mt-1 text-xs sm:text-sm">
                     Modificando:{" "}
                     <span className="font-semibold">
                       {editingActivity.name}
@@ -618,15 +638,21 @@ export default function ActivityTab() {
                   </p>
                 )}
                 {!editingActivity && (
-                  <p className="text-sm text-blue-600 mt-2 bg-blue-50 p-2 rounded">
+                  <p className="text-xs sm:text-sm text-blue-600 mt-2 bg-blue-50 p-2 rounded">
                     ℹ️ Esto solo creará la actividad. Los turnos se generan
                     desde la pestaña "Gestión de Turnos"
                   </p>
                 )}
               </div>
-              <form onSubmit={handleSubmit} className="p-6 space-y-6">
+
+              {/* CONTENIDO */}
+              <form
+                onSubmit={handleSubmit}
+                className="p-4 sm:p-6 space-y-4 sm:space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto"
+              >
+                {/* NOMBRE */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                     Nombre *
                   </label>
                   <input
@@ -637,7 +663,7 @@ export default function ActivityTab() {
                       validateField("name", e.target.value);
                     }}
                     onBlur={(e) => validateField("name", e.target.value)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
+                    className={`w-full px-3 sm:px-4 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
                       errors.name ? "border-red-500" : "border-gray-300"
                     }`}
                     required
@@ -646,8 +672,10 @@ export default function ActivityTab() {
                     <p className="text-red-500 text-xs mt-1">{errors.name}</p>
                   )}
                 </div>
+
+                {/* DESCRIPCIÓN */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                     Descripción *
                   </label>
                   <textarea
@@ -658,7 +686,7 @@ export default function ActivityTab() {
                     }}
                     onBlur={(e) => validateField("description", e.target.value)}
                     rows={3}
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
+                    className={`w-full px-3 sm:px-4 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
                       errors.description ? "border-red-500" : "border-gray-300"
                     }`}
                     required
@@ -669,9 +697,11 @@ export default function ActivityTab() {
                     </p>
                   )}
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+
+                {/* CUPO, DURACIÓN, PRECIO */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                       Cupo *
                     </label>
                     <input
@@ -680,16 +710,11 @@ export default function ActivityTab() {
                       onChange={(e) => {
                         const value =
                           e.target.value === "" ? 0 : Number(e.target.value);
-                        setFormData({
-                          ...formData,
-                          capacity: value,
-                        });
-                        if (e.target.value !== "") {
+                        setFormData({ ...formData, capacity: value });
+                        if (e.target.value !== "")
                           validateField("capacity", value);
-                        }
                       }}
-                      onBlur={(e) => validateField("trainer", e.target.value)}
-                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 ${
+                      className={`w-full px-3 sm:px-4 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-red-500 ${
                         errors.capacity ? "border-red-500" : "border-gray-300"
                       }`}
                       required
@@ -700,8 +725,9 @@ export default function ActivityTab() {
                       </p>
                     )}
                   </div>
+
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                       Duración (min) *
                     </label>
                     <input
@@ -710,15 +736,11 @@ export default function ActivityTab() {
                       onChange={(e) => {
                         const value =
                           e.target.value === "" ? 0 : Number(e.target.value);
-                        setFormData({
-                          ...formData,
-                          duration: value,
-                        });
-                        if (e.target.value !== "") {
+                        setFormData({ ...formData, duration: value });
+                        if (e.target.value !== "")
                           validateField("duration", value);
-                        }
                       }}
-                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 ${
+                      className={`w-full px-3 sm:px-4 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-red-500 ${
                         errors.duration ? "border-red-500" : "border-gray-300"
                       }`}
                       required
@@ -729,8 +751,9 @@ export default function ActivityTab() {
                       </p>
                     )}
                   </div>
+
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                       Precio *
                     </label>
                     <input
@@ -739,15 +762,11 @@ export default function ActivityTab() {
                       onChange={(e) => {
                         const value =
                           e.target.value === "" ? 0 : Number(e.target.value);
-                        setFormData({
-                          ...formData,
-                          price: value,
-                        });
-                        if (e.target.value !== "") {
+                        setFormData({ ...formData, price: value });
+                        if (e.target.value !== "")
                           validateField("price", value);
-                        }
                       }}
-                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 ${
+                      className={`w-full px-3 sm:px-4 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-red-500 ${
                         errors.price ? "border-red-500" : "border-gray-300"
                       }`}
                       required
@@ -759,9 +778,11 @@ export default function ActivityTab() {
                     )}
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+
+                {/* INSTRUCTOR */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                       Instructor
                     </label>
                     <input
@@ -771,7 +792,7 @@ export default function ActivityTab() {
                         setFormData({ ...formData, trainer: e.target.value });
                         validateField("trainer", e.target.value);
                       }}
-                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
+                      className={`w-full px-3 sm:px-4 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-red-500 ${
                         errors.trainer ? "border-red-500" : "border-gray-300"
                       }`}
                       required
@@ -782,37 +803,41 @@ export default function ActivityTab() {
                       </p>
                     )}
                   </div>
+
+                  {/* CLASE GRATIS */}
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
+                      Clase Gratis
+                    </label>
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.hasFreeTrial}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            hasFreeTrial: e.target.checked,
+                          })
+                        }
+                        className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                      />
+                      <span className="ml-2 text-xs sm:text-sm text-gray-700">
+                        Primera clase gratis
+                      </span>
+                    </label>
+                  </div>
                 </div>
+
+                {/* HORARIOS */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Clase Gratis
-                  </label>
-                  <label className="flex items-center cursor-pointer mt-2">
-                    <input
-                      type="checkbox"
-                      checked={formData.hasFreeTrial}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          hasFreeTrial: e.target.checked,
-                        })
-                      }
-                      className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">
-                      Ofrecer primera clase gratis
-                    </span>
-                  </label>
-                </div>
-                <div>
-                  <div className="flex justify-between items-center mb-3">
-                    <label className="block text-sm font-medium text-gray-700">
+                  <div className="flex justify-between items-center mb-2 sm:mb-3">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700">
                       Horarios *
                     </label>
                     <button
                       type="button"
                       onClick={addScheduleSlot}
-                      className="px-3 py-1 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 text-sm font-medium"
+                      className="px-3 py-1 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 text-xs sm:text-sm font-medium"
                     >
                       ➕ Agregar
                     </button>
@@ -825,7 +850,7 @@ export default function ActivityTab() {
                           onChange={(e) =>
                             updateScheduleSlot(index, "day", e.target.value)
                           }
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                          className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
                         >
                           {DAYS.map((day) => (
                             <option key={day} value={day}>
@@ -838,7 +863,7 @@ export default function ActivityTab() {
                           onChange={(e) =>
                             updateScheduleSlot(index, "time", e.target.value)
                           }
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                          className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
                         >
                           {TIMES.map((time) => (
                             <option key={time} value={time}>
@@ -850,7 +875,7 @@ export default function ActivityTab() {
                           <button
                             type="button"
                             onClick={() => removeScheduleSlot(index)}
-                            className="px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100"
+                            className="px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 text-sm"
                           >
                             🗑️
                           </button>
@@ -859,11 +884,13 @@ export default function ActivityTab() {
                     ))}
                   </div>
                 </div>
+
+                {/* IMAGEN */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                     Imagen
                   </label>
-                  <div className="space-y-3">
+                  <div className="space-y-2 sm:space-y-3">
                     <input
                       type="file"
                       accept="image/*"
@@ -873,9 +900,11 @@ export default function ActivityTab() {
                           setImageUrl("");
                         }
                       }}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-3 sm:px-4 py-2 text-sm border border-gray-300 rounded-lg"
                     />
-                    <div className="text-center text-sm text-gray-500">O</div>
+                    <div className="text-center text-xs sm:text-sm text-gray-500">
+                      O
+                    </div>
                     <input
                       type="url"
                       placeholder="URL de imagen"
@@ -884,15 +913,17 @@ export default function ActivityTab() {
                         setImageUrl(e.target.value);
                         setImageFile(null);
                       }}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-3 sm:px-4 py-2 text-sm border border-gray-300 rounded-lg"
                     />
                   </div>
                 </div>
-                <div className="flex gap-3 pt-4">
+
+                {/* BOTONES ACCIÓN */}
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 border-t">
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-lg font-medium hover:from-red-700 hover:to-orange-700 transition"
+                    className="flex-1 px-6 py-2.5 sm:py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-lg font-medium hover:from-red-700 hover:to-orange-700 transition disabled:opacity-50 text-sm sm:text-base"
                   >
                     {isSubmitting ? (
                       <>🔄 Procesando...</>
@@ -905,7 +936,7 @@ export default function ActivityTab() {
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition"
+                    className="flex-1 px-6 py-2.5 sm:py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition text-sm sm:text-base"
                   >
                     ✕ Cancelar
                   </button>

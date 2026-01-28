@@ -29,12 +29,13 @@ export default function MisPagosPage() {
       try {
         const data = await paymentService.getPaymentHistory();
         setPagos(data);
-      } catch {
-        console.error("Error cargando pagos:", error);
+      } catch (err) {
+        console.error("Error cargando pagos:", err);
+        setError("Error al cargar el historial de pagos");
       }
     };
     loadPayments();
-  }, [error]);
+  }, []);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -85,23 +86,30 @@ export default function MisPagosPage() {
         setSuccessMessage(
           "¡Pago aprobado exitosamente! Recargando historial...",
         );
-        setTimeout(async () => {
-          const data = await paymentService.getPaymentHistory();
-          setPagos(data);
-          window.history.replaceState({}, "", "/mis-pagos");
+        const timer = setTimeout(async () => {
+          try {
+            const data = await paymentService.getPaymentHistory();
+            setPagos(data);
+            window.history.replaceState({}, "", "/mis-pagos");
+          } catch (err) {
+            console.error("Error recargando pagos:", err);
+          }
         }, 1000);
+        return () => clearTimeout(timer);
       } else if (status === "rejected") {
         setError("El pago fue rechazado. Por favor intenta nuevamente.");
-        setTimeout(() => {
+        const timer = setTimeout(() => {
           window.history.replaceState({}, "", "/mis-pagos");
         }, 3000);
+        return () => clearTimeout(timer);
       } else if (status === "pending") {
         setWarningMessage(
           "Tu pago está pendiente de confirmación. Te notificaremos cuando se apruebe.",
         );
-        setTimeout(() => {
+        const timer = setTimeout(() => {
           window.history.replaceState({}, "", "/mis-pagos");
         }, 3000);
+        return () => clearTimeout(timer);
       }
     }
   }, []);
@@ -121,7 +129,7 @@ export default function MisPagosPage() {
     fetchReservations();
   }, []);
 
-  if (isAuthLoading) return <div>Cargando...</div>;
+  if (isAuthLoading) return <div className="text-center py-8">Cargando...</div>;
 
   const iniciarPagoMercadoPago = async () => {
     if (!selectedActivity) {
@@ -207,16 +215,16 @@ export default function MisPagosPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        {/* HEADER Y BOTÓN ALINEADOS */}
-        <div className="mb-8 flex justify-between items-center">
+      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-6xl">
+        {/* HEADER Y BOTÓN */}
+        <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">💳 Mis Pagos</h1>
-            <p className="text-gray-600 mt-2">Historial y gestión de pagos</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">💳 Mis Pagos</h1>
+            <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">Historial y gestión de pagos</p>
           </div>
           <button
             onClick={() => setShowPaymentCard(!showPaymentCard)}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-md flex items-center gap-2"
+            className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-md flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             {showPaymentCard ? (
               <>❌ Cancelar Pago</>
@@ -225,56 +233,58 @@ export default function MisPagosPage() {
             )}
           </button>
         </div>
+
         {/* MENSAJES */}
         {successMessage && (
           <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 animate-pulse">
-            <div className="flex items-start">
-              <span className="text-green-600 text-xl mr-2">✅</span>
+            <div className="flex items-start gap-3">
+              <span className="text-green-600 text-xl flex-shrink-0">✅</span>
               <div>
-                <h3 className="text-green-800 font-medium">¡Éxito!</h3>
-                <p className="text-green-700 text-sm mt-1">{successMessage}</p>
+                <h3 className="text-green-800 font-medium text-sm sm:text-base">¡Éxito!</h3>
+                <p className="text-green-700 text-xs sm:text-sm mt-1">{successMessage}</p>
               </div>
             </div>
           </div>
         )}
         {warningMessage && (
           <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <div className="flex items-start">
-              <span className="text-yellow-600 text-xl mr-2">⚠️</span>
+            <div className="flex items-start gap-3">
+              <span className="text-yellow-600 text-xl flex-shrink-0">⚠️</span>
               <div>
-                <h3 className="text-yellow-800 font-medium">Atención</h3>
-                <p className="text-yellow-700 text-sm mt-1">{warningMessage}</p>
+                <h3 className="text-yellow-800 font-medium text-sm sm:text-base">Atención</h3>
+                <p className="text-yellow-700 text-xs sm:text-sm mt-1">{warningMessage}</p>
               </div>
             </div>
           </div>
         )}
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex items-start">
-              <span className="text-red-600 text-xl mr-2">❌</span>
+            <div className="flex items-start gap-3">
+              <span className="text-red-600 text-xl flex-shrink-0">❌</span>
               <div>
-                <h3 className="text-red-800 font-medium">Error</h3>
-                <p className="text-red-700 text-sm mt-1">{error}</p>
+                <h3 className="text-red-800 font-medium text-sm sm:text-base">Error</h3>
+                <p className="text-red-700 text-xs sm:text-sm mt-1">{error}</p>
               </div>
             </div>
           </div>
         )}
+
         {/* CARD DE PAGO DESPLEGABLE */}
         {showPaymentCard && (
-          <div className="mb-8 bg-white rounded-lg shadow-lg p-6 border-2 border-blue-500 animate-fadeIn">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">
+          <div className="mb-8 bg-white rounded-lg shadow-lg p-4 sm:p-6 border-2 border-blue-500 animate-fadeIn">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-6">
               💳 Realizar Pago
             </h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   Seleccionar Actividad
                 </label>
                 <select
                   value={selectedActivity}
                   onChange={(e) => setSelectedActivity(e.target.value)}
                   disabled={isProcessing || activities.length === 0}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                 >
                   <option value="">
                     {activities.length === 0
@@ -291,18 +301,18 @@ export default function MisPagosPage() {
               </div>
               {selectedActivity && actividadSeleccionada && (
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
-                  <h3 className="font-bold text-gray-900 mb-2 text-lg">
+                  <h3 className="font-bold text-gray-900 mb-2 text-base">
                     {actividadSeleccionada.name}
                   </h3>
-                  <p className="text-sm text-gray-600 mb-3">
+                  <p className="text-xs sm:text-sm text-gray-600 mb-3">
                     {actividadSeleccionada.description}
                   </p>
                   <div className="mt-3 pt-3 border-t border-blue-200">
-                    <div className="flex justify-between items-center">
-                      <span className="text-lg font-bold text-gray-900">
+                    <div className="flex justify-between items-center flex-wrap gap-2">
+                      <span className="text-base font-bold text-gray-900">
                         Total a pagar:
                       </span>
-                      <span className="text-3xl font-bold text-blue-600">
+                      <span className="text-2xl sm:text-3xl font-bold text-blue-600">
                         $
                         {Number(actividadSeleccionada.price).toLocaleString(
                           "es-AR",
@@ -312,11 +322,11 @@ export default function MisPagosPage() {
                   </div>
                 </div>
               )}
-              <div className="flex gap-3 pt-2">
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <button
                   onClick={iniciarPagoMercadoPago}
                   disabled={!selectedActivity || isProcessing}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-3 rounded-lg font-bold transition-colors"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-2.5 sm:py-3 rounded-lg font-bold transition-colors text-sm"
                 >
                   {isProcessing ? "Procesando..." : "💳 Pagar con MercadoPago"}
                 </button>
@@ -325,7 +335,7 @@ export default function MisPagosPage() {
                     setShowPaymentCard(false);
                     setSelectedActivity("");
                   }}
-                  className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors"
+                  className="flex-1 sm:flex-none px-6 py-2.5 sm:py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors text-sm"
                 >
                   Cancelar
                 </button>
@@ -333,18 +343,19 @@ export default function MisPagosPage() {
             </div>
           </div>
         )}
+
         {/* HISTORIAL DE PAGOS */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 border-b bg-gray-50">
-            <div className="flex justify-between items-center flex-wrap gap-4">
-              <h2 className="text-xl font-bold text-gray-900">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b bg-gray-50">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-wrap">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">
                 📋 Historial de Pagos
               </h2>
               {/* FILTROS */}
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-2 flex-wrap w-full sm:w-auto">
                 <button
                   onClick={() => setStatusFilter("all")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                     statusFilter === "all"
                       ? "bg-gray-900 text-white"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -354,7 +365,7 @@ export default function MisPagosPage() {
                 </button>
                 <button
                   onClick={() => setStatusFilter("approved")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                     statusFilter === "approved"
                       ? "bg-green-600 text-white"
                       : "bg-green-50 text-green-700 hover:bg-green-100"
@@ -364,7 +375,7 @@ export default function MisPagosPage() {
                 </button>
                 <button
                   onClick={() => setStatusFilter("pending")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                     statusFilter === "pending"
                       ? "bg-yellow-600 text-white"
                       : "bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
@@ -374,7 +385,7 @@ export default function MisPagosPage() {
                 </button>
                 <button
                   onClick={() => setStatusFilter("rejected")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                     statusFilter === "rejected"
                       ? "bg-red-600 text-white"
                       : "bg-red-50 text-red-700 hover:bg-red-100"
@@ -385,26 +396,28 @@ export default function MisPagosPage() {
               </div>
             </div>
           </div>
+
+          {/* TABLA - RESPONSIVE */}
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Fecha
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actividad
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="hidden sm:table-cell px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Método
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Monto
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Estado
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="hidden sm:table-cell px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Acciones
                   </th>
                 </tr>
@@ -414,9 +427,9 @@ export default function MisPagosPage() {
                   <tr>
                     <td
                       colSpan={6}
-                      className="px-6 py-12 text-center text-gray-500"
+                      className="px-3 sm:px-6 py-8 sm:py-12 text-center text-gray-500 text-sm"
                     >
-                      <div className="text-4xl mb-2">📭</div>
+                      <div className="text-3xl sm:text-4xl mb-2">📭</div>
                       {statusFilter === "all"
                         ? "No hay registros de pagos"
                         : `No hay pagos ${getEstadoTexto(statusFilter).toLowerCase()}`}
@@ -428,32 +441,32 @@ export default function MisPagosPage() {
                       key={pago.id}
                       className="hover:bg-gray-50 transition-colors"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
                         {new Date(pago.createdAt).toLocaleDateString("es-AR", {
                           day: "2-digit",
                           month: "2-digit",
                           year: "numeric",
                         })}
                       </td>
-                      <td className="px-6 py-4 text-sm">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm">
                         <div className="font-medium text-gray-900">
                           {pago.activity?.name || "Actividad eliminada"}
                         </div>
                         {pago.mercadoPagoId && (
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-gray-500 hidden sm:block">
                             ID: {pago.mercadoPagoId.slice(0, 10)}...
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      <th className="hidden sm:table-cell px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-700">
                         💳 MercadoPago
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      </th>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
                         ${Number(pago.amount).toLocaleString("es-AR")}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                         <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                          className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${
                             pago.status === "approved"
                               ? "bg-green-100 text-green-800"
                               : pago.status === "pending"
@@ -469,7 +482,7 @@ export default function MisPagosPage() {
                           {getEstadoTexto(pago.status)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <td className="hidden sm:table-cell px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm">
                         <button
                           onClick={() => descargarRecibo(pago.id)}
                           className="text-blue-600 hover:text-blue-800 font-medium hover:underline"

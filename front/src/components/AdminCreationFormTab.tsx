@@ -41,6 +41,9 @@ export default function AdminCreationFormTab({
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [emailExists, setEmailExists] = useState(false);
+  const [dniExists, setDniExists] = useState(false);
+  const [phoneExists, setPhoneExists] = useState(false);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [validations, setValidations] = useState({
     name: false,
     lastname: false,
@@ -119,9 +122,14 @@ export default function AdminCreationFormTab({
     if (name === "phone") {
       const formatted = value.replace(/\D/g, "").substring(0, 15);
       setFormData((prev) => ({ ...prev, [name]: formatted }));
+      setPhoneExists(false);
     } else if (name === "dni") {
       const formatted = value.replace(/\D/g, "").substring(0, 10);
       setFormData((prev) => ({ ...prev, [name]: formatted }));
+      setDniExists(false);
+    } else if (name === "email") {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+      setEmailExists(false);
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
@@ -130,6 +138,56 @@ export default function AdminCreationFormTab({
         ...prev,
         [name]: "",
       }));
+    }
+  };
+
+  const checkAvailability = useCallback(async () => {
+    const email = formData.email?.trim();
+    const dni = formData.dni?.trim();
+    const phone = formData.phone?.trim();
+    if (!email && !dni && !phone) return;
+    setCheckingAvailability(true);
+    try {
+      const params = new URLSearchParams();
+      if (email) params.set("email", email);
+      if (dni) params.set("dni", dni);
+      if (phone) params.set("phone", phone);
+      const { data } = await apiClient.get<{
+        emailTaken: boolean;
+        dniTaken: boolean;
+        phoneTaken: boolean;
+      }>(`/api/users/check-availability?${params.toString()}`);
+      setEmailExists(!!data.emailTaken);
+      setDniExists(!!data.dniTaken);
+      setPhoneExists(!!data.phoneTaken);
+    } catch {
+      // Silenciar error (ej. sin token): no actualizar estados
+    } finally {
+      setCheckingAvailability(false);
+    }
+  }, [formData.email, formData.dni, formData.phone]);
+
+  const handleEmailBlur = () => {
+    if (formData.email && /\S+@\S+\.\S+/.test(formData.email)) {
+      checkAvailability();
+    } else {
+      setEmailExists(false);
+    }
+  };
+
+  const handleDniBlur = () => {
+    if (formData.dni.length >= 7 && formData.dni.length <= 10) {
+      checkAvailability();
+    } else {
+      setDniExists(false);
+    }
+  };
+
+  const handlePhoneBlur = () => {
+    if (formData.phone.length >= 10 && formData.phone.length <= 15) {
+      checkAvailability();
+    } else {
+      setPhoneExists(false);
     }
   };
 
@@ -193,6 +251,8 @@ export default function AdminCreationFormTab({
       newErrors.phone = "Teléfono mínimo 10 dígitos";
     } else if (formData.phone.length > 15) {
       newErrors.phone = "Teléfono máximo 15 dígitos";
+    } else if (phoneExists) {
+      newErrors.phone = "Este teléfono ya está registrado";
     }
 
     if (!formData.dni) {
@@ -201,6 +261,8 @@ export default function AdminCreationFormTab({
       newErrors.dni = "DNI mínimo 7 dígitos";
     } else if (formData.dni.length > 10) {
       newErrors.dni = "DNI máximo 10 dígitos";
+    } else if (dniExists) {
+      newErrors.dni = "Este DNI ya está registrado";
     }
 
     setErrors(newErrors);
@@ -275,8 +337,12 @@ export default function AdminCreationFormTab({
         dni: "",
         genre: "Male",
       });
+      setEmailExists(false);
+      setDniExists(false);
+      setPhoneExists(false);
+      setErrors({});
     } catch (error: any) {
-      let errorMessage = "No se pudo crear el administrador.";
+      let errorMessage = "No se pudo crear el usuario.";
       if (
         error.message.includes("already exists") ||
         error.message.includes("ya existe")
@@ -289,7 +355,7 @@ export default function AdminCreationFormTab({
         error.message.includes("token")
       ) {
         errorMessage =
-          "❌ No tienes permisos para crear administradores. Debes ser SuperAdmin.";
+          "❌ No tienes permisos para crear usuarios. Debes ser SuperAdmin.";
       } else if (error.message.includes("network")) {
         errorMessage = "❌ Error de conexión. Verifica tu internet.";
       } else if (error.response?.data?.message) {
@@ -329,28 +395,29 @@ export default function AdminCreationFormTab({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 px-3 py-4 sm:p-4 md:p-6 lg:p-8">
+      <div className="max-w-3xl mx-auto w-full">
         {/* Header */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center p-4 bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl mb-6">
-            <span className="text-3xl">👑</span>
+        <div className="text-center mb-6 sm:mb-8 md:mb-10">
+          <div className="inline-flex items-center justify-center p-3 sm:p-4 bg-gradient-to-r from-red-500 to-orange-500 rounded-xl sm:rounded-2xl mb-4 sm:mb-6">
+            <span className="text-2xl sm:text-3xl">👑</span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-3 px-2">
             Crear Nuevo Usuario
           </h1>
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-100 text-yellow-800 rounded-full text-sm mt-4">
-            <span>⚠️</span>
-            <span>Solo SuperAdmins pueden crear usuarios</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-yellow-100 text-yellow-800 rounded-full text-xs sm:text-sm mt-2 sm:mt-4 mx-2">
+            <span className="text-xs sm:text-sm">⚠️</span>
+            <span className="text-xs sm:text-sm">Solo SuperAdmins pueden crear usuarios</span>
           </div>
         </div>
+        
         {/* Formulario */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-4 sm:p-6 md:p-8">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             {/* Nombre y Apellido */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   Nombre *
                 </label>
                 <input
@@ -358,7 +425,7 @@ export default function AdminCreationFormTab({
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
+                  className={`w-full p-2.5 sm:p-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
                     errors.name
                       ? "border-red-500"
                       : validations.name
@@ -369,18 +436,18 @@ export default function AdminCreationFormTab({
                   disabled={loading}
                 />
                 {errors.name ? (
-                  <p className="text-red-600 text-sm mt-1">{errors.name}</p>
+                  <p className="text-red-600 text-xs sm:text-sm mt-1">{errors.name}</p>
                 ) : (
                   formData.name.length > 0 &&
                   !validations.name && (
-                    <p className="text-yellow-600 text-sm mt-1">
+                    <p className="text-yellow-600 text-xs sm:text-sm mt-1">
                       Mínimo 3 caracteres
                     </p>
                   )
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   Apellido *
                 </label>
                 <input
@@ -388,7 +455,7 @@ export default function AdminCreationFormTab({
                   name="lastname"
                   value={formData.lastname}
                   onChange={handleChange}
-                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
+                  className={`w-full p-2.5 sm:p-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
                     errors.lastname
                       ? "border-red-500"
                       : validations.lastname
@@ -399,20 +466,21 @@ export default function AdminCreationFormTab({
                   disabled={loading}
                 />
                 {errors.lastname ? (
-                  <p className="text-red-600 text-sm mt-1">{errors.lastname}</p>
+                  <p className="text-red-600 text-xs sm:text-sm mt-1">{errors.lastname}</p>
                 ) : (
                   formData.lastname.length > 0 &&
                   !validations.lastname && (
-                    <p className="text-yellow-600 text-sm mt-1">
+                    <p className="text-yellow-600 text-xs sm:text-sm mt-1">
                       Mínimo 3 caracteres
                     </p>
                   )
                 )}
               </div>
             </div>
+            
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                 Email *
               </label>
               <input
@@ -420,12 +488,13 @@ export default function AdminCreationFormTab({
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
+                onBlur={handleEmailBlur}
+                className={`w-full p-2.5 sm:p-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
                   errors.email
                     ? "border-red-500"
                     : emailExists
-                      ? "border-yellow-500"
-                      : validations.email
+                      ? "border-red-500"
+                      : validations.email && !emailExists
                         ? "border-green-500"
                         : "border-gray-300"
                 }`}
@@ -433,24 +502,27 @@ export default function AdminCreationFormTab({
                 disabled={loading}
               />
               {errors.email ? (
-                <p className="text-red-600 text-sm mt-1">{errors.email}</p>
+                <p className="text-red-600 text-xs sm:text-sm mt-1">{errors.email}</p>
               ) : emailExists ? (
-                <p className="text-yellow-600 text-sm mt-1">
-                  ⚠️ Este email ya está registrado
+                <p className="text-red-600 text-xs sm:text-sm mt-1">
+                  Este email ya está registrado
                 </p>
+              ) : checkingAvailability && formData.email?.includes("@") ? (
+                <p className="text-gray-500 text-xs sm:text-sm mt-1">Comprobando...</p>
               ) : (
                 formData.email.length > 0 &&
                 !validations.email && (
-                  <p className="text-yellow-600 text-sm mt-1">
+                  <p className="text-yellow-600 text-xs sm:text-sm mt-1">
                     Introduce un email válido
                   </p>
                 )
               )}
             </div>
+            
             {/* Contraseñas */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   Contraseña *
                 </label>
                 <div className="relative">
@@ -459,7 +531,7 @@ export default function AdminCreationFormTab({
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    className={`w-full p-3 pr-10 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
+                    className={`w-full p-2.5 sm:p-3 pr-10 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
                       errors.password
                         ? "border-red-500"
                         : validations.password
@@ -477,7 +549,7 @@ export default function AdminCreationFormTab({
                   >
                     {showPassword ? (
                       <svg
-                        className="w-5 h-5 text-gray-500 hover:text-gray-700 transition-colors"
+                        className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 hover:text-gray-700 transition-colors"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -491,7 +563,7 @@ export default function AdminCreationFormTab({
                       </svg>
                     ) : (
                       <svg
-                        className="w-5 h-5 text-gray-500 hover:text-gray-700 transition-colors"
+                        className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 hover:text-gray-700 transition-colors"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -513,19 +585,19 @@ export default function AdminCreationFormTab({
                   </button>
                 </div>
                 {errors.password ? (
-                  <p className="text-red-600 text-sm mt-1">{errors.password}</p>
+                  <p className="text-red-600 text-xs sm:text-sm mt-1">{errors.password}</p>
                 ) : (
                   formData.password.length > 0 && (
                     <div className="mt-2 space-y-1">
                       <div className="flex items-center justify-between">
                         <span
-                          className={`text-sm ${getPasswordStrength(formData.password).color}`}
+                          className={`text-xs sm:text-sm ${getPasswordStrength(formData.password).color}`}
                         >
                           Seguridad:{" "}
                           {getPasswordStrength(formData.password).text}
                         </span>
                         <span
-                          className={`text-sm ${
+                          className={`text-xs sm:text-sm ${
                             formData.password.length < 8
                               ? "text-red-500"
                               : formData.password.length > 15
@@ -542,7 +614,7 @@ export default function AdminCreationFormTab({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   Confirmar contraseña *
                 </label>
                 <div className="relative">
@@ -551,7 +623,7 @@ export default function AdminCreationFormTab({
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    className={`w-full p-3 pr-10 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
+                    className={`w-full p-2.5 sm:p-3 pr-10 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
                       errors.confirmPassword
                         ? "border-red-500"
                         : validations.confirmPassword
@@ -569,7 +641,7 @@ export default function AdminCreationFormTab({
                   >
                     {showConfirmPassword ? (
                       <svg
-                        className="w-5 h-5 text-gray-500 hover:text-gray-700 transition-colors"
+                        className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 hover:text-gray-700 transition-colors"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -583,7 +655,7 @@ export default function AdminCreationFormTab({
                       </svg>
                     ) : (
                       <svg
-                        className="w-5 h-5 text-gray-500 hover:text-gray-700 transition-colors"
+                        className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 hover:text-gray-700 transition-colors"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -605,22 +677,23 @@ export default function AdminCreationFormTab({
                   </button>
                 </div>
                 {errors.confirmPassword ? (
-                  <p className="text-red-600 text-sm mt-1">
+                  <p className="text-red-600 text-xs sm:text-sm mt-1">
                     {errors.confirmPassword}
                   </p>
                 ) : (
                   formData.confirmPassword.length > 0 &&
                   !validations.confirmPassword && (
-                    <p className="text-yellow-600 text-sm mt-1">
+                    <p className="text-yellow-600 text-xs sm:text-sm mt-1">
                       Las contraseñas no coinciden
                     </p>
                   )
                 )}
               </div>
             </div>
+            
             {/* Fecha de nacimiento */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                 Fecha de nacimiento *
               </label>
               <input
@@ -630,7 +703,7 @@ export default function AdminCreationFormTab({
                 onChange={handleChange}
                 max={getMaxBirthdate()}
                 min={getMinBirthdate()}
-                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
+                className={`w-full p-2.5 sm:p-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
                   errors.birthdate
                     ? "border-red-500"
                     : validations.birthdate
@@ -640,23 +713,24 @@ export default function AdminCreationFormTab({
                 disabled={loading}
               />
               {errors.birthdate ? (
-                <p className="text-red-600 text-sm mt-1">{errors.birthdate}</p>
+                <p className="text-red-600 text-xs sm:text-sm mt-1">{errors.birthdate}</p>
               ) : (
                 formData.birthdate &&
                 !validations.birthdate && (
-                  <p className="text-yellow-600 text-sm mt-1">
+                  <p className="text-yellow-600 text-xs sm:text-sm mt-1">
                     Debe ser mayor de 18 años
                   </p>
                 )
               )}
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">
                 Debe ser mayor de 18 años
               </p>
             </div>
+            
             {/* Teléfono y DNI */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   Teléfono *
                 </label>
                 <input
@@ -664,10 +738,11 @@ export default function AdminCreationFormTab({
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
-                    errors.phone
+                  onBlur={handlePhoneBlur}
+                  className={`w-full p-2.5 sm:p-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
+                    errors.phone || phoneExists
                       ? "border-red-500"
-                      : validations.phone
+                      : validations.phone && !phoneExists
                         ? "border-green-500"
                         : "border-gray-300"
                   }`}
@@ -675,18 +750,24 @@ export default function AdminCreationFormTab({
                   disabled={loading}
                 />
                 {errors.phone ? (
-                  <p className="text-red-600 text-sm mt-1">{errors.phone}</p>
+                  <p className="text-red-600 text-xs sm:text-sm mt-1">{errors.phone}</p>
+                ) : phoneExists ? (
+                  <p className="text-red-600 text-xs sm:text-sm mt-1">
+                    Este teléfono ya está registrado
+                  </p>
+                ) : checkingAvailability && formData.phone.length >= 10 ? (
+                  <p className="text-gray-500 text-xs sm:text-sm mt-1">Comprobando...</p>
                 ) : (
                   formData.phone.length > 0 &&
                   !validations.phone && (
-                    <p className="text-yellow-600 text-sm mt-1">
+                    <p className="text-yellow-600 text-xs sm:text-sm mt-1">
                       Debe tener entre 10 y 15 dígitos
                     </p>
                   )
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   DNI *
                 </label>
                 <input
@@ -694,10 +775,11 @@ export default function AdminCreationFormTab({
                   name="dni"
                   value={formData.dni}
                   onChange={handleChange}
-                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
-                    errors.dni
+                  onBlur={handleDniBlur}
+                  className={`w-full p-2.5 sm:p-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors ${
+                    errors.dni || dniExists
                       ? "border-red-500"
-                      : validations.dni
+                      : validations.dni && !dniExists
                         ? "border-green-500"
                         : "border-gray-300"
                   }`}
@@ -705,59 +787,68 @@ export default function AdminCreationFormTab({
                   disabled={loading}
                 />
                 {errors.dni ? (
-                  <p className="text-red-600 text-sm mt-1">{errors.dni}</p>
+                  <p className="text-red-600 text-xs sm:text-sm mt-1">{errors.dni}</p>
+                ) : dniExists ? (
+                  <p className="text-red-600 text-xs sm:text-sm mt-1">
+                    Este DNI ya está registrado
+                  </p>
+                ) : checkingAvailability &&
+                  formData.dni.length >= 7 &&
+                  formData.dni.length <= 10 ? (
+                  <p className="text-gray-500 text-xs sm:text-sm mt-1">Comprobando...</p>
                 ) : (
                   formData.dni.length > 0 &&
                   !validations.dni && (
-                    <p className="text-yellow-600 text-sm mt-1">
+                    <p className="text-yellow-600 text-xs sm:text-sm mt-1">
                       Debe tener entre 7 y 10 dígitos
                     </p>
                   )
                 )}
               </div>
             </div>
+            
             {/* Género */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Género *
-                </label>
-                <select
-                  name="genre"
-                  value={formData.genre}
-                  onChange={handleChange}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
-                  disabled={loading}
-                >
-                  <option value="Female">Femenino</option>
-                  <option value="Male">Masculino</option>
-                  <option value="Nonbinary">No binario</option>
-                  <option value="Other">Otro</option>
-                </select>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                Género *
+              </label>
+              <select
+                name="genre"
+                value={formData.genre}
+                onChange={handleChange}
+                className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
+                disabled={loading}
+              >
+                <option value="Female">Femenino</option>
+                <option value="Male">Masculino</option>
+                <option value="Nonbinary">No binario</option>
+                <option value="Other">Otro</option>
+              </select>
             </div>
+            
             {/* Info de privacidad */}
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <h4 className="font-bold text-blue-800 mb-2">
+            <div className="p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <h4 className="font-bold text-blue-800 mb-2 text-sm sm:text-base">
                 🔒 Proceso de creación
               </h4>
-              <ol className="text-sm text-blue-700 space-y-1 list-decimal pl-5">
+              <ol className="text-xs sm:text-sm text-blue-700 space-y-1 list-decimal pl-4 sm:pl-5">
                 <li>Se crea un usuario normal en el sistema</li>
-                <li>El nuevo Usuario puede iniciar sesión inmediatamente</li>
+                <li>El nuevo usuario puede iniciar sesión inmediatamente</li>
                 <li>Se recomienda cambiar la contraseña en el primer login</li>
               </ol>
             </div>
+            
             {/* Botones */}
-            <div className="pt-6 flex flex-col gap-4">
+            <div className="pt-4 sm:pt-6 flex flex-col gap-3 sm:gap-4">
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full py-3 sm:py-3.5 text-sm sm:text-base bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    Creando Usuario...
+                    <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white"></div>
+                    <span className="text-sm sm:text-base">Creando Usuario...</span>
                   </>
                 ) : (
                   "Crear Usuario"
@@ -766,7 +857,7 @@ export default function AdminCreationFormTab({
               <button
                 type="button"
                 onClick={onBackToOverview || (() => window.history.back())}
-                className="w-full py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                className="w-full py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base"
                 disabled={loading}
               >
                 ← Volver al Panel de Resumen

@@ -11,6 +11,7 @@ import ReservationsTab from "./ReservationsTab";
 import { apiClient } from "src/app/lib";
 import Swal from "sweetalert2";
 
+
 export default function NavigationTab() {
   const { user, isAuthenticated, isAdmin, isSuperAdmin, loading, logout } =
     useAppContext();
@@ -42,6 +43,10 @@ export default function NavigationTab() {
   useEffect(() => {
     const fetchDashboardStats = async () => {
       if (activeTab !== "overview") return;
+      if (user?.rol !== "admin" && user?.rol !== "superAdmin") {
+        return;
+      }
+
       try {
         const [
           userStatsRes,
@@ -73,7 +78,7 @@ export default function NavigationTab() {
       }
     };
     fetchDashboardStats();
-  }, [activeTab]);
+  }, [activeTab, user?.rol]);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -444,8 +449,12 @@ export default function NavigationTab() {
         {activeTab === "activities" && <ActivityTab />}
         {activeTab === "users" && <UsersTab />}
         {activeTab === "reservations" && <ReservationsTab />}
+
+
         {activeTab === "AdminCreationForm" && (
-          <AdminCreationFormTab onBackToOverview={() => setActiveTab("overview")} />
+          <AdminCreationFormTab
+            onBackToOverview={() => setActiveTab("overview")}
+          />
         )}
       </main>
       {/* MODAL DE REPORTES */}

@@ -15,71 +15,80 @@ export const Footer: React.FC = () => {
 
   return (
     <footer className="bg-black text-white">
-      {/* Línea roja decorativa */}
+      {/* LÍNEA ROJA DECORATIVA */}
       <div className="h-1 bg-gradient-to-r from-red-600 via-red-500 to-red-600"></div>
-      <div className="max-w-7xl mx-auto px-6 py-12 md:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 lg:gap-16">
-          {/* Columna 1: Logo y Redes */}
-          <div className="space-y-6">
+
+      {/* CONTENIDO */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
+        {/* GRID 3 COLUMNAS RESPONSIVE */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10 lg:gap-16 mb-8 sm:mb-12">
+          {/* COLUMNA 1: LOGO Y REDES */}
+          <div className="space-y-4 sm:space-y-6">
+            {/* LOGO */}
             <div className="mb-2">
               <Image
                 src="/logo.png"
                 alt="Providence Fitness Logo"
                 width={180}
                 height={54}
-                className="h-14 w-auto"
+                className="h-10 sm:h-14 w-auto"
                 priority
               />
             </div>
-            <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
+
+            {/* DESCRIPCIÓN */}
+            <p className="text-gray-400 text-xs sm:text-sm leading-relaxed max-w-xs">
               Transformá tu cuerpo, elevá tu vida.
               <span className="block mt-1">
                 Unite a la revolución Providence hoy mismo.
               </span>
             </p>
-            {/* Redes Sociales */}
-            <div className="space-y-4">
-              <h4 className="text-white font-semibold text-sm uppercase tracking-wider">
+
+            {/* REDES SOCIALES */}
+            <div className="space-y-3 sm:space-y-4">
+              <h4 className="text-white font-semibold text-xs sm:text-sm uppercase tracking-wider">
                 Seguinos
               </h4>
-              <div className="flex gap-4">
+              <div className="flex gap-3 sm:gap-4">
                 <a
                   href="https://facebook.com/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-gray-400 hover:text-red-500 transition-colors duration-300 hover:scale-110"
-                  aria-label="Facebook (se abre en nueva pestaña)"
+                  aria-label="Facebook"
                 >
-                  <FacebookIcon className="w-6 h-6" />
+                  <FacebookIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                 </a>
                 <a
                   href="https://www.instagram.com/provi.dencefitness?igsh=ZmVoeXRqMzR4bXM1"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-gray-400 hover:text-red-500 transition-colors duration-300 hover:scale-110"
-                  aria-label="Instagram (se abre en nueva pestaña)"
+                  aria-label="Instagram"
                 >
-                  <InstagramIcon className="w-6 h-6" />
+                  <InstagramIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                 </a>
                 <a
                   href="https://twitter.com"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-gray-400 hover:text-red-500 transition-colors duration-300 hover:scale-110"
-                  aria-label="Twitter (se abre en nueva pestaña)"
+                  aria-label="Twitter"
                 >
-                  <TwitterIcon className="w-6 h-6" />
+                  <TwitterIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                 </a>
               </div>
             </div>
           </div>
+
+          {/* COLUMNA 2: NAVEGACIÓN */}
           <div>
-            <div className="mb-6 pb-2 border-b border-gray-800">
-              <h3 className="text-white font-bold text-lg tracking-tight">
+            <div className="mb-4 sm:mb-6 pb-2 border-b border-gray-800">
+              <h3 className="text-white font-bold text-base sm:text-lg tracking-tight">
                 Navegación
               </h3>
             </div>
-            <ul className="space-y-3">
+            <ul className="space-y-2 sm:space-y-3">
               {[
                 { name: "Inicio", href: "/" },
                 { name: "Sobre Nosotros", href: "/nosotros" },
@@ -90,9 +99,9 @@ export const Footer: React.FC = () => {
                 <li key={item.name}>
                   <Link
                     href={item.href}
-                    className="group flex items-center text-gray-300 hover:text-white transition-colors duration-200 text-sm py-1.5"
+                    className="group flex items-center text-gray-300 hover:text-white transition-colors duration-200 text-xs sm:text-sm py-1.5"
                   >
-                    <span className="w-1.5 h-1.5 bg-red-600 rounded-full opacity-0 group-hover:opacity-100 mr-3 transition-opacity duration-200"></span>
+                    <span className="w-1.5 h-1.5 bg-red-600 rounded-full opacity-0 group-hover:opacity-100 mr-2 sm:mr-3 transition-opacity duration-200"></span>
                     {item.name}
                     <span className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                       →
@@ -102,25 +111,32 @@ export const Footer: React.FC = () => {
               ))}
             </ul>
           </div>
+
+          {/* COLUMNA 3: CONTACTO Y CTA */}
           <div>
-            <ul className="space-y-4 text-gray-300">
-              <li className="group flex items-start gap-3 hover:text-white transition-colors duration-200">
-                <div className="mt-0.5">
-                  <PhoneIcon className="w-4 h-4 text-red-500 group-hover:scale-110 transition-transform duration-200" />
+            <ul className="space-y-3 sm:space-y-4 text-gray-300 mb-6 sm:mb-8">
+              {/* TELÉFONO */}
+              <li className="group flex items-start gap-2 sm:gap-3 hover:text-white transition-colors duration-200">
+                <div className="mt-0.5 flex-shrink-0">
+                  <PhoneIcon className="w-4 h-4 sm:w-5 sm:h-5 text-red-500 group-hover:scale-110 transition-transform duration-200" />
                 </div>
-                <div>
-                  <p className="text-sm font-medium">(555) 123-4567</p>
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm font-medium break-words">
+                    (555) 123-4567
+                  </p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     Lunes a Sábado 7:00-22:00
                   </p>
                 </div>
               </li>
-              <li className="group flex items-start gap-3 hover:text-white transition-colors duration-200">
-                <div className="mt-0.5">
-                  <MailIcon className="w-4 h-4 text-red-500 group-hover:scale-110 transition-transform duration-200" />
+
+              {/* EMAIL */}
+              <li className="group flex items-start gap-2 sm:gap-3 hover:text-white transition-colors duration-200">
+                <div className="mt-0.5 flex-shrink-0">
+                  <MailIcon className="w-4 h-4 sm:w-5 sm:h-5 text-red-500 group-hover:scale-110 transition-transform duration-200" />
                 </div>
-                <div>
-                  <p className="text-sm font-medium">
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm font-medium break-all">
                     providenceapi@gmail.com
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5">
@@ -128,13 +144,15 @@ export const Footer: React.FC = () => {
                   </p>
                 </div>
               </li>
-              <li className="group flex items-start gap-3 hover:text-white transition-colors duration-200">
-                <div className="mt-0.5">
-                  <LocationIcon className="w-4 h-4 text-red-500 group-hover:scale-110 transition-transform duration-200" />
+
+              {/* UBICACIÓN */}
+              <li className="group flex items-start gap-2 sm:gap-3 hover:text-white transition-colors duration-200">
+                <div className="mt-0.5 flex-shrink-0">
+                  <LocationIcon className="w-4 h-4 sm:w-5 sm:h-5 text-red-500 group-hover:scale-110 transition-transform duration-200" />
                 </div>
-                <div>
-                  <p className="text-sm font-medium">
-                    Paraná 3745, Provincia de Buenos Aires 
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm font-medium">
+                    Paraná 3745, Provincia de Buenos Aires
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     Martinez, Argentina
@@ -142,28 +160,27 @@ export const Footer: React.FC = () => {
                 </div>
               </li>
             </ul>
-            {/* Botón de acción */}
-            <div className="mt-8">
-              <Link
-                href="/login"
-                className="inline-flex items-center justify-center w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 hover:scale-105 text-sm"
-              >
-                <span>Unite Ahora</span>
-                <span className="ml-2">→</span>
-              </Link>
-              <p className="text-gray-500 text-xs text-center mt-2">
-                ¡Tu primera clase es gratuita!
-              </p>
-            </div>
+
+            {/* BOTÓN DE ACCIÓN */}
+            <Link
+              href="/login"
+              className="inline-flex items-center justify-center w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 sm:py-3 px-4 rounded-lg transition-all duration-300 hover:scale-105 text-xs sm:text-sm"
+            >
+              <span>Unite Ahora</span>
+              <span className="ml-2">→</span>
+            </Link>
+            <p className="text-gray-500 text-xs text-center mt-2">
+              ¡Tu primera clase es gratuita!
+            </p>
           </div>
         </div>
 
-        {/* División y copyright */}
-        <div className="mt-12 pt-6 border-t border-gray-800 text-center">
-          <p className="text-gray-500 text-sm">
-            © {new Date().getFullYear()} Providence Fitness. Todos los derechos reservados.
+        {/* DIVISIÓN Y COPYRIGHT */}
+        <div className="mt-8 sm:mt-12 pt-4 sm:pt-6 border-t border-gray-800 text-center space-y-2">
+          <p className="text-gray-500 text-xs sm:text-sm">
+            © {currentYear} Providence Fitness. Todos los derechos reservados.
           </p>
-          <p className="text-gray-600 text-xs mt-2">
+          <p className="text-gray-600 text-xs">
             Diseñado y desarrollado con ❤️ por nuestro equipo
           </p>
         </div>
