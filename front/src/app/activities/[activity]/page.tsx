@@ -159,22 +159,26 @@ export default function ActivityPage() {
     await checkUserFreeReservation();
     await checkActiveSubscription();
   };
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-center px-4">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mb-4"></div>
-          <div className="text-lg text-gray-700">Cargando actividad...</div>
+          <div className="text-base sm:text-lg text-gray-700">Cargando actividad...</div>
         </div>
       </div>
     );
   }
+
   if (!activity) {
     return null;
   }
+
   return (
     <main className="min-h-screen bg-white">
-      <div className="relative h-64 md:h-80 bg-gray-900">
+      {/* HERO BANNER */}
+      <div className="relative h-48 sm:h-64 md:h-80 bg-gray-900">
         {(activity.image || activity.imageUrl) &&
         !(activity.image || activity.imageUrl).includes("ejemplo") ? (
           <Image
@@ -194,27 +198,29 @@ export default function ActivityPage() {
         )}
 
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center text-white">
-            <h1 className="text-4xl md:text-5xl font-bold uppercase mb-2">
+          <div className="text-center text-white px-4">
+            <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold uppercase mb-1 sm:mb-2">
               {activity.name}
             </h1>
-            <p className="text-xl">PROVIDENCE FITNESS</p>
+            <p className="text-sm sm:text-base md:text-xl">PROVIDENCE FITNESS</p>
           </div>
         </div>
       </div>
 
-      <section className="py-12">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Información de la actividad */}
+      {/* CONTENIDO PRINCIPAL */}
+      <section className="py-8 sm:py-12 md:py-16">
+        <div className="container mx-auto px-4 sm:px-6 max-w-6xl">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+            {/* COLUMNA IZQUIERDA - INFORMACIÓN */}
             <div className="lg:col-span-2">
+              {/* BOTÓN VOLVER */}
               <div className="mb-6">
                 <Link
                   href="/home"
-                  className="inline-flex items-center text-gray-700 hover:text-[#DC2626] transition-colors font-semibold text-base"
+                  className="inline-flex items-center text-gray-700 hover:text-[#DC2626] transition-colors font-semibold text-sm md:text-base"
                 >
                   <svg
-                    className="w-5 h-5 mr-2"
+                    className="w-4 h-4 md:w-5 md:h-5 mr-2"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -229,18 +235,21 @@ export default function ActivityPage() {
                   Volver a actividades
                 </Link>
               </div>
+
+              {/* DESCRIPCIÓN */}
               <div className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">Descripción</h2>
-                <p className="text-gray-700 leading-relaxed">
+                <h2 className="text-xl sm:text-2xl font-bold mb-4">Descripción</h2>
+                <p className="text-gray-700 leading-relaxed text-sm sm:text-base">
                   {activity.description}
                 </p>
               </div>
 
+              {/* INFORMACIÓN DE LA CLASE */}
               <div className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">
+                <h2 className="text-xl sm:text-2xl font-bold mb-4">
                   Información de la Clase
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="flex items-start">
                     <svg
                       className="w-5 h-5 text-[#DC2626] mt-0.5 mr-2 flex-shrink-0"
@@ -253,7 +262,7 @@ export default function ActivityPage() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    <span className="text-gray-700">
+                    <span className="text-gray-700 text-sm sm:text-base">
                       Duración: {activity.duration} minutos
                     </span>
                   </div>
@@ -269,7 +278,7 @@ export default function ActivityPage() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    <span className="text-gray-700">
+                    <span className="text-gray-700 text-sm sm:text-base">
                       Capacidad: {activity.capacity} personas
                     </span>
                   </div>
@@ -285,7 +294,7 @@ export default function ActivityPage() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    <span className="text-gray-700">
+                    <span className="text-gray-700 text-sm sm:text-base">
                       Cancelación: {activity.cancellationTime || 24}h antes
                     </span>
                   </div>
@@ -302,33 +311,34 @@ export default function ActivityPage() {
                           clipRule="evenodd"
                         />
                       </svg>
-                      <span className="text-gray-700 font-semibold">
+                      <span className="text-gray-700 font-semibold text-sm sm:text-base">
                         ¡Primera clase gratuita!
                       </span>
                     </div>
                   )}
                 </div>
               </div>
-              {!isAuthenticated && (
+
+              {/* AUTENTICACIÓN O SCHEDULE */}
+              {!isAuthenticated ? (
                 <div className="mt-8">
-                  <div className="bg-[#FEFCE8] border-l-4 border-yellow-400 p-6 rounded-md">
-                    <h3 className="text-base font-bold text-gray-900 mb-2">
+                  <div className="bg-[#FEFCE8] border-l-4 border-yellow-400 p-4 sm:p-6 rounded-md">
+                    <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-2">
                       Inicia sesión para reservar
                     </h3>
-                    <p className="text-sm text-gray-700 mb-4">
+                    <p className="text-xs sm:text-sm text-gray-700 mb-4">
                       Debes iniciar sesión para ver y reservar horarios
                       disponibles.
                     </p>
                     <Link
                       href="/login"
-                      className="inline-flex items-center justify-center w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2.5 px-4 rounded-md transition-colors duration-200"
+                      className="inline-flex items-center justify-center w-full sm:w-auto bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2.5 px-4 rounded-md transition-colors duration-200 text-sm"
                     >
                       Iniciar Sesión
                     </Link>
                   </div>
                 </div>
-              )}
-              {isAuthenticated && (
+              ) : (
                 <div className="mt-8">
                   <ScheduleList
                     activity={activity}
@@ -342,14 +352,17 @@ export default function ActivityPage() {
                 </div>
               )}
             </div>
-            <div className="lg:col-span-1">
-              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-6">
-                <h3 className="text-xl font-bold mb-4">Precios</h3>
+
+            {/* COLUMNA DERECHA - SIDEBAR */}
+            <div className="lg:col-span-1 space-y-6">
+              {/* CARD DE PRECIOS */}
+              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 sm:p-6">
+                <h3 className="text-lg sm:text-xl font-bold mb-4">Precios</h3>
                 {activity.hasFreeTrial ? (
                   <div className="text-center">
                     {activity.price && (
                       <div className="mt-4">
-                        <div className="text-2xl font-bold text-gray-900">
+                        <div className="text-xl sm:text-2xl font-bold text-gray-900">
                           $
                           {typeof activity.price === "number"
                             ? activity.price.toLocaleString("es-AR")
@@ -357,19 +370,19 @@ export default function ActivityPage() {
                                 "es-AR",
                               )}
                         </div>
-                        <div className="text-sm text-gray-600">mensual</div>
+                        <div className="text-xs sm:text-sm text-gray-600">mensual</div>
                       </div>
                     )}
                   </div>
                 ) : (
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-gray-900">
+                    <div className="text-2xl sm:text-3xl font-bold text-gray-900">
                       $
                       {typeof activity.price === "number"
                         ? activity.price.toLocaleString("es-AR")
                         : Number(activity.price || 0).toLocaleString("es-AR")}
                     </div>
-                    <div className="text-sm text-gray-600">mensual</div>
+                    <div className="text-xs sm:text-sm text-gray-600">mensual</div>
                   </div>
                 )}
                 <button
@@ -380,14 +393,16 @@ export default function ActivityPage() {
                       router.push("/register");
                     }
                   }}
-                  className="w-full bg-[#DC2626] hover:bg-[#B01C1C] text-white py-3 rounded-md font-bold uppercase tracking-wider transition-colors duration-200 mt-6"
+                  className="w-full bg-[#DC2626] hover:bg-[#B01C1C] text-white py-2.5 sm:py-3 rounded-md font-bold uppercase tracking-wider transition-colors duration-200 mt-6 text-sm sm:text-base"
                 >
                   Inscribirse Ahora
                 </button>
               </div>
-              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-6">
+
+              {/* CARD DE HORARIOS */}
+              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 sm:p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-xl font-bold text-gray-900">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900">
                     📅 Horarios
                   </h3>
                 </div>
@@ -431,14 +446,14 @@ export default function ActivityPage() {
                           key={day}
                           className="border-b border-gray-100 pb-3 last:border-0"
                         >
-                          <div className="font-medium text-gray-900 mb-2">
+                          <div className="font-medium text-gray-900 mb-2 text-sm">
                             {day}
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {times.sort().map((time, idx) => (
                               <span
                                 key={idx}
-                                className="px-3 py-1 bg-gray-100 text-gray-700 rounded-md text-sm"
+                                className="px-2 sm:px-3 py-1 bg-gray-100 text-gray-700 rounded-md text-xs sm:text-sm"
                               >
                                 {time}
                               </span>
@@ -449,7 +464,7 @@ export default function ActivityPage() {
                     })()}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500">
+                  <p className="text-xs sm:text-sm text-gray-500">
                     No hay horarios configurados
                   </p>
                 )}
