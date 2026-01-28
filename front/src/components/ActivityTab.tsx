@@ -116,8 +116,8 @@ export default function ActivityTab() {
         break;
 
       case "price":
-        if (value < 3000) {
-          error = "El precio no puede ser menor a $3000";
+        if (value < 1) {
+          error = "El precio no puede ser menor a $1";
         } else if (value > 99999) {
           error = "El precio es demasiado alto";
         }
