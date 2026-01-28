@@ -1,15 +1,7 @@
-"use client";
+import React from "react";
+import Link from "next/link";
 
-import React, { useState, useEffect } from "react";
-import { useAppContext } from "src/contexts/AppContext";
-import { testimonialService } from "src/app/lib";
-import Swal from "sweetalert2";
-import type {
-  Testimonial,
-  EligibilityResponse,
-} from "src/interfaces/Testimonial";
-
-interface MockTestimonial {
+interface Testimonial {
   id: number;
   quote: string;
   author: string;
@@ -18,16 +10,7 @@ interface MockTestimonial {
   highlighted?: boolean;
 }
 
-interface UnifiedTestimonial {
-  id: string | number;
-  quote: string;
-  author: string;
-  rol: string;
-  rating: number;
-  highlighted?: boolean;
-}
-
-const mockTestimonials: MockTestimonial[] = [
+const testimonials: Testimonial[] = [
   {
     id: 1,
     quote:
@@ -80,188 +63,27 @@ const mockTestimonials: MockTestimonial[] = [
 ];
 
 export default function TestimoniosPage() {
-  const { isAuthenticated } = useAppContext();
-  const [showForm, setShowForm] = useState(false);
-  const [eligibility, setEligibility] = useState<EligibilityResponse | null>(
-    null,
-  );
-  const [realTestimonials, setRealTestimonials] = useState<Testimonial[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    comment: "",
-    rating: 5,
-  });
-  const [formErrors, setFormErrors] = useState({
-    comment: "",
-    rating: "",
-  });
-
-  useEffect(() => {
-    loadTestimonials();
-  }, [currentPage]);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      checkEligibility();
-    }
-  }, [isAuthenticated]);
-
-  const loadTestimonials = async () => {
-    try {
-      setLoading(true);
-      const data = await testimonialService.getApprovedTestimonials(
-        currentPage,
-        6,
-      );
-      setRealTestimonials(data.testimonials);
-      setTotalPages(data.totalPages);
-    } catch (error) {
-      console.error("Error loading testimonials:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const checkEligibility = async () => {
-    try {
-      const data = await testimonialService.checkEligibility();
-      setEligibility(data);
-    } catch (error) {
-      console.error("Error checking eligibility:", error);
-    }
-  };
-
-  const validateForm = (): boolean => {
-    const errors = { comment: "", rating: "" };
-    let isValid = true;
-
-    if (formData.comment.trim().length < 10) {
-      errors.comment = "El comentario debe tener al menos 10 caracteres";
-      isValid = false;
-    }
-
-    if (formData.comment.trim().length > 500) {
-      errors.comment = "El comentario no puede exceder 500 caracteres";
-      isValid = false;
-    }
-
-    if (formData.rating < 1 || formData.rating > 5) {
-      errors.rating = "La calificación debe estar entre 1 y 5 estrellas";
-      isValid = false;
-    }
-
-    setFormErrors(errors);
-    return isValid;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-    try {
-      setLoading(true);
-      await testimonialService.createTestimonial(formData);
-
-      await Swal.fire({
-        icon: "success",
-        title: "¡Testimonio enviado!",
-        text: "Tu testimonio está pendiente de aprobación. ¡Gracias por compartir tu experiencia!",
-        confirmButtonColor: "#dc2626",
-      });
-
-      setShowForm(false);
-      setFormData({ comment: "", rating: 5 });
-      await checkEligibility();
-      await loadTestimonials();
-    } catch (error: any) {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text:
-          error.response?.data?.message ||
-          "No se pudo enviar el testimonio. Intenta nuevamente.",
-        confirmButtonColor: "#dc2626",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleOpenForm = () => {
-    if (!isAuthenticated) {
-      Swal.fire({
-        icon: "info",
-        title: "Inicia sesión",
-        text: "Debes iniciar sesión para dejar un testimonio",
-        confirmButtonColor: "#dc2626",
-        confirmButtonText: "Ir a Login",
-      }).then((result) => {
-        if (result.isConfirmed) {
-          window.location.href = "/login";
-        }
-      });
-      return;
-    }
-
-    if (!eligibility?.canCreateTestimonial) {
-      if (eligibility?.hasExistingTestimonial) {
-        Swal.fire({
-          icon: "info",
-          title: "Ya tienes un testimonio",
-          text: "Ya has dejado un testimonio anteriormente",
-          confirmButtonColor: "#dc2626",
-        });
-      } else if (eligibility?.completedActivities === 0) {
-        Swal.fire({
-          icon: "warning",
-          title: "Actividad requerida",
-          text: "Debes completar al menos una actividad para dejar un testimonio",
-          confirmButtonColor: "#dc2626",
-        });
-      }
-      return;
-    }
-
-    setShowForm(true);
-  };
-
-  const allTestimonials: UnifiedTestimonial[] = [
-    ...mockTestimonials,
-    ...realTestimonials.map((t) => ({
-      id: t.id,
-      quote: t.comment,
-      profession: t.profession || "",
-      author: `${t.user.name} ${t.user.lastname || ""}`.trim(),
-      rol: "Miembro verificado",
-      rating: t.rating,
-    })),
-  ];
-
   return (
     <main className="min-h-screen bg-white">
-      {/* Sección Hero */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 text-center">
+      {/* SECCIÓN HERO */}
+      <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 text-center">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-bold text-black mb-6">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-black mb-4 sm:mb-6">
             HISTORIAS DE <span className="text-red-600">ÉXITO</span>
           </h1>
-          <div className="w-20 h-1 bg-red-600 mx-auto mb-6"></div>
-          <p className="text-gray-700 text-lg max-w-3xl mx-auto">
+          <div className="w-16 sm:w-20 h-1 bg-red-600 mx-auto mb-4 sm:mb-6"></div>
+          <p className="text-gray-700 text-base sm:text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
             Transformaciones reales de personas de nuestra comunidad. Mirá lo
             que es posible cuando te comprometés con vos mismo.
           </p>
-          <p className="text-gray-500 mt-6 text-sm">
+          <p className="text-gray-500 mt-4 sm:mt-6 text-xs sm:text-sm">
             ¿Querés ser parte?{" "}
-            <a
+            <Link
               href="/login"
               className="text-red-600 hover:text-red-700 font-medium"
             >
               Registrate ahora
-            </a>
+            </Link>
           </p>
           {/* Botón para dejar testimonio */}
           <button
@@ -367,7 +189,7 @@ export default function TestimoniosPage() {
                 </div>
               </form>
             </div>
-          </div>
+          ))}
         </div>
       )}
       {/* Sección de Testimonios */}
