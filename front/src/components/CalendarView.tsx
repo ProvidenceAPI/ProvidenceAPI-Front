@@ -38,7 +38,8 @@ export default function CalendarView({
   reservations,
   onDayClick,
 }: CalendarViewProps) {
-  const { selectedDate, setSelectedDate } = useCalendar();
+  const { selectedDate, setSelectedDate, fetchTurns, refetchAll } =
+    useCalendar();
   const currentMonth = selectedDate;
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -67,12 +68,12 @@ export default function CalendarView({
     return filtered;
   };
 
-  const goToPreviousMonth = () => {
+  const goToPreviousMonth = async () => {
     const newMonth = subMonths(currentMonth, 1);
     setSelectedDate(newMonth);
   };
 
-  const goToNextMonth = () => {
+  const goToNextMonth = async () => {
     const newMonth = addMonths(currentMonth, 1);
     setSelectedDate(newMonth);
   };
@@ -147,19 +148,16 @@ export default function CalendarView({
 
       {/* Días de la semana */}
       <div className="grid grid-cols-7 bg-gray-50 border-b">
-        {["L", "M", "X", "J", "V", "S", "D"].map((day, index) => (
+        {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((day) => (
           <div
             key={day}
-            className="p-2 sm:p-3 text-center text-xs sm:text-sm font-semibold text-gray-700"
-            title={["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"][index]}
+             className="p-3 text-center text-sm font-semibold text-gray-700"
           >
-            <span className="hidden sm:inline">
-              {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"][index]}
-            </span>
-            <span className="sm:hidden">{day}</span>
-          </div>
+            {day}
+             </div>
         ))}
       </div>
+            
 
       {/* Grid del calendario */}
       <div className="grid grid-cols-7">
@@ -177,9 +175,8 @@ export default function CalendarView({
           const isCurrentMonth = isSameMonth(day, currentMonth);
           const isCurrentDay = isToday(day);
           const hasReservations = dayReservations.length > 0;
-          const visibleReservations = dayReservations.slice(0, 2); // Menos items en móvil
-          const remainingCount = dayReservations.length - 2;
-
+          const visibleReservations = dayReservations.slice(0, 5);
+          const remainingCount = dayReservations.length - 5;
           return (
             <button
               key={day.toISOString()}

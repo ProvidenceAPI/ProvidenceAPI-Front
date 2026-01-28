@@ -4,24 +4,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useAppContext } from "src/contexts/AppContext";
 import { userService } from "src/app/lib";
 import Swal from "sweetalert2";
-import { 
-  Search, 
-  X, 
-  RefreshCw, 
-  Edit2, 
-  Trash2, 
-  User, 
-  Shield, 
-  ShieldOff, 
-  UserCheck, 
-  UserX, 
-  Loader2,
-  ChevronLeft,
-  ChevronRight,
-  Phone,
-  Mail,
-  Calendar
-} from "lucide-react";
 
 interface UserData {
   id: string;
@@ -149,11 +131,101 @@ export default function UsersTab() {
     [allUsers, statusFilter],
   );
 
+  const fetchUsers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data: ApiResponse = await userService.getUsers(
+        currentPage,
+        10,
+        searchTerm,
+      );
+      let fetchedUsers: UserData[] = [];
+      if (data?.users && Array.isArray(data.users)) {
+        fetchedUsers = data.users;
+        setTotalPages(data.pages || 1);
+        setTotalUsers(data.total || data.users.length);
+      } else if (data?.data && Array.isArray(data.data)) {
+        fetchedUsers = data.data;
+        setTotalPages(data.pages || 1);
+        setTotalUsers(data.total || data.data.length);
+      } else if (Array.isArray(data)) {
+        fetchedUsers = data;
+        setTotalPages(1);
+        setTotalUsers(data.length);
+      } else {
+        fetchedUsers = [];
+        setTotalPages(1);
+        setTotalUsers(0);
+      }
+
+      const safeUsers: UserData[] = fetchedUsers.map((user) => {
+        let normalizedRole: UserData["rol"] = "user";
+        if (user.rol) {
+          const roleStr = String(user.rol).toLowerCase();
+          if (roleStr === "superadmin" || roleStr === "super-admin") {
+            normalizedRole = "superadmin";
+          } else if (roleStr === "admin" || roleStr === "administrator") {
+            normalizedRole = "admin";
+          } else {
+            normalizedRole = "user";
+          }
+        }
+        let normalizedStatus: UserData["status"] = "active";
+        if (user.status) {
+          const statusStr = String(user.status).toLowerCase();
+          if (statusStr === "active" || statusStr === "activo") {
+            normalizedStatus = "active";
+          } else if (statusStr === "banned" || statusStr === "baneado") {
+            normalizedStatus = "banned";
+          } else if (statusStr === "cancelled" || statusStr === "cancelado") {
+            normalizedStatus = "cancelled";
+          }
+        }
+
+        return {
+          ...user,
+          name: user.name || "",
+          email: user.email || "",
+          phone: user.phone || "",
+          rol: normalizedRole,
+          status: normalizedStatus,
+        };
+      });
+
+      setUsers(safeUsers);
+    } catch (error: any) {
+      console.error("Error fetching users:", error);
+      setUsers([]);
+      setTotalPages(1);
+      setTotalUsers(0);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error.message || "Error al cargar usuarios",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, searchTerm]);
+
   useEffect(() => {
     if (!dataLoaded) {
       loadAllUsersOnce();
     }
   }, [dataLoaded, loadAllUsersOnce]);
+  /*if (searchTerm) {
+      performFrontendSearch(searchTerm);
+    } else {
+      fetchUsers();
+    }
+  }, [
+    dataLoaded,
+    currentPage,
+    searchTerm,
+    loadAllUsersOnce,
+    performFrontendSearch,
+    fetchUsers,
+  ]);*/
 
   useEffect(() => {
     if (dataLoaded) {
@@ -462,63 +534,72 @@ export default function UsersTab() {
   };
 
   const getRoleBadge = (rol: string) => {
+    const baseClasses = "px-2.5 py-1 rounded-full text-xs font-medium";
     const safeRole = (rol || "user").toLowerCase();
 
     if (safeRole === "superadmin") {
       return (
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 text-red-700 border border-red-200 text-xs font-medium">
-          <Shield className="w-3 h-3" />
-          <span>SuperAdmin</span>
-        </div>
+        <span
+          className={`${baseClasses} bg-red-50 text-red-700 border border-red-200`}
+        >
+          SuperAdmin
+        </span>
       );
     } else if (safeRole === "admin") {
       return (
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-medium">
-          <Shield className="w-3 h-3" />
-          <span>Admin</span>
-        </div>
+        <span
+          className={`${baseClasses} bg-blue-50 text-blue-700 border border-blue-200`}
+        >
+          Admin
+        </span>
       );
     } else {
       return (
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 border border-gray-300 text-xs font-medium">
-          <User className="w-3 h-3" />
-          <span>Usuario</span>
-        </div>
+        <span
+          className={`${baseClasses} bg-gray-100 text-gray-700 border border-gray-300`}
+        >
+          Usuario
+        </span>
       );
     }
   };
 
   const getStatusBadge = (status: string) => {
+    const baseClasses = "px-2.5 py-1 rounded-full text-xs font-medium";
     const statusLower = (status || "active").toLowerCase();
 
     if (statusLower === "active") {
       return (
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 text-green-700 border border-green-200 text-xs font-medium">
-          <UserCheck className="w-3 h-3" />
-          <span>Activo</span>
-        </div>
+        <span
+          className={`${baseClasses} bg-green-50 text-green-700 border border-green-200`}
+        >
+          Activo
+        </span>
       );
     } else if (statusLower === "banned") {
       return (
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 text-red-700 border border-red-200 text-xs font-medium">
-          <UserX className="w-3 h-3" />
-          <span>Baneado</span>
-        </div>
+        <span
+          className={`${baseClasses} bg-red-50 text-red-700 border border-red-200`}
+        >
+          Baneado
+        </span>
       );
     } else if (statusLower === "cancelled") {
       return (
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-50 text-gray-700 border border-gray-200 text-xs font-medium">
-          <UserX className="w-3 h-3" />
-          <span>Cancelado</span>
-        </div>
+        <span
+          className={`${baseClasses} bg-gray-50 text-gray-700 border border-gray-200`}
+        >
+          Cancelado
+        </span>
       );
     }
 
     return (
-      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 border border-gray-300 text-xs font-medium">
-        <User className="w-3 h-3" />
-        <span>{status}</span>
-      </div>
+      <span
+        className={`${baseClasses} bg-gray-100 text-gray-700 border border-gray-300`}
+      >
+        {status}
+      </span>
     );
   };
 
@@ -541,25 +622,23 @@ export default function UsersTab() {
   }
 
   const ActionButtons = ({ user }: ActionButtonsProps) => (
-    <div className="flex flex-wrap gap-1 sm:gap-2">
+    <div className="flex space-x-2">
       {(isSuperAdmin || isAdmin) && (
         <button
           onClick={() => setEditingUser(user)}
-          className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs sm:text-sm bg-blue-50 text-blue-700 hover:bg-blue-100 rounded border border-blue-200 transition-colors whitespace-nowrap"
+          className="px-3 py-1.5 text-sm bg-blue-50 text-blue-700 hover:bg-blue-100 rounded border border-blue-200 transition-colors"
           title="Editar usuario"
         >
-          <Edit2 className="w-3 h-3 sm:w-4 sm:h-4" />
-          <span className="hidden xs:inline">Editar</span>
+          Editar
         </button>
       )}
       {isSuperAdmin && user.rol !== "superadmin" && (
         <button
           onClick={() => handleDeleteUser(user.id)}
-          className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs sm:text-sm bg-red-50 text-red-700 hover:bg-red-100 rounded border border-red-200 transition-colors whitespace-nowrap"
+          className="px-3 py-1.5 text-sm bg-red-50 text-red-700 hover:bg-red-100 rounded border border-red-200 transition-colors"
           title="Cancelar cuenta"
         >
-          <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
-          <span className="hidden xs:inline">Cancelar</span>
+          Cancelar
         </button>
       )}
     </div>
@@ -575,25 +654,23 @@ export default function UsersTab() {
     const roleLower = currentRole.toLowerCase();
     if (roleLower === "superadmin") return null;
     return (
-      <div className="mt-2 flex flex-wrap gap-1">
+      <div className="mt-2 space-x-2">
         {roleLower === "admin" && (
           <button
             onClick={() => handleRoleChange(userId, "user")}
-            className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 text-gray-700 hover:bg-gray-200 rounded border border-gray-300 transition-colors whitespace-nowrap"
+            className="text-xs px-2 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded border border-gray-300 transition-colors"
             title="Cambiar a Usuario"
           >
-            <ShieldOff className="w-3 h-3" />
-            <span>Quitar Admin</span>
+            Quitar Admin
           </button>
         )}
         {roleLower === "user" && (
           <button
             onClick={() => handleRoleChange(userId, "admin")}
-            className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 rounded border border-blue-200 transition-colors whitespace-nowrap"
+            className="text-xs px-2 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded border border-blue-200 transition-colors"
             title="Cambiar a Admin"
           >
-            <Shield className="w-3 h-3" />
-            <span>Hacer Admin</span>
+            Hacer Admin
           </button>
         )}
       </div>
@@ -616,53 +693,42 @@ export default function UsersTab() {
   );
 
   return (
-    <div className="space-y-4 sm:space-y-6 px-3 sm:px-4 md:px-6">
-      {/* Header */}
-      <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+    <div className="space-y-6">
+      {/* Header  */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 truncate">
-              👥 Gestión de Usuarios
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">
+              Gestión de Usuarios
             </h1>
-            <div className="flex flex-col xs:flex-row xs:items-center gap-1 xs:gap-3 mt-1 sm:mt-2">
-              <p className="text-sm sm:text-base text-gray-600">
-                Total: <span className="font-semibold">{totalUsers}</span> usuarios
-              </p>
+            <p className="text-gray-600 mt-1">
+              Total: {totalUsers} usuarios
               {searchTerm && (
-                <span className="text-xs sm:text-sm text-gray-500 px-2 py-1 bg-gray-100 rounded-full">
-                  Filtrados: {users.length}
+                <span className="ml-2 text-sm text-gray-500">
+                  (Filtrados: {users.length})
                 </span>
               )}
-            </div>
+            </p>
           </div>
-          
-          <div className="flex flex-col xs:flex-row gap-3">
-            {/* Select de filtro por estado */}
-            <div className="relative flex-shrink-0">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as any)}
-                className="w-full xs:w-[140px] px-3 py-2.5 text-sm border border-gray-300 rounded-lg bg-white hover:bg-gray-50 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors cursor-pointer appearance-none pl-4 pr-10"
-              >
-                <option value="all">Todos los estados</option>
-                <option value="active">Activos</option>
-                <option value="banned">Baneados</option>
-                <option value="cancelled">Cancelados</option>
-              </select>
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-            
-            {/* Buscador */}
-            <div className="relative flex-1 xs:flex-none xs:w-48 sm:w-56 md:w-64">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <div className="flex items-center space-x-3">
+            {/* ✅ SELECT CON ANCHO FIJO */}
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              className="w-[140px] px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-50 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors cursor-pointer flex-shrink-0"
+            >
+              <option value="all">Todos</option>
+              <option value="active">Activos</option>
+              <option value="banned">Baneados</option>
+              <option value="cancelled">Cancelados</option>
+            </select>
+
+            {/* ✅ INPUT CON ANCHO FIJO - SIN DIV EXTRA */}
+            <div className="relative w-64 flex-shrink-0">
               <input
                 type="text"
                 placeholder="Buscar usuarios..."
-                className="w-full px-4 py-2.5 pl-10 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
+                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
                 value={searchTerm}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 onKeyDown={(e) => {
@@ -672,97 +738,142 @@ export default function UsersTab() {
                   }
                 }}
               />
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
               {searchTerm && (
                 <button
                   onClick={clearSearch}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   title="Limpiar búsqueda"
                 >
-                  <X className="w-4 h-4" />
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
                 </button>
               )}
             </div>
-            
-            {/* Botón de refrescar */}
+
+            {/* ✅ BOTÓN CON ANCHO FIJO */}
             <button
               onClick={() => {
                 setDataLoaded(false);
                 setCurrentPage(1);
                 setSearchTerm("");
               }}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg border border-gray-300 transition-colors whitespace-nowrap flex-shrink-0"
+              className="w-[130px] px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg border border-gray-300 transition-colors flex items-center justify-center space-x-2 flex-shrink-0"
               title="Refrescar"
             >
-              <RefreshCw className="w-4 h-4" />
-              <span className="hidden xs:inline">Refrescar</span>
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+              <span>Refrescar</span>
             </button>
           </div>
         </div>
       </div>
-
-      {/* Modal de edición */}
+      {/* MODAL  */}
       {editingUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-3 sm:p-4">
-          <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 w-full max-w-sm sm:max-w-md max-h-[90vh] overflow-y-auto shadow-xl mx-2 sm:mx-4">
-            <div className="flex justify-between items-center mb-4 sm:mb-6">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="flex justify-between items-center mb-6">
               <div>
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900">
-                  ✏️ Editar Usuario
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Editar Usuario
                 </h3>
-                <p className="text-sm text-gray-600 mt-1 truncate">
-                  {editingUser.name || "Sin nombre"} {editingUser.lastname || ""}
+                <p className="text-gray-600 mt-1">
+                  {editingUser.name || "Sin nombre"}
                 </p>
               </div>
               <button
                 onClick={() => setEditingUser(null)}
-                className="text-gray-500 hover:text-gray-700 p-1"
+                className="text-gray-500 hover:text-gray-700"
               >
-                <X className="w-5 h-5 sm:w-6 sm:h-6" />
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
               </button>
             </div>
-            
-            <div className="space-y-3 sm:space-y-4">
+            <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Email *
                 </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input
-                    type="email"
-                    className="w-full pl-10 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
-                    value={editingUser.email}
-                    onChange={(e) =>
-                      setEditingUser({ ...editingUser, email: e.target.value })
-                    }
-                    required
-                  />
-                </div>
+                <input
+                  type="email"
+                  className="w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                  value={editingUser.email}
+                  onChange={(e) =>
+                    setEditingUser({ ...editingUser, email: e.target.value })
+                  }
+                  required
+                />
               </div>
-              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Teléfono
                 </label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input
-                    type="tel"
-                    className="w-full pl-10 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
-                    value={editingUser.phone || ""}
-                    onChange={(e) =>
-                      setEditingUser({ ...editingUser, phone: e.target.value })
-                    }
-                  />
-                </div>
+                <input
+                  type="tel"
+                  className="w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                  value={editingUser.phone || ""}
+                  onChange={(e) =>
+                    setEditingUser({ ...editingUser, phone: e.target.value })
+                  }
+                />
               </div>
-              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Estado
                 </label>
                 <select
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                  className="w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                   value={editingUser.status}
                   onChange={(e) =>
                     setEditingUser({
@@ -779,13 +890,12 @@ export default function UsersTab() {
                   <option value="cancelled">Cancelado</option>
                 </select>
               </div>
-              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Rol
                 </label>
                 <select
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                  className="w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                   value={editingUser.rol}
                   onChange={(e) =>
                     setEditingUser({
@@ -802,17 +912,16 @@ export default function UsersTab() {
                   )}
                 </select>
               </div>
-              
-              <div className="flex gap-2 sm:gap-3 pt-3 sm:pt-4">
+              <div className="flex gap-3 pt-4">
                 <button
                   onClick={handleSaveUser}
-                  className="flex-1 bg-red-600 text-white py-2.5 text-sm sm:text-base rounded-lg font-medium hover:bg-red-700 transition-colors"
+                  className="flex-1 bg-red-600 text-white py-2.5 rounded font-medium hover:bg-red-700 transition-colors"
                 >
                   Guardar
                 </button>
                 <button
                   onClick={() => setEditingUser(null)}
-                  className="flex-1 bg-gray-200 text-gray-700 py-2.5 text-sm sm:text-base rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                  className="flex-1 bg-gray-200 text-gray-700 py-2.5 rounded font-medium hover:bg-gray-300 transition-colors"
                 >
                   Cancelar
                 </button>
@@ -821,140 +930,87 @@ export default function UsersTab() {
           </div>
         </div>
       )}
-
-      {/* Tabla de usuarios */}
-      <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      {/* TABLA */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         {loading && !dataLoaded ? (
-          <div className="p-8 sm:p-12 text-center">
-            <Loader2 className="animate-spin w-8 h-8 text-red-600 mx-auto mb-4" />
+          <div className="p-12 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Cargando usuarios...</p>
           </div>
         ) : (
-          <div className="w-full overflow-x-auto">
-            {/* Versión móvil - Cards */}
-            <div className="block sm:hidden">
-              {paginatedUsers.length > 0 ? (
-                <div className="space-y-3 p-3">
-                  {paginatedUsers.map((user) => (
-                    <div key={user.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-gray-900 truncate">
-                            {user.name || "Sin nombre"} {user.lastname || ""}
-                          </h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            {getRoleBadge(user.rol)}
-                            {getStatusBadge(user.status)}
-                          </div>
-                        </div>
-                        <ActionButtons user={user} />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Mail className="w-4 h-4 text-gray-400" />
-                          <span className="text-gray-700 truncate">{user.email}</span>
-                        </div>
-                        
-                        {user.phone && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <Phone className="w-4 h-4 text-gray-400" />
-                            <span className="text-gray-700">{user.phone}</span>
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                          <Calendar className="w-4 h-4" />
-                          <span>Registro: {formatDate(user.createdAt)}</span>
-                        </div>
-                      </div>
-                      
-                      <QuickRoleButtons userId={user.id} currentRole={user.rol} />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <div className="text-gray-500">
-                    {searchTerm ? (
-                      <>
-                        <p className="text-lg">No se encontraron usuarios</p>
-                        <p className="text-sm mt-2">Buscando: "{searchTerm}"</p>
-                        <button
-                          onClick={clearSearch}
-                          className="mt-4 text-red-600 hover:text-red-700 text-sm font-medium"
-                        >
-                          Limpiar búsqueda
-                        </button>
-                      </>
-                    ) : (
-                      "No hay usuarios registrados"
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Versión desktop - Tabla */}
-            <table className="hidden sm:table w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+          <div className="w-full overflow-x-auto overflow-y-hidden">
+            <table className="w-full table-fixed">
+              <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                 <tr>
-                  <th className="text-left px-4 py-3 text-xs sm:text-sm font-semibold text-gray-700">Usuario</th>
-                  <th className="text-left px-4 py-3 text-xs sm:text-sm font-semibold text-gray-700">Contacto</th>
-                  <th className="text-left px-4 py-3 text-xs sm:text-sm font-semibold text-gray-700">Rol</th>
-                  <th className="text-left px-4 py-3 text-xs sm:text-sm font-semibold text-gray-700">Estado</th>
-                  <th className="text-left px-4 py-3 text-xs sm:text-sm font-semibold text-gray-700">Acciones</th>
+                  <th className="w-[15%] px-2 sm:px-3 xl:px-6">Nombre</th>
+                  <th className="w-[15%] px-2 sm:px-3 xl:px-6">Apellido</th>
+                  <th className="w-[25%] px-2 sm:px-3 xl:px-6">Email</th>
+                  <th className="w-[15%] px-2 sm:px-3 xl:px-6">Rol</th>
+                  <th className="w-[10%] px-2 sm:px-3 xl:px-6">Estado</th>
+                  <th className="w-[20%] px-2 sm:px-3 xl:px-6">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
-                {paginatedUsers.length > 0 ? (
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {users && users.length > 0 ? (
                   paginatedUsers.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3">
+                    <tr
+                      key={user.id}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-6 py-4 break-words">
                         <div className="font-medium text-gray-900">
-                          {user.name || "Sin nombre"} {user.lastname || ""}
+                          {user.name || "Sin nombre"}
                         </div>
-                        <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
+                        {user.phone && (
+                          <div className="text-sm text-gray-500 mt-1">
+                            {user.phone}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 break-words">
+                        <div className="font-medium text-gray-900">
+                          {user.lastname || "Sin apellido"}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 break-words">
+                        <div className="text-sm text-gray-900">
+                          {user.email}
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1">
                           Registro: {formatDate(user.createdAt)}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-2 text-sm">
-                            <Mail className="w-4 h-4 text-gray-400" />
-                            <span className="text-gray-900 truncate max-w-[200px]">{user.email}</span>
-                          </div>
-                          {user.phone && (
-                            <div className="flex items-center gap-2 text-sm">
-                              <Phone className="w-4 h-4 text-gray-400" />
-                              <span className="text-gray-700">{user.phone}</span>
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-col gap-2">
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col">
                           {getRoleBadge(user.rol)}
-                          <QuickRoleButtons userId={user.id} currentRole={user.rol} />
+                          <QuickRoleButtons
+                            userId={user.id}
+                            currentRole={user.rol}
+                          />
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-6 py-4 break-words">
                         {getStatusBadge(user.status)}
                       </td>
-                      <td className="px-4 py-3">
-                        <ActionButtons user={user} />
+                      <td className="px-2 sm:px-3 xl:px-6 py-4">
+                        <div className="px-2 sm:px-3 xl:px-6 py-4">
+                          <ActionButtons user={user} />
+                        </div>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="text-center py-12">
+                    <td colSpan={6} className="text-center py-12">
                       <div className="text-gray-500">
                         {searchTerm ? (
                           <>
-                            <p className="text-lg">No se encontraron usuarios</p>
-                            <p className="text-sm mt-2">Buscando: "{searchTerm}"</p>
+                            <p className="text-lg">
+                              No se encontraron usuarios
+                            </p>
+                            <p className="text-sm mt-2">
+                              Buscando: "{searchTerm}"
+                            </p>
                             <button
                               onClick={clearSearch}
                               className="mt-4 text-red-600 hover:text-red-700 text-sm font-medium"
@@ -974,64 +1030,26 @@ export default function UsersTab() {
           </div>
         )}
       </div>
-
-      {/* Paginación */}
+      {/* PAGINACIÓN */}
       {totalPages > 1 && (
-        <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4">
-          <div className="flex flex-col xs:flex-row items-center justify-between gap-4">
-            <div className="text-sm text-gray-600">
-              Mostrando <span className="font-semibold">{Math.min(ITEMS_PER_PAGE, paginatedUsers.length)}</span> de <span className="font-semibold">{users.length}</span> usuarios
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                disabled={currentPage === 1}
-                className="flex items-center gap-1 px-3 sm:px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-gray-300"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                <span className="hidden xs:inline">Anterior</span>
-              </button>
-              
-              <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = currentPage - 2 + i;
-                  }
-                  
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-sm rounded-lg border ${
-                        currentPage === pageNum
-                          ? "bg-red-600 text-white border-red-600"
-                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
-                      } transition-colors`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-              </div>
-              
-              <button
-                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="flex items-center gap-1 px-3 sm:px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-gray-300"
-              >
-                <span className="hidden xs:inline">Siguiente</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+        <div className="flex justify-center items-center space-x-4 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-gray-300"
+          >
+            Anterior
+          </button>
+          <span className="text-gray-700">
+            Página {currentPage} de {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-gray-300"
+          >
+            Siguiente
+          </button>
         </div>
       )}
     </div>
