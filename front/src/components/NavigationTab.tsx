@@ -11,6 +11,7 @@ import ReservationsTab from "./ReservationsTab";
 import { apiClient } from "src/app/lib";
 import Swal from "sweetalert2";
 
+
 export default function NavigationTab() {
   const { user, isAuthenticated, isAdmin, isSuperAdmin, loading, logout } =
     useAppContext();
@@ -448,6 +449,8 @@ export default function NavigationTab() {
         {activeTab === "activities" && <ActivityTab />}
         {activeTab === "users" && <UsersTab />}
         {activeTab === "reservations" && <ReservationsTab />}
+
+
         {activeTab === "AdminCreationForm" && (
           <AdminCreationFormTab
             onBackToOverview={() => setActiveTab("overview")}
