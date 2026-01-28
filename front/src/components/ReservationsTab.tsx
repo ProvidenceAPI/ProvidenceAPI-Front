@@ -134,11 +134,37 @@ export default function ReservationsTab() {
         ? data
         : data?.data || data?.turns || [];
 
+      // Función para verificar si un turno es reservable (fecha futura y mínimo 1 hora de anticipación)
+      const isTurnBookable = (turn: Turn): boolean => {
+        if (!turn.date || !turn.startTime) return false;
+        try {
+          const now = new Date();
+          const [year, month, day] = turn.date.split("-").map(Number);
+          const [hh, mm] = turn.startTime.split(":").map(Number);
+          if (
+            [year, month, day, hh, mm].some(
+              (n) => typeof n !== "number" || Number.isNaN(n),
+            )
+          ) {
+            return false;
+          }
+          const turnDateTime = new Date(year, month - 1, day, hh, mm);
+          // No permitir fechas/horas pasadas
+          if (turnDateTime <= now) return false;
+          // Mínimo 1 hora de anticipación
+          const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
+          return turnDateTime >= oneHourFromNow;
+        } catch {
+          return false;
+        }
+      };
+
       const availableTurns = turnsList.filter(
         (turn: Turn) =>
           turn.status !== "cancelled" &&
           turn.status !== "completed" &&
-          turn.availableSpots > 0,
+          turn.availableSpots > 0 &&
+          isTurnBookable(turn), // Filtrar turnos pasados o con menos de 1 hora de anticipación
       );
       const uniqueDates = Array.from(
         new Set(
