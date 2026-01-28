@@ -263,7 +263,6 @@ export default function TestimoniosPage() {
               Registrate ahora
             </a>
           </p>
-
           {/* Botón para dejar testimonio */}
           <button
             onClick={handleOpenForm}
