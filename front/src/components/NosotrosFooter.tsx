@@ -6,29 +6,29 @@ import Image from "next/image";
 
 const teamMembers = [
   {
-    name: "Molina Laila Nahir",
-    role: "Desarrolladora Frontend",
-    linkedin: "#",
-    github: "#",
-    email: "#",
-    image: "/image/team/lai.png", 
-  },
-  {
-    name: "Cañon Nieto Luz Adriana",
-    role: "Desarrolladora Backend",
-    linkedin: "#",
-    github: "#",
-    email: "#",
-    image: "/image/team/luza.png",
-  },
-  {
-    name: "Bartoli Sofía Desiree",
-    role: "Desarrolladora Backend",
-    linkedin: "#",
-    github: "#",
-    email: "#",
-    image: "/image/team/sofi.png",
-  },
+  name: "Molina Laila Nahir",
+  role: "Desarrolladora Frontend",
+  linkedin: "https://www.linkedin.com/in/laila-nahir-molina-4852373a9/",
+  github: "https://github.com/Laila1723",
+  email: "laimolina12@gmail.com",
+  image: "/image/team/lai.png", 
+},
+{
+  name: "Cañon Nieto Luz Adriana",
+  role: "Desarrolladora Backend",
+  linkedin: "https://www.linkedin.com/in/luzadrianacanon/",
+  github: "https://github.com/LACanonNieto",
+  email: "luzadca@gmail.com",
+  image: "/image/team/luza.png",
+},
+{
+  name: "Bartoli Sofía Desiree",
+  role: "Desarrolladora Backend",
+  linkedin: "https://www.linkedin.com/in/sof%C3%ADa-desir%C3%A9e-bartoli-6aa23a15a/",
+  github: "https://github.com/SBSofiaBartoli",
+  email: "sofiadbartoli@gmail.com",
+  image: "/image/team/sofi.png",
+},
 ];
 
 const features = [
