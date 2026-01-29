@@ -9,14 +9,20 @@ const errorTranslations: Record<string, string> = {
   "Reservation cancelled successfully": "La reserva ya está cancelada",
   "You are not allowed to cancel this reservation": "No tienes permiso para cancelar esta reserva",
   "There is already a reservation for this turn": "Ya existe una reserva para este turno",
+  "User already has a reservation for this turn": "El usuario ya tiene una reserva para este turno",
   "Only one reservation per day is allowed.": "Solo se permite una reserva por día",
   
   
   "This turn was cancelled": "Este turno fue cancelado",
   "This turn has already occurred": "Este turno ya ha ocurrido",
   "There are no available spots for this turn": "No hay cupos disponibles para este turno",
+  "No available spots for this turn": "No hay cupos disponibles para este turno",
   "Turn cancelled successfully": "El turno ya está cancelado",
   "Turn not found": "Turno no encontrado",
+  "Cannot assign a reservation to a cancelled turn": "No se puede asignar una reserva a un turno cancelado",
+  "Cannot assign a reservation to a completed turn": "No se puede asignar una reserva a un turno completado",
+  "Cannot change the turn of a cancelled reservation": "No se puede cambiar el turno de una reserva cancelada",
+  "La reserva ya está asignada a este turno": "La reserva ya está asignada a este turno",
   
   
   "You cannot book turns for inactive activities": "No puedes reservar turnos para actividades inactivas",
@@ -28,6 +34,9 @@ const errorTranslations: Record<string, string> = {
   
  
   "You must book at least 1 hour in advance. This turn starts in": "Debes reservar al menos 1 hora antes. Este turno comienza en",
+  "You must reassign at least 1 hour in advance. This turn starts in": "Debes reasignar al menos 1 hora antes. Este turno comienza en",
+  "You cannot reassign to a past date": "No puedes reasignar a una fecha pasada",
+  "You cannot reassign to a date/time earlier than the original reservation date": "No puedes reasignar a una fecha/hora anterior a la fecha original de la reserva",
   "You can only cancel up to": "Solo puedes cancelar hasta",
   "hours before the turn": "horas antes del turno",
   "minutes.": "minutos.",
