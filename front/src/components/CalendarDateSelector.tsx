@@ -30,10 +30,23 @@ export default function CalendarDatePicker({
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    return normalizedAvailableDates.includes(dateStr);
+    
+    if (!normalizedAvailableDates.includes(dateStr)) {
+      return false;
+    }
+    
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    if (dateStr < todayStr) {
+      return false;
+    }
+    
+    return true;
   };
 
-  const handleDateClick = (day: number) => {
+  const handleDateClick = (day: number, e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
@@ -42,13 +55,17 @@ export default function CalendarDatePicker({
     }
   };
 
-  const goToPreviousMonth = () => {
+  const goToPreviousMonth = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
     setCurrentMonth(
       new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1),
     );
   };
 
-  const goToNextMonth = () => {
+  const goToNextMonth = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
     setCurrentMonth(
       new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1),
     );
@@ -83,6 +100,7 @@ export default function CalendarDatePicker({
       {/* Header del calendario */}
       <div className="flex items-center justify-between mb-2">
         <button
+          type="button"
           onClick={goToPreviousMonth}
           className="p-1 hover:bg-gray-100 rounded transition"
         >
@@ -104,6 +122,7 @@ export default function CalendarDatePicker({
           {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
         </div>
         <button
+          type="button"
           onClick={goToNextMonth}
           className="p-1 hover:bg-gray-100 rounded transition"
         >
@@ -147,7 +166,8 @@ export default function CalendarDatePicker({
           return (
             <button
               key={day}
-              onClick={() => handleDateClick(day)}
+              type="button"
+              onClick={(e) => handleDateClick(day, e)}
               disabled={!isAvailable}
               className={`
               w-7 h-7 flex items-center justify-center rounded text-[11px] font-medium transition

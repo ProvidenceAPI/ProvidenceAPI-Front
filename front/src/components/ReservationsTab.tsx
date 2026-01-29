@@ -21,6 +21,7 @@ export default function ReservationsTab() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [users, setUsers] = useState<IUser[]>([]);
   const [turns, setTurns] = useState<Turn[]>([]);
+  const [allTurnsForActivity, setAllTurnsForActivity] = useState<Turn[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingTurns, setLoadingTurns] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -134,12 +135,24 @@ export default function ReservationsTab() {
         ? data
         : data?.data || data?.turns || [];
 
-      // Función para verificar si un turno es reservable (fecha futura y mínimo 1 hora de anticipación)
-      const isTurnBookable = (turn: Turn): boolean => {
+         const isTurnBookable = (turn: Turn): boolean => {
         if (!turn.date || !turn.startTime) return false;
         try {
           const now = new Date();
-          const [year, month, day] = turn.date.split("-").map(Number);
+          
+ 
+          let dateStr: string;
+          if (typeof turn.date === "string") {
+            dateStr = turn.date.split("T")[0].split(" ")[0];
+          } else {
+            const dateObj = turn.date as Date;
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+            const day = String(dateObj.getDate()).padStart(2, "0");
+            dateStr = `${year}-${month}-${day}`;
+          }
+          
+          const [year, month, day] = dateStr.split("-").map(Number);
           const [hh, mm] = turn.startTime.split(":").map(Number);
           if (
             [year, month, day, hh, mm].some(
@@ -149,41 +162,91 @@ export default function ReservationsTab() {
             return false;
           }
           const turnDateTime = new Date(year, month - 1, day, hh, mm);
-          // No permitir fechas/horas pasadas
+      
           if (turnDateTime <= now) return false;
-          // Mínimo 1 hora de anticipación
-          const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
-          return turnDateTime >= oneHourFromNow;
+      
+          if (!selectedReservation) {
+            const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
+            if (turnDateTime < oneHourFromNow) return false;
+          }
+        
+          return true;
         } catch {
           return false;
         }
       };
 
-      const availableTurns = turnsList.filter(
-        (turn: Turn) =>
-          turn.status !== "cancelled" &&
-          turn.status !== "completed" &&
-          turn.availableSpots > 0 &&
-          isTurnBookable(turn), // Filtrar turnos pasados o con menos de 1 hora de anticipación
-      );
-      const uniqueDates = Array.from(
-        new Set(
-          availableTurns.map((turn: Turn) => {
-            const dateStr =
-              typeof turn.date === "string"
-                ? turn.date.split("T")[0]
-                : turn.date;
-            return dateStr;
-          }),
+      const userConfirmedReservations = selectedReservation
+        ? reservations.filter(
+            (r: Reservation) =>
+              r.user.id === selectedReservation.user.id &&
+              r.status === "confirmed" &&
+              r.id !== selectedReservation.id, 
+          )
+        : [];
+
+      const normalizeDate = (dateValue: string | Date): string => {
+        if (typeof dateValue === "string") {
+          return dateValue.split("T")[0].split(" ")[0];
+        }
+        const date = dateValue as Date;
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      };
+
+      const activeTurns = turnsList.filter((turn: Turn) => {
+        const statusLower = (turn.status || "").toLowerCase();
+        return (
+          statusLower !== "cancelled" &&
+          statusLower !== "completed"
+        );
+      });
+
+      const allActiveDates: string[] = Array.from(
+        new Set<string>(
+          activeTurns.map((turn) => normalizeDate(turn.date as string | Date)),
         ),
-      ) as string[];
+      ).sort();
+
+      const availableTurns = turnsList.filter(
+        (turn: Turn) => {
+          const statusLower = (turn.status || "").toLowerCase();
+          
+           if (selectedReservation && turn.id === selectedReservation.turnId) {
+            return false;
+          }
+          
+           if (selectedReservation && userConfirmedReservations.length > 0) {
+            const hasExistingReservation = userConfirmedReservations.some(
+              (r: Reservation) => r.turnId === turn.id,
+            );
+            if (hasExistingReservation) {
+              return false;
+            }
+          }
+          
+          return (
+            statusLower !== "cancelled" &&
+            statusLower !== "completed" &&
+            turn.availableSpots > 0 &&
+            isTurnBookable(turn) 
+          );
+        },
+      );
+
+      const uniqueDates: string[] = allActiveDates;
 
       setAvailableDatesForActivity(uniqueDates);
+      
+      setAllTurnsForActivity(availableTurns);
+      
       if (date) {
+        const normalizedSelectedDate = normalizeDate(date);
         const turnsForDate = availableTurns.filter((turn: Turn) => {
-          const turnDate =
-            typeof turn.date === "string" ? turn.date.split("T")[0] : turn.date;
-          return turnDate === date;
+          const turnDateNormalized = normalizeDate(turn.date as string | Date);
+          return turnDateNormalized === normalizedSelectedDate;
         });
         setTurns(turnsForDate);
       } else {
@@ -201,7 +264,7 @@ export default function ReservationsTab() {
   const handleChangeReservationTurn = async (turnId: string) => {
     if (!selectedReservation) return;
 
-    // Validar que turnId sea un UUID válido
+
     if (!turnId || typeof turnId !== "string" || turnId.trim() === "") {
       Swal.fire({
         icon: "error",
@@ -212,7 +275,7 @@ export default function ReservationsTab() {
     }
 
     try {
-      // Mostrar loading mientras se procesa
+      
       Swal.fire({
         title: "Procesando...",
         text: "Reasignando la reserva",
@@ -298,6 +361,7 @@ export default function ReservationsTab() {
     setSelectedTurnId("");
     setAvailableDatesForActivity([]);
     setTurns([]);
+    setAllTurnsForActivity([]);
   };
 
   const handleAssignSubmit = () => {
@@ -367,13 +431,23 @@ export default function ReservationsTab() {
     );
   };
 
-  const formatReservationDate = (date: string): string => {
-    const [year, month, day] = date.split("T")[0].split("-");
-    const dateObj = new Date(
-      parseInt(year),
-      parseInt(month) - 1,
-      parseInt(day),
-    );
+  const formatReservationDate = (date: string | Date): string => {
+    
+    let dateStr: string;
+    if (typeof date === "string") {
+      dateStr = date.split("T")[0].split(" ")[0];
+    } else {
+      
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      dateStr = `${year}-${month}-${day}`;
+    }
+    
+  
+    const [year, month, day] = dateStr.split("-").map(Number);
+    const dateObj = new Date(year, month - 1, day);
+    
     return dateObj.toLocaleDateString("es-ES", {
       year: "numeric",
       month: "long",
@@ -381,8 +455,19 @@ export default function ReservationsTab() {
     });
   };
 
-  const formatTurnDate = (date: string): string => {
-    const dateStr = typeof date === "string" ? date.split("T")[0] : date;
+  const formatTurnDate = (date: string | Date): string => {
+    
+    let dateStr: string;
+    if (typeof date === "string") {
+      dateStr = date.split("T")[0].split(" ")[0];
+    } else {
+      
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      dateStr = `${year}-${month}-${day}`;
+    }
+    
     const [year, month, day] = dateStr.split("-").map(Number);
     const dateObj = new Date(year, month - 1, day);
 
@@ -730,6 +815,7 @@ export default function ReservationsTab() {
                       setSelectedDate("");
                       setSelectedTurnId("");
                       setTurns([]);
+                      setAllTurnsForActivity([]);
                       loadTurnsForActivity(e.target.value);
                     }}
                     className="w-full px-3 py-2 border rounded-lg"
@@ -792,9 +878,29 @@ export default function ReservationsTab() {
                           availableDates={availableDatesForActivity}
                           selectedDate={selectedDate}
                           onDateSelect={(date) => {
-                            setSelectedDate(date);
+                            const normalizedDate = date.split("T")[0].split(" ")[0];
+                            setSelectedDate(normalizedDate);
                             setSelectedTurnId("");
-                            loadTurnsForActivity(selectedActivityId, date);
+                            if (allTurnsForActivity.length > 0) {
+                              const normalizeDate = (dateValue: string | Date): string => {
+                                if (typeof dateValue === "string") {
+                                  return dateValue.split("T")[0].split(" ")[0];
+                                }
+                                const date = dateValue as Date;
+                                const year = date.getFullYear();
+                                const month = String(date.getMonth() + 1).padStart(2, "0");
+                                const day = String(date.getDate()).padStart(2, "0");
+                                return `${year}-${month}-${day}`;
+                              };
+                              const turnsForDate = allTurnsForActivity.filter((turn: Turn) => {
+                                const turnDateNormalized = normalizeDate(turn.date as string | Date);
+                                return turnDateNormalized === normalizedDate;
+                              });
+                              setTurns(turnsForDate);
+                            } else {
+                            
+                              loadTurnsForActivity(selectedActivityId, normalizedDate);
+                            }
                           }}
                         />
                       )}

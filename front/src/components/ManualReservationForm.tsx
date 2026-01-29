@@ -82,7 +82,7 @@ export default function ManualReservationForm({
 
     setLoadingTurns(true);
     try {
-      // Siempre traer un rango (próximos 30 días) para poder pintar el calendario
+      
       const startDate = new Date();
       const endDate = new Date();
       endDate.setDate(endDate.getDate() + 30);
@@ -97,7 +97,7 @@ export default function ManualReservationForm({
         ? data
         : data?.data || data?.turns || [];
       
-      // Función para verificar si un turno es reservable (fecha futura y mínimo 1 hora de anticipación)
+      
       const isTurnBookable = (turn: Turn): boolean => {
         if (!turn.date || !turn.startTime) return false;
         try {
@@ -112,9 +112,9 @@ export default function ManualReservationForm({
             return false;
           }
           const turnDateTime = new Date(year, month - 1, day, hh, mm);
-          // No permitir fechas/horas pasadas
+          
           if (turnDateTime <= now) return false;
-          // Mínimo 1 hora de anticipación
+         
           const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
           return turnDateTime >= oneHourFromNow;
         } catch {
@@ -123,11 +123,15 @@ export default function ManualReservationForm({
       };
 
       const available: Turn[] = (turnsList as Turn[]).filter(
-        (turn) =>
-          turn.status !== "cancelled" &&
-          turn.status !== "completed" &&
-          turn.availableSpots > 0 &&
-          isTurnBookable(turn), // Filtrar turnos pasados o con menos de 1 hora de anticipación
+        (turn) => {
+          const statusLower = (turn.status || "").toLowerCase();
+          return (
+            statusLower !== "cancelled" &&
+            statusLower !== "completed" &&
+            turn.availableSpots > 0 &&
+            isTurnBookable(turn) 
+          );
+        },
       );
       available.sort((a: Turn, b: Turn) => {
         const dateA = new Date(`${a.date}T${a.startTime}`);
@@ -135,23 +139,39 @@ export default function ManualReservationForm({
         return dateA.getTime() - dateB.getTime();
       });
 
-      const normalizeDate = (d: string) => d.split("T")[0];
+     
+      const normalizeDate = (dateValue: string | Date): string => {
+        if (typeof dateValue === "string") {
+         
+          return dateValue.split("T")[0].split(" ")[0];
+        }
+     
+        const date = dateValue as Date;
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      };
+
       const uniqueDates: string[] = Array.from(
-        new Set<string>(available.map((t) => normalizeDate(t.date))),
+        new Set<string>(available.map((t) => normalizeDate(t.date as string | Date))),
       ).sort();
       setAvailableDates(uniqueDates);
 
-      // Si la fecha seleccionada no tiene turnos, seleccionar la primera disponible
+  
+      const normalizedFilterDate = filterDate ? normalizeDate(filterDate) : "";
       const nextDate =
-        filterDate && uniqueDates.includes(filterDate)
-          ? filterDate
+        normalizedFilterDate && uniqueDates.includes(normalizedFilterDate)
+          ? normalizedFilterDate
           : uniqueDates[0] || "";
-      if (nextDate !== filterDate) {
+      
+    
+      if (nextDate && nextDate !== normalizedFilterDate) {
         setFilterDate(nextDate);
       }
 
       const visibleTurns = nextDate
-        ? available.filter((t: Turn) => normalizeDate(t.date) === nextDate)
+        ? available.filter((t: Turn) => normalizeDate(t.date as string | Date) === nextDate)
         : available;
       setAvailableTurns(visibleTurns);
       setSelectedTurnId("");
@@ -449,15 +469,19 @@ export default function ManualReservationForm({
                     <div className="text-sm text-green-700 mt-1">
                       <p>
                         <strong>Fecha:</strong>{" "}
-                        {new Date(selectedTurn.date).toLocaleDateString(
-                          "es-ES",
-                          {
+                        {(() => {
+                          
+                          
+                          const dateStr = selectedTurn.date.split("T")[0];
+                          const [year, month, day] = dateStr.split("-").map(Number);
+                          const date = new Date(year, month - 1, day);
+                          return date.toLocaleDateString("es-ES", {
                             weekday: "long",
                             year: "numeric",
                             month: "long",
                             day: "numeric",
-                          },
-                        )}
+                          });
+                        })()}
                       </p>
                       <p>
                         <strong>Horario:</strong> {selectedTurn.startTime} -{" "}
