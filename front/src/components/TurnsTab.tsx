@@ -8,18 +8,22 @@ import Swal from "sweetalert2";
 import { endOfMonth, format, isSameDay, startOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
 import { useAppContext } from "src/contexts/AppContext";
-import { broadcastTurnUpdate, turnChannel } from "src/utils/broadcastChannel";
-import { 
-  Calendar, 
-  Filter, 
-  Plus, 
-  Zap, 
-  Users, 
-  CheckCircle, 
-  AlertCircle, 
+import {
+  activityChannel,
+  broadcastTurnUpdate,
+  turnChannel,
+} from "src/utils/broadcastChannel";
+import {
+  Calendar,
+  Filter,
+  Plus,
+  Zap,
+  Users,
+  CheckCircle,
+  AlertCircle,
   XCircle,
   Loader2,
-  Clock
+  Clock,
 } from "lucide-react";
 
 const parseLocalDate = (dateString: string): Date => {
@@ -44,6 +48,16 @@ export default function TurnsTab() {
   const [filterActivity, setFilterActivity] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState<string>("");
 
+  useEffect(() => {
+    const handleActivityChange = (event: MessageEvent) => {
+      refetchAll();
+    };
+    activityChannel.addEventListener("message", handleActivityChange);
+    return () => {
+      activityChannel.removeEventListener("message", handleActivityChange);
+    };
+  }, [refetchAll]);
+
   const handleApiError = (
     error: any,
     defaultMessage: string = "Ocurrió un error",
@@ -53,7 +67,7 @@ export default function TurnsTab() {
     let icon: "error" | "warning" | "info" = "error";
     const statusCode = error.statusCode || error.response?.status;
     const errorMessage = error.message || error.response?.data?.message || "";
-    
+
     if (errorMessage.includes("already exists")) {
       Swal.fire({
         icon: "warning",
@@ -63,7 +77,7 @@ export default function TurnsTab() {
       });
       return;
     }
-    
+
     if (errorMessage.includes("inactive activities")) {
       Swal.fire({
         icon: "warning",
@@ -73,7 +87,7 @@ export default function TurnsTab() {
       });
       return;
     }
-    
+
     if (errorMessage.includes("existing reservations")) {
       Swal.fire({
         icon: "warning",
@@ -122,7 +136,7 @@ export default function TurnsTab() {
       default:
         message = errorMessage || defaultMessage;
     }
-    
+
     Swal.fire({
       icon,
       title,
@@ -252,7 +266,7 @@ export default function TurnsTab() {
           .join("")}
       </div>
     `,
-      width: window.innerWidth < 640 ? '90%' : 700,
+      width: window.innerWidth < 640 ? "90%" : 700,
       confirmButtonText: "Cerrar",
       confirmButtonColor: "#6b7280",
     });
@@ -280,7 +294,7 @@ export default function TurnsTab() {
       );
       return;
     }
-    
+
     const activity = activities.find((a) => a.id === selectedActivity);
     const availableDays: string[] = [];
     const availableHours: { [key: string]: string[] } = {};
@@ -316,7 +330,7 @@ export default function TurnsTab() {
         }
       });
     }
-    
+
     const { value: dates } = await Swal.fire({
       title: `📅 Generar Turnos - ${activity?.name}`,
       html: `
@@ -385,9 +399,9 @@ export default function TurnsTab() {
         return { start, end };
       },
     });
-    
+
     if (!dates) return;
-    
+
     try {
       Swal.fire({
         title: "Generando turnos...",
@@ -586,9 +600,9 @@ export default function TurnsTab() {
         return { date, startTime, endTime, capacity };
       },
     });
-    
+
     if (!formData) return;
-    
+
     try {
       const createdTurn = await reservationService.createTurn({
         activityId: selectedActivity,
@@ -611,7 +625,7 @@ export default function TurnsTab() {
   const handleEditTurn = async (turnId: string) => {
     const turn = turns.find((t) => t.id === turnId);
     if (!turn) return;
-    
+
     const { value: formData } = await Swal.fire({
       title: "✏️ Editar Turno",
       html: `
@@ -647,9 +661,9 @@ export default function TurnsTab() {
         return { startTime, endTime, capacity };
       },
     });
-    
+
     if (!formData) return;
-    
+
     try {
       await reservationService.updateTurn(turnId, formData);
       broadcastTurnUpdate("updated", turnId);
@@ -663,7 +677,7 @@ export default function TurnsTab() {
   const handleCancelTurn = async (turnId: string) => {
     const turn = turns.find((t) => t.id === turnId);
     if (!turn) return;
-    
+
     const result = await Swal.fire({
       title: "⚠️ Cancelar Turno",
       html: `
@@ -697,9 +711,9 @@ export default function TurnsTab() {
       cancelButtonText: "No",
       width: window.innerWidth < 640 ? "90%" : "500px",
     });
-    
+
     if (!result.isConfirmed) return;
-    
+
     try {
       await reservationService.cancelTurn(turnId);
       broadcastTurnUpdate("cancelled", turnId);
@@ -713,7 +727,7 @@ export default function TurnsTab() {
   const handleDeleteTurn = async (turnId: string) => {
     const turn = turns.find((t) => t.id === turnId);
     if (!turn) return;
-    
+
     const result = await Swal.fire({
       title: "🗑️ Eliminar Turno",
       text: "Esta acción no se puede deshacer",
@@ -724,9 +738,9 @@ export default function TurnsTab() {
       cancelButtonText: "Cancelar",
       width: window.innerWidth < 640 ? "90%" : "400px",
     });
-    
+
     if (!result.isConfirmed) return;
-    
+
     try {
       await reservationService.deleteTurn(turnId);
       broadcastTurnUpdate("deleted", turnId);
@@ -771,7 +785,7 @@ export default function TurnsTab() {
               </p>
             </div>
           </div>
-          
+
           {/* Controles principales */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mb-6">
             {/* Panel de creación */}
@@ -813,7 +827,7 @@ export default function TurnsTab() {
                 </div>
               </div>
             </div>
-            
+
             {/* Panel de filtros */}
             <div className="bg-white rounded-lg sm:rounded-xl shadow p-3 sm:p-4">
               <h3 className="font-semibold text-gray-900 mb-2 sm:mb-3 flex items-center gap-2">
@@ -846,9 +860,9 @@ export default function TurnsTab() {
               </div>
             </div>
           </div>
-          
+
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 xs:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
             <div className="bg-white rounded-lg shadow p-3 sm:p-4">
               <div className="text-xs sm:text-sm text-gray-600 flex items-center gap-1">
                 <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -893,7 +907,7 @@ export default function TurnsTab() {
             </div>
           </div>
         </div>
-        
+
         {/* Calendario */}
         {loading ? (
           <div className="bg-white rounded-lg sm:rounded-xl shadow-lg p-6 sm:p-8 md:p-12 flex justify-center">
