@@ -6,24 +6,27 @@ import Image from "next/image";
 
 const teamMembers = [
   {
-  name: "Molina Laila Nahir",
-  role: "Desarrolladora Frontend",
+  name: " Laila Nahir Molina",
+  role: "Desarrolladora Full Stack",
+  specialty: "Especialista en Frontend",
   linkedin: "https://www.linkedin.com/in/laila-nahir-molina-4852373a9/",
   github: "https://github.com/Laila1723",
   email: "laimolina12@gmail.com",
-  image: "/image/team/lai.png", 
+  image: "/image/team/lai.png",
 },
 {
-  name: "Cañon Nieto Luz Adriana",
-  role: "Desarrolladora Backend",
+  name: "Luz Adriana Cañon Nieto",
+  role: "Desarrolladora Full Stack",
+  specialty: "Especialista en Backend",
   linkedin: "https://www.linkedin.com/in/luzadrianacanon/",
   github: "https://github.com/LACanonNieto",
   email: "luzadca@gmail.com",
   image: "/image/team/luza.png",
 },
 {
-  name: "Bartoli Sofía Desiree",
-  role: "Desarrolladora Backend",
+  name: " Sofía Desiree Bartoli",
+  role: "Desarrolladora Full Stack",
+  specialty: "Especialista en Backend",
   linkedin: "https://www.linkedin.com/in/sof%C3%ADa-desir%C3%A9e-bartoli-6aa23a15a/",
   github: "https://github.com/SBSofiaBartoli",
   email: "sofiadbartoli@gmail.com",
@@ -157,14 +160,14 @@ export default function NosotrosFooter() {
                   <div className="text-center space-y-5">
                     {/* Avatar con imagen */}
                     <div className="relative">
-                      <div className="w-24 h-24 mx-auto rounded-full overflow-hidden border-4 border-gray-800 group-hover:border-[#B91C1C] transition-all duration-300 mb-2 relative">
+                      <div className="w-32 h-32 mx-auto rounded-full overflow-hidden border-4 border-gray-800 group-hover:border-[#B91C1C] transition-all duration-300 mb-2 relative">
                         {/* Fallback si no hay imagen */}
                         {member.image ? (
                           <Image
                             src={member.image}
                             alt={`Foto de ${member.name}`}
-                            width={96}
-                            height={96}
+                            width={128}
+                            height={128}
                             className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300"
                             priority={index < 3} 
                           />
@@ -180,7 +183,8 @@ export default function NosotrosFooter() {
                     {/* Información del miembro */}
                     <div>
                       <h3 className="font-bold text-white text-xl mb-2 leading-tight">{member.name}</h3>
-                      <p className="text-gray-300 mb-1 font-medium">{member.role}</p>
+                      <p className="text-gray-300 mb-0.5 font-medium">{member.role}</p>
+                      <p className="text-gray-400 text-sm mb-2">{member.specialty}</p>
                       <div className="inline-block px-4 py-1 bg-gradient-to-r from-[#DC2626]/10 to-[#B91C1C]/5 rounded-full border border-[#DC2626]/20 text-sm text-gray-300">
                         Providence Team
                       </div>
