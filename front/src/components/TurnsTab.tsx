@@ -8,7 +8,23 @@ import Swal from "sweetalert2";
 import { endOfMonth, format, isSameDay, startOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
 import { useAppContext } from "src/contexts/AppContext";
-import { broadcastTurnUpdate, turnChannel } from "src/utils/broadcastChannel";
+import {
+  activityChannel,
+  broadcastTurnUpdate,
+  turnChannel,
+} from "src/utils/broadcastChannel";
+import {
+  Calendar,
+  Filter,
+  Plus,
+  Zap,
+  Users,
+  CheckCircle,
+  AlertCircle,
+  XCircle,
+  Loader2,
+  Clock,
+} from "lucide-react";
 
 const parseLocalDate = (dateString: string): Date => {
   const datePart = dateString.split("T")[0];
@@ -31,6 +47,17 @@ export default function TurnsTab() {
   const [selectedActivity, setSelectedActivity] = useState<string>("");
   const [filterActivity, setFilterActivity] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState<string>("");
+
+  useEffect(() => {
+    const handleActivityChange = (event: MessageEvent) => {
+      refetchAll();
+    };
+    activityChannel.addEventListener("message", handleActivityChange);
+    return () => {
+      activityChannel.removeEventListener("message", handleActivityChange);
+    };
+  }, [refetchAll]);
+
   const handleApiError = (
     error: any,
     defaultMessage: string = "Ocurrió un error",
@@ -40,6 +67,7 @@ export default function TurnsTab() {
     let icon: "error" | "warning" | "info" = "error";
     const statusCode = error.statusCode || error.response?.status;
     const errorMessage = error.message || error.response?.data?.message || "";
+
     if (errorMessage.includes("already exists")) {
       Swal.fire({
         icon: "warning",
@@ -49,6 +77,7 @@ export default function TurnsTab() {
       });
       return;
     }
+
     if (errorMessage.includes("inactive activities")) {
       Swal.fire({
         icon: "warning",
@@ -58,6 +87,7 @@ export default function TurnsTab() {
       });
       return;
     }
+
     if (errorMessage.includes("existing reservations")) {
       Swal.fire({
         icon: "warning",
@@ -106,6 +136,7 @@ export default function TurnsTab() {
       default:
         message = errorMessage || defaultMessage;
     }
+
     Swal.fire({
       icon,
       title,
@@ -180,39 +211,39 @@ export default function TurnsTab() {
                 : "❌ Cancelado";
             return `
             <div class="p-4 rounded-lg border ${bgColor}">
-              <div class="flex justify-between items-start mb-2">
-                <div>
-                  <div class="font-bold text-gray-900">${
+              <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-2">
+                <div class="flex-1 min-w-0">
+                  <div class="font-bold text-gray-900 truncate">${
                     (turn as any).activityName ||
                     turn.activity?.name ||
                     "Actividad"
                   }</div>
-                  <div class="text-sm text-gray-600">${turn.startTime} - ${turn.endTime}</div>
+                  <div class="text-sm text-gray-600 mt-1">${turn.startTime} - ${turn.endTime}</div>
                 </div>
-                <span class="px-2 py-1 rounded text-xs font-medium ${badgeColor}">
+                <span class="self-start sm:self-center px-2 py-1 rounded text-xs font-medium ${badgeColor} whitespace-nowrap">
                   ${statusText}
                 </span>
               </div>
-              <div class="flex gap-4 text-sm">
-                <span class="text-gray-600">
+              <div class="flex flex-col xs:flex-row xs:gap-4 gap-2 text-sm">
+                <span class="text-gray-600 whitespace-nowrap">
                   👥 ${turn.availableSpots}/${(turn as any).capacity ?? "-"} disponibles
                 </span>
                 ${
                   (turn as any).reservations
-                    ? `<span class="text-blue-600">📋 ${(turn as any).reservations.length} reservas</span>`
+                    ? `<span class="text-blue-600 whitespace-nowrap">📋 ${(turn as any).reservations.length} reservas</span>`
                     : ""
                 }
               </div>
-              <div class="mt-3 flex gap-2">
+              <div class="mt-3 flex flex-wrap gap-2">
                 <button
                   onclick="window.editTurn('${turn.id}')"
-                  class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                  class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 whitespace-nowrap"
                 >
                   ✏️ Editar
                 </button>
                 <button
                   onclick="window.cancelTurn('${turn.id}')"
-                  class="px-3 py-1 bg-orange-600 text-white text-xs rounded hover:bg-orange-700"
+                  class="px-3 py-1.5 bg-orange-600 text-white text-xs rounded hover:bg-orange-700 whitespace-nowrap"
                   ${isCancelled ? "disabled style='opacity:0.5;cursor:not-allowed;'" : ""}
                 >
                   ⏸️ Cancelar
@@ -222,7 +253,7 @@ export default function TurnsTab() {
                     ? `
                   <button
                     onclick="window.deleteTurn('${turn.id}')"
-                    class="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+                    class="px-3 py-1.5 bg-red-600 text-white text-xs rounded hover:bg-red-700 whitespace-nowrap"
                   >
                     🗑️ Eliminar
                   </button>`
@@ -235,7 +266,7 @@ export default function TurnsTab() {
           .join("")}
       </div>
     `,
-      width: 700,
+      width: window.innerWidth < 640 ? "90%" : 700,
       confirmButtonText: "Cerrar",
       confirmButtonColor: "#6b7280",
     });
@@ -263,6 +294,7 @@ export default function TurnsTab() {
       );
       return;
     }
+
     const activity = activities.find((a) => a.id === selectedActivity);
     const availableDays: string[] = [];
     const availableHours: { [key: string]: string[] } = {};
@@ -298,6 +330,7 @@ export default function TurnsTab() {
         }
       });
     }
+
     const { value: dates } = await Swal.fire({
       title: `📅 Generar Turnos - ${activity?.name}`,
       html: `
@@ -311,7 +344,7 @@ export default function TurnsTab() {
               ? availableDays
                   .map((day) => {
                     const hours = availableHours[day] || [];
-                    return `<div class="flex justify-between"><span class="font-medium">${day}</span><span class="text-gray-600">${hours.join(", ")}</span></div>`;
+                    return `<div class="flex justify-between flex-col xs:flex-row gap-1"><span class="font-medium">${day}</span><span class="text-gray-600 truncate">${hours.join(", ")}</span></div>`;
                   })
                   .join("")
               : '<p class="text-gray-500 text-center">No hay horarios configurados</p>'
@@ -321,23 +354,25 @@ export default function TurnsTab() {
         <p class="text-xs text-blue-800 mt-2">ℹ️ Se generarán turnos automáticamente según estos horarios</p>
       </div>
       
-      <div>
-        <label class="block text-sm font-medium mb-2">Fecha inicio</label>
-        <input 
-          type="date" 
-          id="startDate" 
-          class="w-full p-2 border rounded"
-          min="${new Date().toISOString().split("T")[0]}"
-        >
-      </div>
-      <div>
-        <label class="block text-sm font-medium mb-2">Fecha fin</label>
-        <input 
-          type="date" 
-          id="endDate" 
-          class="w-full p-2 border rounded"
-          min="${new Date().toISOString().split("T")[0]}"
-        >
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium mb-2">Fecha inicio</label>
+          <input 
+            type="date" 
+            id="startDate" 
+            class="w-full p-2 border rounded text-sm"
+            min="${new Date().toISOString().split("T")[0]}"
+          >
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-2">Fecha fin</label>
+          <input 
+            type="date" 
+            id="endDate" 
+            class="w-full p-2 border rounded text-sm"
+            min="${new Date().toISOString().split("T")[0]}"
+          >
+        </div>
       </div>
     </div>
   `,
@@ -345,7 +380,7 @@ export default function TurnsTab() {
       confirmButtonColor: "#ef4444",
       showCancelButton: true,
       cancelButtonText: "Cancelar",
-      width: "650px",
+      width: window.innerWidth < 640 ? "90%" : "650px",
       preConfirm: () => {
         const start = (document.getElementById("startDate") as HTMLInputElement)
           .value;
@@ -364,7 +399,9 @@ export default function TurnsTab() {
         return { start, end };
       },
     });
+
     if (!dates) return;
+
     try {
       Swal.fire({
         title: "Generando turnos...",
@@ -385,11 +422,13 @@ export default function TurnsTab() {
         icon: "success",
         title: "✅ Turnos Generados",
         html: `
-        <p>Se generaron <strong>${generated.length} turnos</strong></p>
-        <p class="text-sm text-gray-600 mt-2">Del ${format(
-          new Date(dates.start),
-          "dd/MM/yyyy",
-        )} al ${format(new Date(dates.end), "dd/MM/yyyy")}</p>
+        <div class="text-center">
+          <p class="text-lg font-semibold mb-2">Se generaron <strong class="text-green-600">${generated.length} turnos</strong></p>
+          <p class="text-sm text-gray-600">Del ${format(
+            new Date(dates.start),
+            "dd/MM/yyyy",
+          )} al ${format(new Date(dates.end), "dd/MM/yyyy")}</p>
+        </div>
       `,
         confirmButtonColor: "#10b981",
       });
@@ -455,16 +494,16 @@ export default function TurnsTab() {
           ${availableDays
             .map((day) => {
               const hours = availableHours[day] || [];
-              return `<div class="flex justify-between"><span class="font-medium">${day}</span><span class="text-gray-600">${hours.join(", ")}</span></div>`;
+              return `<div class="flex flex-col xs:flex-row xs:justify-between gap-1"><span class="font-medium">${day}</span><span class="text-gray-600 truncate">${hours.join(", ")}</span></div>`;
             })
             .join("")}
         </div>
         <p class="text-xs text-gray-600 mt-2">⏱️ Duración: ${activity?.duration || 60} minutos</p>
       </div>
       
-      <!-- Campos en una sola fila -->
-      <div class="grid grid-cols-3 gap-3">
-        <div>
+      <!-- Campos responsivos -->
+      <div class="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div class="xs:col-span-2 lg:col-span-1">
           <label class="block text-sm font-medium mb-1">Fecha *</label>
           <input 
             type="date" 
@@ -502,7 +541,7 @@ export default function TurnsTab() {
       confirmButtonColor: "#ef4444",
       showCancelButton: true,
       cancelButtonText: "Cancelar",
-      width: "650px",
+      width: window.innerWidth < 640 ? "90%" : "650px",
       preConfirm: () => {
         const date = (document.getElementById("date") as HTMLInputElement)
           .value;
@@ -561,7 +600,9 @@ export default function TurnsTab() {
         return { date, startTime, endTime, capacity };
       },
     });
+
     if (!formData) return;
+
     try {
       const createdTurn = await reservationService.createTurn({
         activityId: selectedActivity,
@@ -584,28 +625,30 @@ export default function TurnsTab() {
   const handleEditTurn = async (turnId: string) => {
     const turn = turns.find((t) => t.id === turnId);
     if (!turn) return;
+
     const { value: formData } = await Swal.fire({
       title: "✏️ Editar Turno",
       html: `
       <div class="space-y-4 text-left">
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label class="block text-sm font-medium mb-2">Hora inicio</label>
-            <input type="time" id="startTime" class="w-full p-2 border rounded" value="${turn.startTime}">
+            <input type="time" id="startTime" class="w-full p-2 border rounded text-sm" value="${turn.startTime}">
           </div>
           <div>
             <label class="block text-sm font-medium mb-2">Hora fin</label>
-            <input type="time" id="endTime" class="w-full p-2 border rounded" value="${turn.endTime}">
+            <input type="time" id="endTime" class="w-full p-2 border rounded text-sm" value="${turn.endTime}">
           </div>
         </div>
         <div>
           <label class="block text-sm font-medium mb-2">Capacidad</label>
-          <input type="number" id="capacity" class="w-full p-2 border rounded" value="${(turn as any).capacity ?? turn.availableSpots ?? 20}" min="1">
+          <input type="number" id="capacity" class="w-full p-2 border rounded text-sm" value="${(turn as any).capacity ?? turn.availableSpots ?? 20}" min="1">
         </div>
       </div>
     `,
       confirmButtonText: "💾 Guardar",
       showCancelButton: true,
+      width: window.innerWidth < 640 ? "90%" : "500px",
       preConfirm: () => {
         const startTime = (
           document.getElementById("startTime") as HTMLInputElement
@@ -618,7 +661,9 @@ export default function TurnsTab() {
         return { startTime, endTime, capacity };
       },
     });
+
     if (!formData) return;
+
     try {
       await reservationService.updateTurn(turnId, formData);
       broadcastTurnUpdate("updated", turnId);
@@ -628,31 +673,35 @@ export default function TurnsTab() {
       handleApiError(error, "No se pudo actualizar el turno");
     }
   };
+
   const handleCancelTurn = async (turnId: string) => {
     const turn = turns.find((t) => t.id === turnId);
     if (!turn) return;
+
     const result = await Swal.fire({
       title: "⚠️ Cancelar Turno",
       html: `
-      <p>¿Estás seguro de cancelar este turno?</p>
-      <div class="mt-4 p-3 bg-yellow-50 rounded text-left">
-        <p class="text-sm"><strong>Actividad:</strong> ${
-          (turn as any).activityName || turn.activity?.name || "Actividad"
-        }</p>
-        <p class="text-sm"><strong>Fecha:</strong> ${format(
-          parseLocalDate(turn.date),
-          "dd/MM/yyyy",
-        )}</p>
-        <p class="text-sm"><strong>Horario:</strong> ${turn.startTime} - ${turn.endTime}</p>
-        ${
-          (turn as any).reservations?.length
-            ? `
-          <p class="text-sm text-red-600 mt-2">
-            ⚠️ Hay ${(turn as any).reservations.length} reserva(s) que serán canceladas y los usuarios serán notificados
-          </p>
-        `
-            : ""
-        }
+      <div class="text-left">
+        <p>¿Estás seguro de cancelar este turno?</p>
+        <div class="mt-4 p-3 bg-yellow-50 rounded">
+          <p class="text-sm mb-1"><strong>Actividad:</strong> ${
+            (turn as any).activityName || turn.activity?.name || "Actividad"
+          }</p>
+          <p class="text-sm mb-1"><strong>Fecha:</strong> ${format(
+            parseLocalDate(turn.date),
+            "dd/MM/yyyy",
+          )}</p>
+          <p class="text-sm mb-1"><strong>Horario:</strong> ${turn.startTime} - ${turn.endTime}</p>
+          ${
+            (turn as any).reservations?.length
+              ? `
+            <p class="text-sm text-red-600 mt-2">
+              ⚠️ Hay ${(turn as any).reservations.length} reserva(s) que serán canceladas
+            </p>
+          `
+              : ""
+          }
+        </div>
       </div>
     `,
       icon: "warning",
@@ -660,8 +709,11 @@ export default function TurnsTab() {
       confirmButtonColor: "#ef4444",
       confirmButtonText: "Sí, cancelar",
       cancelButtonText: "No",
+      width: window.innerWidth < 640 ? "90%" : "500px",
     });
+
     if (!result.isConfirmed) return;
+
     try {
       await reservationService.cancelTurn(turnId);
       broadcastTurnUpdate("cancelled", turnId);
@@ -675,6 +727,7 @@ export default function TurnsTab() {
   const handleDeleteTurn = async (turnId: string) => {
     const turn = turns.find((t) => t.id === turnId);
     if (!turn) return;
+
     const result = await Swal.fire({
       title: "🗑️ Eliminar Turno",
       text: "Esta acción no se puede deshacer",
@@ -683,8 +736,11 @@ export default function TurnsTab() {
       confirmButtonColor: "#dc2626",
       confirmButtonText: "Sí, eliminar",
       cancelButtonText: "Cancelar",
+      width: window.innerWidth < 640 ? "90%" : "400px",
     });
+
     if (!result.isConfirmed) return;
+
     try {
       await reservationService.deleteTurn(turnId);
       broadcastTurnUpdate("deleted", turnId);
@@ -715,32 +771,34 @@ export default function TurnsTab() {
   }, [turns]);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 px-3 py-4 sm:px-4 sm:py-6 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+        <div className="mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 truncate">
                 🗓️ Gestión de Turnos
               </h1>
-              <p className="text-gray-600 mt-2">
+              <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">
                 Administra los turnos y horarios de actividades
               </p>
             </div>
           </div>
-          {/* Controles */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+
+          {/* Controles principales */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mb-6">
             {/* Panel de creación */}
-            <div className="bg-white rounded-lg shadow p-4">
-              <h3 className="font-semibold text-gray-900 mb-3">
-                ➕ Crear Turnos
+            <div className="bg-white rounded-lg sm:rounded-xl shadow p-3 sm:p-4">
+              <h3 className="font-semibold text-gray-900 mb-2 sm:mb-3 flex items-center gap-2">
+                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="text-sm sm:text-base">Crear Turnos</span>
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 <select
                   value={selectedActivity}
                   onChange={(e) => setSelectedActivity(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                  className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
                 >
                   <option value="">Seleccionar actividad</option>
                   {activities.map((activity) => (
@@ -749,35 +807,38 @@ export default function TurnsTab() {
                     </option>
                   ))}
                 </select>
-                <div className="flex gap-2">
+                <div className="flex flex-col xs:flex-row gap-2">
                   <button
                     onClick={handleGenerateTurns}
                     disabled={!selectedActivity}
-                    className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-lg hover:from-red-700 hover:to-orange-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 px-3 sm:px-4 py-2.5 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-lg hover:from-red-700 hover:to-orange-700 transition font-medium text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap"
                   >
-                    ⚡ Generar Automático
+                    <Zap className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span>Generar Automático</span>
                   </button>
                   <button
                     onClick={handleCreateManualTurn}
                     disabled={!selectedActivity}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 px-3 sm:px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap"
                   >
-                    ➕ Crear Manual
+                    <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span>Crear Manual</span>
                   </button>
                 </div>
               </div>
             </div>
+
             {/* Panel de filtros */}
-            <div className="bg-white rounded-lg shadow p-4">
-              <h3 className="font-semibold text-gray-900 mb-3">🔍 Filtros</h3>
-              <div className="grid grid-cols-2 gap-3">
-                {/* FILTRO DE ACTIVIDAD */}
+            <div className="bg-white rounded-lg sm:rounded-xl shadow p-3 sm:p-4">
+              <h3 className="font-semibold text-gray-900 mb-2 sm:mb-3 flex items-center gap-2">
+                <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="text-sm sm:text-base">Filtros</span>
+              </h3>
+              <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 sm:gap-3">
                 <select
                   value={filterActivity}
-                  onChange={(e) => {
-                    setFilterActivity(e.target.value);
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                  onChange={(e) => setFilterActivity(e.target.value)}
+                  className="px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
                 >
                   <option value="">Todas las actividades</option>
                   {activities.map((activity) => (
@@ -786,13 +847,10 @@ export default function TurnsTab() {
                     </option>
                   ))}
                 </select>
-                {/* FILTRO DE ESTADO */}
                 <select
                   value={filterStatus}
-                  onChange={(e) => {
-                    setFilterStatus(e.target.value);
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
                 >
                   <option value="">Todos los estados</option>
                   <option value="available">Disponibles</option>
@@ -802,32 +860,45 @@ export default function TurnsTab() {
               </div>
             </div>
           </div>
-          {/* Stats */}
-          <div className="grid grid-cols-4 gap-4">
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="text-sm text-gray-600">Total Turnos</div>
-              <div className="text-2xl font-bold text-gray-900">
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+            <div className="bg-white rounded-lg shadow p-3 sm:p-4">
+              <div className="text-xs sm:text-sm text-gray-600 flex items-center gap-1">
+                <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span>Total Turnos</span>
+              </div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900 mt-1">
                 {turns.length}
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="text-sm text-gray-600">Disponibles</div>
-              <div className="text-2xl font-bold text-green-600">
+            <div className="bg-white rounded-lg shadow p-3 sm:p-4">
+              <div className="text-xs sm:text-sm text-gray-600 flex items-center gap-1">
+                <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
+                <span>Disponibles</span>
+              </div>
+              <div className="text-xl sm:text-2xl font-bold text-green-600 mt-1">
                 {
                   turns.filter((t) => t.status?.toLowerCase() === "available")
                     .length
                 }
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="text-sm text-gray-600">Llenos</div>
-              <div className="text-2xl font-bold text-yellow-600">
+            <div className="bg-white rounded-lg shadow p-3 sm:p-4">
+              <div className="text-xs sm:text-sm text-gray-600 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500" />
+                <span>Llenos</span>
+              </div>
+              <div className="text-xl sm:text-2xl font-bold text-yellow-600 mt-1">
                 {turns.filter((t) => t.status?.toLowerCase() === "full").length}
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="text-sm text-gray-600">Cancelados</div>
-              <div className="text-2xl font-bold text-red-600">
+            <div className="bg-white rounded-lg shadow p-3 sm:p-4">
+              <div className="text-xs sm:text-sm text-gray-600 flex items-center gap-1">
+                <XCircle className="w-3 h-3 sm:w-4 sm:h-4 text-red-500" />
+                <span>Cancelados</span>
+              </div>
+              <div className="text-xl sm:text-2xl font-bold text-red-600 mt-1">
                 {
                   turns.filter((t) => t.status?.toLowerCase() === "cancelled")
                     .length
@@ -836,21 +907,24 @@ export default function TurnsTab() {
             </div>
           </div>
         </div>
+
         {/* Calendario */}
         {loading ? (
-          <div className="bg-white rounded-xl shadow-lg p-12 flex justify-center">
+          <div className="bg-white rounded-lg sm:rounded-xl shadow-lg p-6 sm:p-8 md:p-12 flex justify-center">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-red-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600 font-medium">
+              <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-4 border-red-600 mx-auto"></div>
+              <p className="mt-4 text-gray-600 font-medium text-sm sm:text-base">
                 Cargando turnos...
               </p>
             </div>
           </div>
         ) : (
-          <CalendarView
-            reservations={mappedReservations}
-            onDayClick={handleDayClick}
-          />
+          <div className="bg-white rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 md:p-6">
+            <CalendarView
+              reservations={mappedReservations}
+              onDayClick={handleDayClick}
+            />
+          </div>
         )}
       </div>
     </div>

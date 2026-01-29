@@ -184,67 +184,85 @@ export default function NavigationTab() {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* ⬅️ AGREGAR PESTAÑAS AQUÍ */}
-      <div className="bg-white flex items-center justify-center rounded-xl shadow-lg mb-8">
+      <div className="bg-white rounded-xl shadow-lg mb-8 mx-4 sm:mx-0">
         <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8 px-6">
+          <nav className="flex flex-wrap justify-center gap-x-1 sm:gap-x-2 lg:gap-x-0 px-2 sm:px-6">
             <button
               onClick={() => setActiveTab("overview")}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === "overview"
-                  ? "border-red-600 text-red-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
+              className={`
+  py-2.5 sm:py-4 px-3 sm:px-4 lg:px-6 border-b-2 font-medium text-xs sm:text-sm transition-all whitespace-nowrap
+  ${
+    activeTab === "overview"
+      ? "border-red-500 text-red-600"
+      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+  }
+`}
             >
               📊 Resumen
             </button>
             <button
               onClick={() => setActiveTab("users")}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === "users"
-                  ? "border-red-600 text-red-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
+              className={`
+  py-2.5 sm:py-4 px-3 sm:px-4 lg:px-6 border-b-2 font-medium text-xs sm:text-sm transition-all whitespace-nowrap
+  ${
+    activeTab === "users"
+      ? "border-red-500 text-red-600"
+      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+  }
+`}
             >
               👥 Usuarios
             </button>
             <button
               onClick={() => setActiveTab("activities")}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === "activities"
-                  ? "border-red-600 text-red-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
+              className={`
+  py-2.5 sm:py-4 px-3 sm:px-4 lg:px-6 border-b-2 font-medium text-xs sm:text-sm transition-all whitespace-nowrap
+  ${
+    activeTab === "activities"
+      ? "border-red-500 text-red-600"
+      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+  }
+`}
             >
               🏋️ Actividades
             </button>
             <button
               onClick={() => setActiveTab("reservations")}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === "reservations"
-                  ? "border-red-600 text-red-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
+              className={`
+  py-2.5 sm:py-4 px-3 sm:px-4 lg:px-6 border-b-2 font-medium text-xs sm:text-sm transition-all whitespace-nowrap
+  ${
+    activeTab === "reservations"
+      ? "border-red-500 text-red-600"
+      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+  }
+`}
             >
               📅 Reservas
             </button>
             <button
               onClick={() => setActiveTab("turns")}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === "turns"
-                  ? "border-red-600 text-red-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
+              className={`
+  py-2.5 sm:py-4 px-3 sm:px-4 lg:px-6 border-b-2 font-medium text-xs sm:text-sm transition-all whitespace-nowrap
+  ${
+    activeTab === "turns"
+      ? "border-red-500 text-red-600"
+      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+  }
+`}
             >
               🗓️ Turnos
             </button>
             {isSuperAdmin && (
               <button
                 onClick={() => setActiveTab("AdminCreationForm")}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === "AdminCreationForm"
-                    ? "border-red-600 text-red-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
+                className={`
+  py-2.5 sm:py-4 px-3 sm:px-4 lg:px-6 border-b-2 font-medium text-xs sm:text-sm transition-all whitespace-nowrap
+  ${
+    activeTab === "AdminCreationForm"
+      ? "border-red-500 text-red-600"
+      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+  }
+`}
               >
                 👥 Crear Usuario
               </button>
@@ -448,6 +466,7 @@ export default function NavigationTab() {
         {activeTab === "activities" && <ActivityTab />}
         {activeTab === "users" && <UsersTab />}
         {activeTab === "reservations" && <ReservationsTab />}
+
         {activeTab === "AdminCreationForm" && (
           <AdminCreationFormTab
             onBackToOverview={() => setActiveTab("overview")}

@@ -24,6 +24,7 @@ export const testimonialService = {
   createTestimonial: async (testimonial: {
     comment: string;
     rating: number;
+    profession?: string;
   }): Promise<Testimonial> => {
     const { data } = await apiClient.post("/api/testimonials", testimonial);
     return data;
