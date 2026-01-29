@@ -645,7 +645,7 @@ export default function ActivityTab() {
                     📅 Horarios:
                   </div>
                   <div className="max-h-24 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-2 gap-y-1">
                       {renderSchedule(activity.schedule)}
                     </div>
                   </div>
